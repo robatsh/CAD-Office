@@ -125,12 +125,12 @@ export default {
   about: {
     title: 'Hakkında',
     close: 'Kapat',
-    product: 'CAD Görüntüleyici',
-    tagline: 'DWG ve DXF çizimleri için yüksek performanslı web CAD görüntüleyici.',
-    website: 'Web sitesi',
+    product: 'CAD Görüntüleyici ve Düzenleyici',
+    tagline:
+      'DWG ve DXF çizimlerini doğrudan tarayıcınızda açın ve düzenleyin.',
     docs: 'Belgeler',
     repository: 'GitHub',
-    copyright: '© {year} mlightcad. Tüm hakları saklıdır.',
+    attribution: 'MLightCAD tabanlıdır.',
     ok: 'Tamam'
   },
   drawStyle: {

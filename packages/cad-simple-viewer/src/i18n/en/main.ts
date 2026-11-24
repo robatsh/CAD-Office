@@ -126,12 +126,11 @@ export default {
   about: {
     title: 'About',
     close: 'Close',
-    product: 'CAD Viewer',
-    tagline: 'High-performance web CAD viewer for DWG and DXF drawings.',
-    website: 'Website',
+    product: 'CAD Viewer and Editor',
+    tagline: 'Open and edit DWG and DXF drawings in your browser.',
     docs: 'Documentation',
     repository: 'GitHub',
-    copyright: '© {year} mlightcad. All rights reserved.',
+    attribution: 'Based on MLightCAD.',
     ok: 'OK'
   },
   drawStyle: {

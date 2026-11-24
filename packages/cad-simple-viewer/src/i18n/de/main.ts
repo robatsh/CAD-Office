@@ -128,12 +128,12 @@ export default {
   about: {
     title: 'Über',
     close: 'Schließen',
-    product: 'CAD Zuschauer',
-    tagline: 'Leistungsstarker Web-Viewer CAD für Zeichnungen DWG und DXF.',
-    website: 'Webseite',
+    product: 'CAD-Viewer und Editor',
+    tagline:
+      'DWG- und DXF-Zeichnungen direkt im Browser öffnen und bearbeiten.',
     docs: 'Dokumentation',
     repository: 'GitHub',
-    copyright: '© {year} mlightcad. Alle Rechte vorbehalten.',
+    attribution: 'Basiert auf MLightCAD.',
     ok: 'OK'
   },
   drawStyle: {

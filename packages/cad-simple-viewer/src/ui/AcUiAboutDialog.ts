@@ -1,14 +1,10 @@
-import {
-  acapCreateMlightcadBrandMark,
-  MLIGHTCAD_DOCS_URL,
-  MLIGHTCAD_REPO_URL,
-  MLIGHTCAD_WEBSITE_URL
-} from '../app/AcApBrand.js'
 import { AcApI18n } from '../i18n/index.js'
 import { AcUiDialog } from './AcUiDialog.js'
 
+const projectUrl = 'https://github.com/robatsh/CAD-Office'
+
 /**
- * About dialog showing mlightcad branding and product links.
+ * About dialog showing CAD-Office branding and project links.
  *
  * Extends {@link AcUiDialog}; styles are injected once per document.
  */
@@ -53,10 +49,9 @@ export class AcUiAboutDialog extends AcUiDialog {
   }
 
   private buildContent(): void {
-    const brand = acapCreateMlightcadBrandMark({
-      className: 'ml-ui-about-brand',
-      iconSize: '56px'
-    })
+    const brand = document.createElement('div')
+    brand.className = 'ml-ui-about-brand'
+    brand.textContent = 'CAD-Office'
 
     const product = document.createElement('div')
     product.className = 'ml-ui-about-product'
@@ -69,27 +64,25 @@ export class AcUiAboutDialog extends AcUiDialog {
     const links = document.createElement('div')
     links.className = 'ml-ui-about-links'
     links.appendChild(
-      this.createLink(AcApI18n.t('main.about.website'), MLIGHTCAD_WEBSITE_URL)
+      this.createLink(
+        AcApI18n.t('main.about.docs'),
+        `${projectUrl}/blob/main/DEVELOPMENT.md`
+      )
     )
     links.appendChild(
-      this.createLink(AcApI18n.t('main.about.docs'), MLIGHTCAD_DOCS_URL)
+      this.createLink(AcApI18n.t('main.about.repository'), projectUrl)
     )
-    links.appendChild(
-      this.createLink(AcApI18n.t('main.about.repository'), MLIGHTCAD_REPO_URL)
-    )
+    links.appendChild(this.createLink('MIT', `${projectUrl}/blob/main/LICENSE`))
 
-    const copyright = document.createElement('div')
-    copyright.className = 'ml-ui-about-copyright'
-    copyright.textContent = AcApI18n.t('main.about.copyright').replace(
-      '{year}',
-      String(new Date().getFullYear())
-    )
+    const attribution = document.createElement('div')
+    attribution.className = 'ml-ui-about-attribution'
+    attribution.textContent = AcApI18n.t('main.about.attribution')
 
     this.bodyEl.appendChild(brand)
     this.bodyEl.appendChild(product)
     this.bodyEl.appendChild(tagline)
     this.bodyEl.appendChild(links)
-    this.bodyEl.appendChild(copyright)
+    this.bodyEl.appendChild(attribution)
 
     const okBtn = document.createElement('button')
     okBtn.type = 'button'
@@ -121,29 +114,12 @@ export class AcUiAboutDialog extends AcUiDialog {
     style.id = AcUiAboutDialog.aboutStyleId
     style.textContent = `
 .ml-ui-about-brand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
   margin-bottom: 10px;
+  text-align: center;
   color: var(--ml-ui-accent, #0b84ff);
-}
-
-.ml-ui-about-brand .ml-brand-mark-icon {
-  display: inline-flex;
-}
-
-.ml-ui-about-brand .ml-brand-mark-icon svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.ml-ui-about-brand .ml-brand-mark-label {
   font-size: 22px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--ml-ui-text, #303133);
 }
 
 .ml-ui-about-product {
@@ -178,7 +154,7 @@ export class AcUiAboutDialog extends AcUiDialog {
   text-decoration: underline;
 }
 
-.ml-ui-about-copyright {
+.ml-ui-about-attribution {
   margin-top: 14px;
   text-align: center;
   font-size: 11px;

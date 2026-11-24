@@ -124,12 +124,11 @@ export default {
   about: {
     title: 'حول',
     close: 'إغلاق',
-    product: 'عارض CAD',
-    tagline: 'عارض CAD عالي الأداء للويب لملفات DWG وDXF.',
-    website: 'الموقع الإلكتروني',
+    product: 'عارض ومحرر CAD',
+    tagline: 'افتح رسومات DWG وDXF وعدّلها مباشرةً في المتصفح.',
     docs: 'التوثيق',
     repository: 'GitHub',
-    copyright: '© {year} mlightcad. جميع الحقوق محفوظة.',
+    attribution: 'يستند إلى MLightCAD.',
     ok: 'موافق'
   },
   drawStyle: {

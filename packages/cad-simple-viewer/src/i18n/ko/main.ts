@@ -126,12 +126,11 @@ export default {
   about: {
     title: '정보',
     close: '닫기',
-    product: 'CAD 뷰어',
-    tagline: 'DWG 및 DXF 도면을 위한 고성능 웹 CAD 뷰어입니다.',
-    website: '웹 사이트',
+    product: 'CAD 뷰어 및 편집기',
+    tagline: '브라우저에서 DWG 및 DXF 도면을 직접 열고 편집할 수 있습니다.',
     docs: '문서',
     repository: 'GitHub',
-    copyright: '© {year} mlightcad. 모든 권리 보유.',
+    attribution: 'MLightCAD를 기반으로 합니다.',
     ok: '확인'
   },
   drawStyle: {

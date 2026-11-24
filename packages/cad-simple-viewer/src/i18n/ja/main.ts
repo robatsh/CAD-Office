@@ -127,12 +127,11 @@ export default {
   about: {
     title: 'バージョン情報',
     close: '閉じる',
-    product: 'CAD ビューア',
-    tagline: 'DWG および DXF 図面用の高性能 Web CAD ビューア。',
-    website: 'Web サイト',
+    product: 'CAD ビューアー・エディター',
+    tagline: 'DWG と DXF の図面をブラウザーで直接開いて編集できます。',
     docs: 'ドキュメント',
     repository: 'GitHub',
-    copyright: '© {year} mlightcad. 無断転載を禁じます。',
+    attribution: 'MLightCAD をベースにしています。',
     ok: 'OK'
   },
   drawStyle: {

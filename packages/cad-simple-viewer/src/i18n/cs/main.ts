@@ -125,12 +125,11 @@ export default {
   about: {
     title: 'O aplikaci',
     close: 'Zavřít',
-    product: 'CAD prohlížeč',
-    tagline: 'Vysokovýkonný webový CAD prohlížeč pro výkresy DWG a DXF.',
-    website: 'Web',
+    product: 'Prohlížeč a editor CAD',
+    tagline: 'Otevírejte a upravujte výkresy DWG a DXF přímo v prohlížeči.',
     docs: 'Dokumentace',
     repository: 'GitHub',
-    copyright: '© {year} mlightcad. Všechna práva vyhrazena.',
+    attribution: 'Vychází z projektu MLightCAD.',
     ok: 'OK'
   },
   drawStyle: {

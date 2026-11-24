@@ -121,12 +121,11 @@ export default {
   about: {
     title: '关于',
     close: '关闭',
-    product: 'CAD 查看器',
-    tagline: '面向 DWG/DXF 图纸的高性能 Web CAD 查看器。',
-    website: '官网',
+    product: 'CAD 查看与编辑工具',
+    tagline: '直接在浏览器中打开和编辑 DWG 与 DXF 图纸。',
     docs: '文档',
     repository: 'GitHub',
-    copyright: '© {year} mlightcad。保留所有权利。',
+    attribution: '基于 MLightCAD。',
     ok: '确定'
   },
   drawStyle: {
