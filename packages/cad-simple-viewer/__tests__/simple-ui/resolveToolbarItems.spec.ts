@@ -644,6 +644,7 @@ describe('default toolbar items', () => {
     expect(locale?.selectedChildId).toBe('locale-cs')
     expect(locale?.children?.map(child => child.id)).toEqual([
       'locale-en',
+      'locale-de',
       'locale-zh',
       'locale-ja',
       'locale-ko',
