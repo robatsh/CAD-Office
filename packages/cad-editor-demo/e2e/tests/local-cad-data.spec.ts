@@ -75,7 +75,7 @@ for (const renderMode of ['Hauptthread', 'Web-Worker']) {
     )
     const drawingWithText = blankDrawing.replace(
       '2\nENTITIES\n',
-      '2\nENTITIES\n0\nTEXT\n8\n0\n10\n0\n20\n0\n30\n0\n40\n5\n1\nMalchow\n7\nSTANDARD\n'
+      '2\nENTITIES\n0\nTEXT\n8\n0\n10\n0\n20\n0\n30\n0\n40\n5\n1\nSample text\n7\nSTANDARD\n'
     )
 
     await page.goto('/')
@@ -90,7 +90,7 @@ for (const renderMode of ['Hauptthread', 'Web-Worker']) {
       .locator('input[type="file"]')
       .first()
       .setInputFiles({
-        name: 'malchow-text.dxf',
+        name: 'sample-text.dxf',
         mimeType: 'application/dxf',
         buffer: Buffer.from(drawingWithText)
       })

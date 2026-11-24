@@ -830,8 +830,10 @@ export default {
       off: '극좌표 추적 켜기'
     },
     theme: {
-      dark: '밝은 테마로 전환',
-      light: '어두운 테마로 전환'
+      label: '색상 테마',
+      light: '밝게',
+      dark: '어둡게',
+      system: '시스템 설정'
     },
     warning: {
       font: '다음 글꼴을 찾을 수 없습니다!'

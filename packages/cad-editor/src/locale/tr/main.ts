@@ -868,8 +868,10 @@ export default {
       off: 'Kutupsal izlemeyi aç'
     },
     theme: {
-      dark: 'Açık temaya geç',
-      light: 'Koyu temaya geç'
+      label: 'Renk teması',
+      light: 'Açık',
+      dark: 'Koyu',
+      system: 'Sistem'
     },
     warning: {
       font: 'Aşağıdaki yazı tipleri bulunamadı!'

@@ -807,8 +807,10 @@ export default {
       off: '打开极轴追踪'
     },
     theme: {
-      dark: '切换到暗黑主题',
-      light: '切换到明亮主题'
+      label: '配色方案',
+      light: '浅色',
+      dark: '深色',
+      system: '跟随系统'
     },
     warning: {
       font: '没有找到如下字体：'

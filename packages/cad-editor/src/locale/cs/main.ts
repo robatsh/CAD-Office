@@ -853,8 +853,10 @@ export default {
       off: 'Zapnout polární trasování'
     },
     theme: {
-      dark: 'Přepnout na světlý motiv',
-      light: 'Přepnout na tmavý motiv'
+      label: 'Barevný motiv',
+      light: 'Světlý',
+      dark: 'Tmavý',
+      system: 'Podle systému'
     },
     warning: {
       font: 'Následující fonty nebyly nalezeny!'

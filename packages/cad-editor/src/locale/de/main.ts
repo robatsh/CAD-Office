@@ -903,8 +903,10 @@ export default {
       off: 'Aktivieren Sie die Polarverfolgung'
     },
     theme: {
-      dark: 'Wechseln Sie zum Lichtthema',
-      light: 'Wechseln Sie zum dunklen Thema'
+      label: 'Farbschema',
+      light: 'Hell',
+      dark: 'Dunkel',
+      system: 'Systemdesign'
     },
     warning: {
       font: 'Die folgenden Schriftarten wurden nicht gefunden!'

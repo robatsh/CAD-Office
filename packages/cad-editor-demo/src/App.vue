@@ -208,7 +208,7 @@ const initialize = async () => {
   )
 }
 
-const viewerName = 'CAD-Viewer'
+const viewerName = 'CAD-Office'
 // Font requests also originate from workers, where relative URLs resolve
 // against the worker script instead of the document.
 const BASE_URL = new URL(

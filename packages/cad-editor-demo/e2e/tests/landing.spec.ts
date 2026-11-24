@@ -8,7 +8,8 @@ test('keeps drawing actions accessible on the mobile landing page', async ({
   await page.goto('/')
 
   const header = page.getByRole('banner')
-  await expect(header).toHaveText('CAD-Viewer')
+  await expect(header).toHaveText('CAD-Office')
+  await expect(page).toHaveTitle('CAD-Office')
   await expect(header.getByRole('link')).toHaveCount(0)
   const main = page.getByRole('main')
   await expect(

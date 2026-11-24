@@ -860,8 +860,10 @@ export default {
       off: 'Turn on polar tracking'
     },
     theme: {
-      dark: 'Switch to light theme',
-      light: 'Switch to dark theme'
+      label: 'Theme',
+      light: 'Light',
+      dark: 'Dark',
+      system: 'System'
     },
     warning: {
       font: 'The following fonts are not found!'
