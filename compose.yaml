@@ -1,0 +1,8 @@
+services:
+  cad-office:
+    image: ghcr.io/robatsh/cad-office:latest
+    ports:
+      - '8080:80'
+    restart: unless-stopped
+    volumes:
+      - ./branding:/usr/share/nginx/html/branding:ro

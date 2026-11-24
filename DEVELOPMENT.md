@@ -60,6 +60,24 @@ Playwright startet seinen eigenen Vite-Server auf Port 4173 und verwendet unter 
 
 ## Docker
 
+GitHub Actions baut das Image bei Pushes auf `main`, prüft den HTTP-Start
+und veröffentlicht es als `ghcr.io/robatsh/cad-office:latest` sowie mit der
+vollständigen Commit-SHA als Tag. Der Workflow kann auf `main` auch manuell
+gestartet werden.
+
+Mit der [Compose-Datei](compose.yaml) lässt sich das veröffentlichte Image
+auf einem Docker-Host starten oder aktualisieren:
+
+```sh
+docker compose pull
+docker compose up -d
+```
+
+Für ein privates Paket zuerst mit einem GitHub-Zugang mit Leserechten für das
+Paket bei `ghcr.io` anmelden.
+
+### Lokal bauen
+
 Diese Befehle im Repository-Stamm mit einer Docker-Engine im Linux-Container-Modus ausführen.
 
 ```powershell
@@ -68,5 +86,40 @@ docker run --rm -p 8080:80 cad-office
 ```
 
 Der Viewer ist unter <http://localhost:8080> erreichbar. Nginx liefert den statischen Produktionsbuild inklusive Web-Workern, WebAssembly, CAD-Schriften und einer leeren metrischen DXF-Vorlage aus.
+
+### Logo, Favicon und Akzentfarben
+
+Lege auf dem Docker-Host einen Ordner `branding` mit einer `branding.json`
+und den darin referenzierten Bilddateien an:
+
+```json
+{
+  "logo": "logo.svg",
+  "favicon": "favicon.png",
+  "lightAccent": "#086781",
+  "darkAccent": "#63d7e2"
+}
+```
+
+Das Logo erscheint auf der Startseite, das Favicon im Browser-Tab. Die
+Akzentfarben gelten für das jeweilige Editor-Design. Die Startseite verwendet
+`lightAccent`. Alle Felder sind optional. Für Farben gilt das Format
+`#RRGGBB`, für Bilder ein Dateiname im Branding-Ordner.
+
+```powershell
+docker run --rm -p 8080:80 --mount "type=bind,source=$(Join-Path (Get-Location) branding),target=/usr/share/nginx/html/branding,readonly" cad-office
+```
+
+Mit Docker Compose kommt der Mount unter den Dienst:
+
+```yaml
+volumes:
+  - ./branding:/usr/share/nginx/html/branding:ro
+```
+
+Nach Änderungen im eingebundenen Ordner genügt es, die Seite neu zu laden.
+Ohne `branding.json` verwendet die App ihr Standarddesign.
+
+### CAD-Schriften
 
 Der Schriftkatalog liegt unter [fonts.json](packages/cad-editor-demo/static/cad-data/fonts/fonts.json). Die mitgelieferten Liberation-Schriften ersetzen gängige Schriftfamilien wie Arial, Times New Roman und Courier New. Für Zeichnungen mit eigenen SHX- oder TrueType-Schriften die vor Ort verfügbaren Schriftdateien in denselben Ordner legen, im Katalog eintragen und das Image neu bauen.

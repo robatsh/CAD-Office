@@ -4,6 +4,13 @@
     <div v-if="!showViewer" class="upload-screen">
       <header class="portal-header">
         <div class="portal-header-inner">
+          <img
+            v-if="logo"
+            :src="logo"
+            alt=""
+            class="portal-logo"
+            @error="($event.target as HTMLImageElement).hidden = true"
+          />
           <span class="portal-name">{{ viewerName }}</span>
         </div>
       </header>
@@ -74,6 +81,8 @@ import { initializeLocale } from './locale'
 import { getOneDriveEnvConfig, registerOneDriveFromEnv } from './onedriveEnv'
 import { registerLibreDwgConverter } from './registerLibreDwg'
 import { store } from './store'
+
+defineProps<{ logo?: string }>()
 
 initializeLocale()
 const { t } = useI18n({ useScope: 'global' })
@@ -401,7 +410,7 @@ const handleNewDrawing = (
   --ml-ui-bg-page: #edf3f5;
   --ml-ui-bg-fill: #f5f8f9;
   --ml-ui-border: #c7d7de;
-  --ml-ui-accent: #086781;
+  --ml-ui-accent: var(--cad-office-portal-accent, #086781);
   --ml-ui-shadow: 0 8px 24px rgb(22 51 67 / 9%);
 
   position: absolute;
@@ -416,13 +425,22 @@ const handleNewDrawing = (
 .portal-header {
   background: #143b50;
   color: #fff;
-  border-bottom: 4px solid #39a4b4;
+  border-bottom: 4px solid var(--cad-office-portal-accent, #39a4b4);
 }
 
 .portal-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   max-width: 1080px;
   margin-inline: auto;
   padding: 18px clamp(16px, 4vw, 40px);
+}
+
+.portal-logo {
+  max-width: 160px;
+  max-height: 36px;
+  object-fit: contain;
 }
 
 .portal-name {

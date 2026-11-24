@@ -6,6 +6,7 @@ import ElementPlus from 'element-plus'
 import { createApp } from 'vue'
 
 import App from './App.vue'
+import { applyBranding, loadBranding } from './branding'
 
 /** Match MlCadViewer default so the landing page uses the same chrome tokens. */
 const applyLandingTheme = () => {
@@ -16,9 +17,13 @@ const applyLandingTheme = () => {
   document.documentElement.classList.remove('ml-theme-light')
 }
 
-const initApp = () => {
+const initApp = async () => {
   applyLandingTheme()
-  const app = createApp(App)
+  const branding = await loadBranding(
+    new URL(`${import.meta.env.BASE_URL}branding/`, document.baseURI)
+  )
+  applyBranding(branding)
+  const app = createApp(App, { logo: branding.logo })
   // Required when Vite aliases `@mlightcad/ui-components` to source: those SFCs
   // use `<el-*>` tags without local imports (their own build auto-imports them).
   app.use(ElementPlus)
@@ -31,4 +36,4 @@ const initApp = () => {
   }
 }
 
-initApp()
+void initApp()
