@@ -304,6 +304,18 @@ export default defineConfig(({ command, mode }) => {
     },
     optimizeDeps: {
       force: command === 'serve',
+      // Scan the linked viewer sources before Vite serves the landing page.
+      // Discovering their dependencies during startup can reload the page.
+      entries:
+        command === 'serve'
+          ? [
+              'index.html',
+              '../cad-editor/src/index.ts',
+              '../cad-simple-viewer/src/index.ts',
+              '../cad-simple-viewer/src/file-open-panel.ts',
+              '../three-renderer/src/index.ts'
+            ]
+          : undefined,
       // Pre-bundle the PDF stack so the first lazy `cpdf` import does not
       // trigger a Vite optimizeDeps full-page reload in the example app.
       // pnpm keeps these out of this package's node_modules, so they are

@@ -439,6 +439,11 @@ const handleNewDrawing = (
 
 .startup-status {
   margin: 0 0 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--ml-ui-border);
+  border-radius: 8px;
+  background: var(--ml-ui-bg);
   color: var(--ml-ui-text);
+  text-align: center;
 }
 </style>
