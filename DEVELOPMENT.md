@@ -110,12 +110,21 @@ Akzentfarben gelten für das jeweilige Editor-Design. Die Startseite verwendet
 docker run --rm -p 8080:80 --mount "type=bind,source=$(Join-Path (Get-Location) branding),target=/usr/share/nginx/html/branding,readonly" cad-office
 ```
 
-Mit Docker Compose kommt der Mount unter den Dienst:
+In Portainer kommt der Mount unter den Dienst `cad-office`. Verwende einen
+absoluten Pfad zu einem bereits vorhandenen Verzeichnis auf dem Docker-Host:
 
 ```yaml
 volumes:
-  - ./branding:/usr/share/nginx/html/branding:ro
+  - type: bind
+    source: /opt/cad-office/branding
+    target: /usr/share/nginx/html/branding
+    read_only: true
+    bind:
+      create_host_path: false
 ```
+
+Bei einem lokalen Compose-Aufruf kannst du `./branding` als Quelle verwenden,
+wenn der Ordner neben der Compose-Datei liegt.
 
 Nach Änderungen im eingebundenen Ordner genügt es, die Seite neu zu laden.
 Ohne `branding.json` verwendet die App ihr Standarddesign.
