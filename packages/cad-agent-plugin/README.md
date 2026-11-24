@@ -1,0 +1,60 @@
+# @mlightcad/cad-agent-plugin
+
+Natural-language CAD drawing agent for [cad-viewer](https://github.com/mlightcad/cad-viewer).
+
+## Why scripts, not hundreds of tools?
+
+A CAD agent that only exposes fine-grained tools (`draw_line`, `draw_circle`,
+…) tends to grow into a second CAD API for AI — still incomplete, expensive in
+tokens, and weak on ad-hoc analysis.
+
+This plugin maps a **script-first** catalog from
+[`@mlightcad/cad-agent-core`](../cad-agent-core/README.md): the model writes
+`cad.*` JavaScript, and the host runs it against the open drawing. Lifecycle
+UI stays in the chat panel; drawing logic stays in code the model can iterate
+on (filter, measure, edit, verify in one call).
+
+That means fewer tool definitions in the prompt, less round-tripping for bulk
+work, and built-in self-check via `cad.measure` — the same design used by
+`@mlightcad/cad-mcp-server` for external agents.
+
+Read more:
+[Building a CAD Agent: MCP, Tools, or Let AI Write Code?](https://dev.to/mlightcad/building-a-cad-agent-mcp-tools-or-let-ai-write-code-2nc4)
+
+## Features
+
+- Lazy-loaded `AcApPlugin` (trigger command: `agent`)
+- Vercel AI SDK `Experimental_Agent` with CAD tool calling
+- Vue chat panel (`@ai-sdk/vue` `Chat` + custom transport)
+- Model and API keys come from the shared AI model settings in
+  [`@mlightcad/cad-llm-plugin`](../cad-llm-plugin/README.md) (`llmsettings`),
+  which `pdftext` text recognition uses too; the panel's gear button opens
+  that dialog
+
+## Usage in cad-viewer
+
+```typescript
+import { registerLazyAgentPlugin } from '@mlightcad/cad-agent-plugin/register'
+import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
+
+const { pluginManager } = AcApDocManager.instance
+registerLazyLlmPlugin(pluginManager)
+registerLazyAgentPlugin(pluginManager)
+```
+
+`@mlightcad/cad-llm-plugin` is a peer dependency: install it next to this
+package.
+
+Run `agent` from the ribbon or command line to open the chat panel.
+
+The manual script console lives in [`@mlightcad/cad-script-plugin`](../cad-script-plugin/README.md). This package does not register `cadscript`.
+
+## CAD tools
+
+Tool schemas and execution live in [`@mlightcad/cad-agent-core`](../cad-agent-core/README.md). This package maps that catalog onto the AI SDK.
+
+- `execute_cad_script` — all drawing, queries, edits, selection, zoom, context (`cad.drawing`), and file export (`cad.file.saveDxf` / `savePdf` / `saveHtml`)
+
+Agent mode defaults to Simple (optional `cad.view.capturePreview`, no automatic
+vision verification). Enable High inference in the panel for opt-in post-round
+screenshot + vision verification on complex tasks.

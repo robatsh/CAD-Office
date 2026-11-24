@@ -1,0 +1,83 @@
+import type { Config } from 'jest'
+
+const config: Config = {
+  verbose: true,
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  transform: {
+    // Transpile-only: type-checking the `ai` / `@ai-sdk/*` graph that
+    // cad-agent-plugin / cad-llm-plugin pull in exhausts the heap (see
+    // cad-agent-plugin's copy-typings.mjs). Same for paddleocr-js types.
+    '^.+[\\\\/]packages[\\\\/]cad-(agent|llm|paddleocr)-plugin[\\\\/].+\\.ts$': [
+      'ts-jest',
+      {
+        tsconfig: '<rootDir>/packages/cad-agent-plugin/tsconfig.jest.json'
+      }
+    ],
+    '^.+\\.(ts|tsx)$': [
+      'ts-jest',
+      {
+        tsconfig: '<rootDir>/tsconfig.jest.json'
+      }
+    ],
+    '^.+\\.js$': [
+      'ts-jest',
+      {
+        tsconfig: {
+          allowJs: true
+        }
+      }
+    ]
+  },
+  transformIgnorePatterns: [
+    // three@0.186's CJS entry re-exports ESM (`three.module.js` / `three.core.js`).
+    '/node_modules/(?!.*(mtext-parser|rbush|quickselect|three/build/three))'
+  ],
+  testPathIgnorePatterns: ['/e2e/', '/__tests__/helpers/', '/__tests__/simple-ui/helpers/'],
+  moduleNameMapper: {
+    // Published packages use Node-ESM `.js` specifiers; map them back to `.ts`.
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+    '^lodash-es$': 'lodash',
+    '^@mlightcad/cad-pdf-core$':
+      '<rootDir>/packages/cad-pdf-core/src/index.ts',
+    '^@mlightcad/pdf-renderer$':
+      '<rootDir>/packages/pdf-renderer/src/index.ts',
+    '^@mlightcad/cad-svg-converter$':
+      '<rootDir>/packages/cad-svg-converter/src/index.ts',
+    '^@mlightcad/cad-html-core$':
+      '<rootDir>/packages/cad-html-core/src/index.ts',
+    '^@mlightcad/cad-html-plugin$':
+      '<rootDir>/packages/cad-html-plugin/src/index.ts',
+    '^@mlightcad/cad-pdf-plugin$':
+      '<rootDir>/packages/cad-pdf-plugin/src/index.ts',
+    '^@mlightcad/cad-agent-core$':
+      '<rootDir>/packages/cad-agent-core/src/index.ts',
+    '^@mlightcad/cad-llm-plugin$':
+      '<rootDir>/packages/cad-llm-plugin/src/index.ts',
+    '^@mlightcad/cad-paddleocr-plugin$':
+      '<rootDir>/packages/cad-paddleocr-plugin/src/index.ts',
+    '^@paddleocr/paddleocr-js$': '<rootDir>/test/mocks/paddleocr-js.js',
+    '^@mlightcad/cad-script-core$':
+      '<rootDir>/packages/cad-script-core/src/index.ts',
+    '^@mlightcad/cad-script-core/script-api$':
+      '<rootDir>/packages/cad-script-core/src/script-api.ts',
+    '^@mlightcad/cad-simple-viewer$':
+      '<rootDir>/packages/cad-simple-viewer/src/index.ts',
+    '^@mlightcad/cad-simple-viewer/icons$':
+      '<rootDir>/packages/cad-simple-viewer/src/ui/icons.ts',
+    '^three/examples/jsm/lines/LineMaterial\\.js$':
+      '<rootDir>/test/mocks/three/LineMaterial.js',
+    '^three/examples/jsm/lines/LineSegments2\\.js$':
+      '<rootDir>/test/mocks/three/LineSegments2.js',
+    '^three/examples/jsm/lines/LineSegmentsGeometry\\.js$':
+      '<rootDir>/test/mocks/three/LineSegmentsGeometry.js',
+    '^three/examples/jsm/renderers/CSS2DRenderer\\.js$':
+      '<rootDir>/test/mocks/three/CSS2DRenderer.js',
+    '^three/examples/jsm/utils/BufferGeometryUtils\\.js$':
+      '<rootDir>/test/mocks/three/BufferGeometryUtils.js',
+    '^three/examples/jsm/controls/OrbitControls(\\.js)?$':
+      '<rootDir>/test/mocks/three/OrbitControls.js'
+  }
+}
+
+export default config

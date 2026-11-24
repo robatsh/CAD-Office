@@ -1,0 +1,112 @@
+import {
+  AcApContext,
+  AcApPlugin,
+  AcEdCommandStack
+} from '@mlightcad/cad-simple-viewer'
+
+import packageJson from '../package.json'
+import { AcApConvertToPdfCmd } from './AcApConvertToPdfCmd.js'
+import { AcApImportPdfCmd } from './AcApImportPdfCmd.js'
+import { AcApImportPdfPromptCmd } from './AcApImportPdfPromptCmd.js'
+import { AcApPdfDimCmd } from './AcApPdfDimCmd.js'
+import { AcApPdfHatchCmd } from './AcApPdfHatchCmd.js'
+import { AcApPdfScaleCmd } from './AcApPdfScaleCmd.js'
+import { AcApPdfTextCmd } from './AcApPdfTextCmd.js'
+
+export interface AcApPdfPluginOptions {
+  /**
+   * When true, only the import and clean-up commands (`pdfimport`, `-pdfimport`, `pdfscale`, `pdftext`, `pdfdim`, `pdfhatch`) are registered. Defaults to false.
+   */
+  disableExport?: boolean
+}
+
+/**
+ * PDF export/import plugin for cad-simple-viewer.
+ *
+ * Registers `-cpdf`, `pdfimport`, `-pdfimport`, `pdfscale`, `pdftext`, `pdfdim` and `pdfhatch` when loaded. Also registers `cpdf` when no UI
+ * dialog command is already present. Register this plugin lazily via
+ * {@link registerLazyPdfPlugin} so the PDF renderer is fetched on demand.
+ */
+export class AcApPdfPlugin implements AcApPlugin {
+  /** @inheritdoc */
+  name = 'PdfPlugin'
+  /** @inheritdoc */
+  version = packageJson.version
+  /** @inheritdoc */
+  description =
+    'PDF export (-cpdf / cpdf), import (pdfimport / -pdfimport) and PDF clean-up (pdfscale, pdftext, pdfdim, pdfhatch) commands'
+
+  private readonly _disableExport: boolean
+
+  /** Commands registered in {@link onLoad} for cleanup in {@link onUnload}. */
+  private registeredCommands: Array<{ group: string; name: string }> = []
+
+  constructor(options: AcApPdfPluginOptions = {}) {
+    this._disableExport = options.disableExport === true
+  }
+
+  /**
+   * Registers `-cpdf` (when export is enabled), `pdfimport` / `-pdfimport` and the PDF clean-up system commands.
+   * Registers `cpdf` only when a host UI has not already claimed that name.
+   *
+   * @param _context - Application context (unused)
+   * @param commandManager - Command stack used to register PDF commands
+   */
+  onLoad(_context: AcApContext, commandManager: AcEdCommandStack): void {
+    const group = AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME
+    if (!this._disableExport) {
+      const exportCmd = new AcApConvertToPdfCmd()
+      commandManager.addCommand(group, '-cpdf', '-cpdf', exportCmd)
+      this.registeredCommands.push({ group, name: '-cpdf' })
+      if (!commandManager.lookupGlobalCmd('cpdf')) {
+        commandManager.addCommand(group, 'cpdf', 'cpdf', exportCmd)
+        this.registeredCommands.push({ group, name: 'cpdf' })
+      }
+    }
+    commandManager.addCommand(
+      group,
+      'pdfimport',
+      'pdfimport',
+      new AcApImportPdfCmd()
+    )
+    this.registeredCommands.push({ group, name: 'pdfimport' })
+    commandManager.addCommand(
+      group,
+      '-pdfimport',
+      '-pdfimport',
+      new AcApImportPdfPromptCmd()
+    )
+    this.registeredCommands.push({ group, name: '-pdfimport' })
+    commandManager.addCommand(
+      group,
+      'pdfscale',
+      'pdfscale',
+      new AcApPdfScaleCmd()
+    )
+    this.registeredCommands.push({ group, name: 'pdfscale' })
+    commandManager.addCommand(group, 'pdftext', 'pdftext', new AcApPdfTextCmd())
+    this.registeredCommands.push({ group, name: 'pdftext' })
+    commandManager.addCommand(group, 'pdfdim', 'pdfdim', new AcApPdfDimCmd())
+    this.registeredCommands.push({ group, name: 'pdfdim' })
+    commandManager.addCommand(
+      group,
+      'pdfhatch',
+      'pdfhatch',
+      new AcApPdfHatchCmd()
+    )
+    this.registeredCommands.push({ group, name: 'pdfhatch' })
+  }
+
+  /**
+   * Removes commands registered in {@link onLoad}.
+   *
+   * @param _context - Application context (unused)
+   * @param commandManager - Command stack used to unregister PDF commands
+   */
+  onUnload(_context: AcApContext, commandManager: AcEdCommandStack): void {
+    for (const cmd of this.registeredCommands) {
+      commandManager.removeCmd(cmd.group, cmd.name)
+    }
+    this.registeredCommands = []
+  }
+}

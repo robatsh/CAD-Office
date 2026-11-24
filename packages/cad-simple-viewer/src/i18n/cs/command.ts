@@ -1,0 +1,769 @@
+export default {
+  ACAD: {
+    '-hatch': {
+      description:
+        'Vytváří šrafování pomocí voleb příkazového řádku bez rozhraní pásu karet'
+    },
+    '-layer': {
+      description: 'Spravuje hladiny pomocí voleb příkazového řádku'
+    },
+    about: {
+      description: 'Zobrazí informace o mlightcad'
+    },
+    acadver: {
+      description:
+        'Ukládá identifikátor verze databáze výkresu (pouze pro čtení)'
+    },
+    annoallvisible: {
+      description:
+        'Určuje, zda se zobrazují poznámkové objekty, které nepodporují aktuální měřítko poznámek'
+    },
+    angbase: {
+      description: 'Nastaví směr základního úhlu 0 vzhledem k aktuálnímu USS'
+    },
+    angdir: {
+      description:
+        'Určuje, zda se kladné úhly měří po směru nebo proti směru hodinových ručiček'
+    },
+    arc: {
+      description: 'Vytvoří oblouk'
+    },
+    aunits: {
+      description: 'Nastaví formát zobrazení úhlů'
+    },
+    auprec: {
+      description:
+        'Nastaví přesnost zobrazení úhlů, používá se společně s AUNITS'
+    },
+    bmpout: {
+      description: 'Exportuje do BMP'
+    },
+    cannoscale: {
+      description: 'Nastaví název aktuálního měřítka poznámek'
+    },
+    cdxf: {
+      description: 'Exportuje aktuální výkres do DXF'
+    },
+    cpdf: {
+      description: 'Exportuje aktuální výkres do PDF'
+    },
+    '-cpdf': {
+      description: 'Exportuje aktuální výkres do PDF pomocí příkazového řádku'
+    },
+    cecolor: {
+      description: 'Nastaví aktuální výchozí barvu pro nově vytvářené objekty'
+    },
+    celtscale: {
+      description: 'Řídí měřítko typu čáry pro nově vytvářené objekty'
+    },
+    celtype: {
+      description: 'Nastaví typ čáry pro nově vytvářené objekty'
+    },
+    celweight: {
+      description: 'Nastaví výchozí tloušťku čáry pro nově vytvářené objekty'
+    },
+    cetransparency: {
+      description: 'Nastaví průhlednost pro nově vytvářené objekty'
+    },
+    cachefont: {
+      description:
+        'Uloží místní soubor fontu do IndexedDB pro vykreslování textu'
+    },
+    circle: {
+      description: 'Vytvoří jednu kružnici zadáním středu a poloměru'
+    },
+    clayer: {
+      description: 'Nastaví aktuální hladinu pro nové objekty a operace úprav'
+    },
+    cmleaderstyle: {
+      description: 'Nastaví název aktuálního stylu multiodkazu'
+    },
+    cmlscale: {
+      description: 'Řídí celkovou šířku multičáry'
+    },
+    cmlstyle: {
+      description: 'Nastaví název aktuálního stylu multičáry'
+    },
+    colortheme: {
+      description:
+        'Řídí barevný motiv uživatelského rozhraní (tmavý nebo světlý)'
+    },
+    commandpreview: {
+      description:
+        'Řídí, zda se zobrazuje náhled možného výsledku určitých příkazů'
+    },
+    comparehatch: {
+      description:
+        'Řídí, zda jsou objekty šrafování zahrnuty do porovnání výkresů'
+    },
+    compareprops: {
+      description:
+        'Řídí, které změny negeometrických vlastností se identifikují jako rozdíly mezi výkresy'
+    },
+    comparercmargin: {
+      description:
+        'Nastaví ofset mezi hranicí sady změn a revizním oblakem v porovnávacím výkresu'
+    },
+    comparetext: {
+      description:
+        'Řídí, zda jsou textové objekty zahrnuty do porovnání výkresů'
+    },
+    comparetolerance: {
+      description:
+        'Nastaví toleranci počtu desetinných míst při porovnání dvou výkresů'
+    },
+    copy: {
+      description:
+        'Kopíruje vybrané objekty vytvořením kopií na nových pozicích',
+      prompt: 'Vyberte objekty'
+    },
+    copybase: {
+      description:
+        'Zkopíruje vybrané objekty do schránky se zadaným základním bodem',
+      prompt: 'Vyberte objekty'
+    },
+    copyclip: {
+      description: 'Zkopíruje vybrané objekty do schránky',
+      prompt: 'Vyberte objekty'
+    },
+    cutclip: {
+      description:
+        'Zkopíruje vybrané objekty do schránky a odstraní je z výkresu',
+      prompt: 'Vyberte objekty'
+    },
+    pasteblock: {
+      description: 'Vloží objekty ze schránky jako blok'
+    },
+    pasteclip: {
+      description: 'Vloží objekty ze schránky do aktuálního výkresu'
+    },
+    pasteorig: {
+      description: 'Vloží objekty ze schránky se souřadnicemi původního výkresu'
+    },
+    csvg: {
+      description: 'Převede aktuální výkres na SVG'
+    },
+    chtml: {
+      description:
+        'Exportuje aktuální výkres do samostatného offline souboru HTML'
+    },
+    '-chtml': {
+      description:
+        'Exportuje aktuální výkres do HTML pomocí voleb příkazového řádku'
+    },
+    dimlinear: {
+      description: 'Vytvoří lineární kóty'
+    },
+    dimaligned: {
+      description: 'Vytvoří zarovnanou lineární kótu'
+    },
+    dimradius: {
+      description: 'Vytvoří poloměrové kóty kruhů a oblouků'
+    },
+    dimdiameter: {
+      description: 'Vytvoří průměrové kóty kruhů a oblouků'
+    },
+    dimangular: {
+      description: 'Vytvoří úhlové kóty'
+    },
+    dimarc: {
+      description: 'Vytvoří kótu délky oblouku'
+    },
+    dimordinate: {
+      description: 'Vytvoří souřadnicovou kótu'
+    },
+    dimcontinue: {
+      description: 'Vytvoří řetězovou kótu'
+    },
+    dimbaseline: {
+      description: 'Vytvoří základnovou kótu'
+    },
+    dimstyle: {
+      description: 'Nastaví název aktuálního stylu kótování'
+    },
+    dwgname: {
+      description: 'Ukládá název aktuálního souboru výkresu (pouze pro čtení)'
+    },
+    find: {
+      description: 'Otevře dokovací panel hledání textu'
+    },
+    layer: {
+      description: 'Otevře nebo zavře dokovací panel správce hladin'
+    },
+    loginname: {
+      description: 'Zobrazí přihlašovací jméno uživatele (pouze pro čtení)'
+    },
+    dynmode: {
+      description: 'Řídí nastavení dynamického zadávání u kurzoru'
+    },
+    dynprompt: {
+      description: 'Řídí zobrazení výzev v popiscích dynamického zadávání'
+    },
+    ellipse: {
+      description:
+        'Vytvoří elipsu nebo eliptický oblouk pomocí koncových bodů os nebo středu'
+    },
+    erase: {
+      description: 'Odstraní vybrané objekty z výkresu',
+      prompt: 'Vyberte objekty'
+    },
+    explode: {
+      description: 'Rozloží složený objekt na jednotlivé objekty',
+      prompt: 'Vyberte objekty k rozložení'
+    },
+    join: {
+      description:
+        'Spojí koncové body úseček, oblouků a křivek do jednoho objektu',
+      prompt: 'Vyberte objekty ke spojení'
+    },
+    extend: {
+      description:
+        'Prodlouží objekty tak, aby se setkaly s hranami jiných objektů'
+    },
+    trim: {
+      description: 'Ořízne objekty tak, aby se setkaly s hranami jiných objektů'
+    },
+    group: {
+      description: 'Vytváří a spravuje uložené sady objektů nazývané skupiny'
+    },
+    groupdisplaymode: {
+      description:
+        'Řídí zobrazení úchytů, když je zapnutý výběr skupiny a je vybrán člen skupiny'
+    },
+    '-bsearch': {
+      description:
+        'Vyhledá shodnou geometrii a převede ji na bloky (příkazový řádek)',
+      prompt: 'Vyberte objekty k vyhledání'
+    },
+    '-group': {
+      description: 'Vytváří a spravuje skupiny pomocí voleb příkazového řádku'
+    },
+    groupedit: {
+      description: 'Přidává a odebírá objekty ze skupiny nebo ji přejmenuje'
+    },
+    ungroup: {
+      description: 'Zruší asociaci objektů se skupinou'
+    },
+    extmax: {
+      description:
+        'Ukládá pravý horní roh rozsahu výkresu v modelovém prostoru (pouze pro čtení)'
+    },
+    extmin: {
+      description:
+        'Ukládá levý dolní roh rozsahu výkresu v modelovém prostoru (pouze pro čtení)'
+    },
+    entout: {
+      description: 'Exportuje sloučený náhledový obrázek vybraných objektů',
+      prompt: 'Vyberte objekty'
+    },
+    hideobjects: {
+      description: 'Dočasně potlačí zobrazení vybraných objektů',
+      prompt: 'Vyberte objekty'
+    },
+    imageattach: {
+      description:
+        'Připojí rastrový obrázek jako externí referenci k aktuálnímu výkresu'
+    },
+    '-insert': {
+      description:
+        'Vloží definici bloku do aktuálního výkresu (příkazový řádek)'
+    },
+    xattach: {
+      description:
+        'Připojí výkres DWG nebo DXF jako externí referenci k aktuálnímu výkresu'
+    },
+    gripcolor: {
+      description:
+        'Nastaví barvu nevybraných gripů zobrazených na vybraných objektech'
+    },
+    griphot: {
+      description: 'Nastaví barvu vybraných (aktivních) gripů'
+    },
+    gripobjlimit: {
+      description:
+        'Potlačí zobrazení gripů, když výběr přesáhne zadaný počet objektů (0 = bez omezení)'
+    },
+    grips: {
+      description: 'Řídí, zda se na vybraných objektech zobrazují gripy'
+    },
+    gripsize: {
+      description: 'Nastaví velikost gripů v pixelech'
+    },
+    hatch: {
+      description:
+        'Vyplní uzavřenou oblast nebo vybrané objekty vzorem šrafování'
+    },
+    pdfdim: {
+      description: 'Převede rozložené kóty z PDF zpět na kótovací objekty',
+      prompt: 'Vyberte oblast s kótami'
+    },
+    pdfhatch: {
+      description: 'Převede rozložené čáry šrafy z PDF zpět na objekt šrafy',
+      prompt: 'Vyberte šrafovanou oblast i s čarami kolem ní'
+    },
+    pdftext: {
+      description: 'Převede rozložené tahy textu z PDF zpět na textové objekty',
+      prompt: 'Vyberte tahy textu k převodu'
+    },
+    pdfscale: {
+      description:
+        'Kalibruje importovanou geometrii PDF podle známé vzdálenosti',
+      prompt: 'Vyberte objekty ke změně měřítka'
+    },
+    pdfimport: {
+      description:
+        'Importuje vektorovou geometrii ze souboru PDF pomocí dialogu Importovat PDF'
+    },
+    '-pdfimport': {
+      description:
+        'Importuje vektorovou geometrii ze souboru PDF pomocí příkazového řádku'
+    },
+    hpang: {
+      description:
+        'Nastaví výchozí úhel v radiánech pro nově vytvářené vzory šrafování'
+    },
+    hpassoc: {
+      description: 'Řídí, zda jsou nově vytvářená šrafování asociativní'
+    },
+    hpbackgroundcolor: {
+      description:
+        'Nastaví výchozí barvu pozadí pro nově vytvářené vzory šrafování'
+    },
+    hpcolor: {
+      description: 'Nastaví výchozí barvu pro nově vytvářená šrafování'
+    },
+    hpdouble: {
+      description:
+        'Řídí, zda jsou uživatelsky definované vzory šrafování zdvojené'
+    },
+    hpislanddetection: {
+      description:
+        'Řídí, jak se nakládá s ostrůvky uvnitř nově vytvářených hranic šrafování'
+    },
+    hplayer: {
+      description:
+        'Nastaví výchozí hladinu pro nově vytvářená šrafování a výplně'
+    },
+    hpname: {
+      description:
+        'Nastaví výchozí název vzoru pro nově vytvářená šrafování v této relaci'
+    },
+    hpscale: {
+      description: 'Nastaví výchozí měřítko pro nově vytvářené vzory šrafování'
+    },
+    hpseparate: {
+      description:
+        'Řídí, zda se pro více hranic vytvoří jeden nebo samostatné objekty šrafování'
+    },
+    hptransparency: {
+      description:
+        'Nastaví výchozí průhlednost pro nově vytvářená šrafování a výplně'
+    },
+    insunits: {
+      description:
+        'Určuje jednotky výkresu pro automatické měřítko vkládaných bloků, obrázků nebo externích referencí'
+    },
+    jpgout: {
+      description: 'Exportuje do JPEG'
+    },
+    laycur: {
+      description: 'Změní hladinu vybraných objektů na aktuální hladinu',
+      prompt: 'Vyberte objekty pro změnu na aktuální hladinu'
+    },
+    laydel: {
+      description: 'Odstraní hladinu a všechny objekty na této hladině'
+    },
+    layerclose: {
+      description: 'Zavře Správce vlastností hladin'
+    },
+    layerp: {
+      description:
+        'Vrátí poslední změnu nebo sadu změn provedených v nastavení hladin'
+    },
+    layfrz: {
+      description: 'Zmrazí hladinu vybraných objektů',
+      prompt: 'Vyberte objekt na hladině ke zmrazení'
+    },
+    layiso: {
+      description: 'Izoluje hladiny vybraných objektů',
+      prompt: 'Vyberte objekty na hladinách k izolaci'
+    },
+    laylck: {
+      description: 'Uzamkne hladinu vybraných objektů',
+      prompt: 'Vyberte objekt na hladině k uzamčení'
+    },
+    layoff: {
+      description: 'Vypne hladinu vybraných objektů',
+      prompt: 'Vyberte objekt na hladině k vypnutí'
+    },
+    layon: {
+      description: 'Zapne všechny hladiny ve výkresu'
+    },
+    laythw: {
+      description: 'Rozmrazí všechny zmrazené hladiny ve výkresu'
+    },
+    layulk: {
+      description: 'Odemkne hladinu vybraných objektů',
+      prompt: 'Vyberte objekt na hladině k odemčení'
+    },
+    layuniso: {
+      description: 'Obnoví hladiny skryté nebo uzamčené příkazem LAYISO'
+    },
+    line: {
+      description: 'Kreslí úsečky mezi body'
+    },
+    log: {
+      description: 'Zaznamenává ladicí informace do konzole'
+    },
+    ltscale: {
+      description: 'Nastaví globální měřítko typu čáry pro výkres'
+    },
+    lunits: {
+      description: 'Nastaví formát zobrazení souřadnic a vzdáleností'
+    },
+    luprec: {
+      description:
+        'Nastaví přesnost zobrazení délkových jednotek, používá se společně s LUNITS'
+    },
+    lwdisplay: {
+      description: 'Řídí, zda se ve výkresu zobrazují tloušťky čar'
+    },
+    clearmeasurements: {
+      description: 'Odstraní všechna měření z aktuálního rozvržení'
+    },
+    measurementvis: {
+      description: 'Zobrazí nebo skryje měření na aktuálním rozvržení'
+    },
+    measurementpanel: {
+      description: 'Otevře paletu měření'
+    },
+    measurementexport: {
+      description: 'Exportuje měření do sidecar JSON souboru'
+    },
+    measurementimport: {
+      description: 'Importuje měření ze sidecar JSON souboru'
+    },
+    measurearea: {
+      description: 'Vypočítá plochu a obvod vybraných objektů nebo bodů'
+    },
+    measureangle: {
+      description: 'Změří úhel mezi dvěma čarami nebo třemi body'
+    },
+    measurearc: {
+      description: 'Změří délku oblouku'
+    },
+    measuredistance: {
+      description: 'Změří vzdálenost a přírůstky mezi dvěma body'
+    },
+    measurecontinuous: {
+      description:
+        'Měří řetězené vzdálenosti postupným zadáváním bodů, dokud nestisknete Enter nebo Zrušit'
+    },
+    measurepoint: {
+      description: 'Změří souřadnice X/Y vybraného bodu'
+    },
+    measurement: {
+      description:
+        'Nastaví, zda výkres používá anglosaské (imperiální) nebo metrické jednotky'
+    },
+    measurementcolor: {
+      description: 'Nastaví barvu použitou pro překryvy měření'
+    },
+    mirrtext: {
+      description:
+        'Určuje, zda příkaz MIRROR skutečně zrcadlí text: 0 ponechá text čitelný, 1 text zrcadlí'
+    },
+    mirror: {
+      description: 'Vytvoří zrcadlenou kopii vybraných objektů',
+      prompt: 'Vyberte objekty'
+    },
+    modelbkcolor: {
+      description: 'Nastaví barvu pozadí kreslicí oblasti modelového prostoru'
+    },
+    leader: {
+      description: 'Vytvoří odkaz, který spojuje poznámku s prvkem'
+    },
+    mleader: {
+      description: 'Vytvoří objekt multiodkazu'
+    },
+    mleaderedit: {
+      description: 'Přidá do multiodkazu odkazové čáry nebo je z něj odebere'
+    },
+    mleadereditremove: {
+      description: 'Odebere odkazové čáry z multiodkazu'
+    },
+    mline: {
+      description:
+        'Vytvoří několik rovnoběžných čar jako jeden objekt multičáry'
+    },
+    move: {
+      description: 'Posune vybrané objekty o vektor přemístění',
+      prompt: 'Vyberte objekty'
+    },
+    objectscale: {
+      description:
+        'Přidá nebo odstraní podporovaná měřítka poznámek u vybraných poznámkových objektů',
+      prompt: 'Vyberte poznámkové objekty'
+    },
+    fillet: {
+      description: 'Zaoblí hrany objektů'
+    },
+    filletpolyarc: {
+      description:
+        'Řídí, zda možnost Polyline příkazu FILLET zaoblí obloukové segmenty v křivkách'
+    },
+    filletrad: {
+      description: 'Ukládá aktuální poloměr zaoblení pro 2D objekty'
+    },
+    chamfer: {
+      description: 'Zkosí hrany objektů'
+    },
+    chamfera: {
+      description: 'Nastaví první vzdálenost zkosení, když je CHAMMODE 0'
+    },
+    chamferb: {
+      description: 'Nastaví druhou vzdálenost zkosení, když je CHAMMODE 0'
+    },
+    chamferc: {
+      description: 'Nastaví délku zkosení, když je CHAMMODE 1'
+    },
+    chamferd: {
+      description: 'Nastaví úhel zkosení, když je CHAMMODE 1'
+    },
+    chammode: {
+      description:
+        'Nastaví metodu vstupu pro CHAMFER: 0 = dvě vzdálenosti, 1 = délka a úhel'
+    },
+    offset: {
+      description:
+        'Vytvoří rovnoběžné kopie křivek, lomených čar nebo kružnic v zadané vzdálenosti'
+    },
+    mtext: {
+      description: 'Vytvoří jeden objekt víceřádkového textu'
+    },
+    txt2mtxt: {
+      description:
+        'Sloučí vybrané texty a víceřádkové texty do jednoho víceřádkového textu',
+      prompt: 'Vyberte texty nebo víceřádkové texty'
+    },
+    open: {
+      description: 'Otevře existující soubor výkresu'
+    },
+    openprof: {
+      description:
+        'Řídí, zda se do konzole zaznamenávají časové profily fází otevírání souboru'
+    },
+    openperf: {
+      description:
+        'Otevře paletu výkonu otevření s časy z posledního otevření výkresu'
+    },
+    orthomode: {
+      description: 'Omezí pohyb kurzoru na vodorovnou nebo svislou osu'
+    },
+    osmode: {
+      description:
+        'Nastaví trvalé režimy uchopení objektů pomocí bitové hodnoty'
+    },
+    pan: {
+      description: 'Posune pohled beze změny směru pohledu nebo zvětšení'
+    },
+    paperbkcolor: {
+      description:
+        'Nastaví barvu pozadí kreslicí oblasti výkresového prostoru (rozvržení)'
+    },
+    pdmode: {
+      description: 'Řídí způsob zobrazení bodových entit POINT'
+    },
+    pdsize: {
+      description: 'Nastaví velikost zobrazení bodových entit POINT'
+    },
+    pickbox: {
+      description:
+        'Nastaví velikost (v pixelech) výběrového rámečku pro výběr objektů'
+    },
+    pickstyle: {
+      description: 'Řídí výběr skupin a výběr asociativních šrafování'
+    },
+    pline: {
+      description: 'Vytvoří křivku zadáním více bodů'
+    },
+    pngout: {
+      description: 'Exportuje do PNG'
+    },
+    point: {
+      description: 'Vytvoří body'
+    },
+    polaraddang: {
+      description:
+        'Ukládá další úhly polárního sledování jako seznam oddělený středníky'
+    },
+    polarang: {
+      description: 'Nastaví přírůstek polárního úhlu pro polární sledování'
+    },
+    polarmode: {
+      description:
+        'Řídí nastavení polárního sledování a sledování uchopení objektů'
+    },
+    projmode: {
+      description:
+        'Nastaví aktuální režim projekce pro oříznutí nebo prodloužení'
+    },
+    edgemode: {
+      description:
+        'Určuje, zda se při oříznutí nebo prodloužení řezné a hraniční hrany prodlužují na svou přirozenou geometrii'
+    },
+    trimedges: {
+      description:
+        'Určuje, zda čáry šrafovacího vzoru slouží v rychlém režimu příkazů TRIM a EXTEND jako řezné hrany'
+    },
+    trimextendmode: {
+      description:
+        'Určuje, zda příkazy TRIM a EXTEND používají rychlý, nebo standardní režim'
+    },
+    polygon: {
+      description:
+        'Vytvoří pravidelný mnohoúhelník podle středu/poloměru nebo jedné hrany'
+    },
+    qnew: {
+      description: 'Zahájí nový výkres'
+    },
+    close: {
+      description: 'Zavře aktuální výkres'
+    },
+    ray: {
+      description:
+        'Vytvoří polopřímku, která začíná v bodě a pokračuje do nekonečna'
+    },
+    rectang: {
+      description: 'Vytvoří obdélník zadáním dvou protilehlých rohů'
+    },
+    regen: {
+      description: 'Překreslí aktuální výkres'
+    },
+    revcloud: {
+      description: 'Vytvoří nebo upraví revizní obláček'
+    },
+    markuptext: {
+      description: 'Umístí textovou poznámku'
+    },
+    markupline: {
+      description: 'Vytvoří úsečkovou poznámku'
+    },
+    markuparrow: {
+      description: 'Vytvoří šipkovou poznámku'
+    },
+    markupcloud: {
+      description: 'Vytvoří revizní obláček'
+    },
+    markuprect: {
+      description: 'Vytvoří obdélníkovou poznámku'
+    },
+    markupcircle: {
+      description: 'Vytvoří kruhovou poznámku'
+    },
+    markuphighlight: {
+      description: 'Vytvoří zvýrazňovací obdélník'
+    },
+    markupcallout: {
+      description:
+        'Vytvoří odkazovou poznámku: zadejte hrot odkazu, umístěte textové pole a zadejte text'
+    },
+    markupstamp: {
+      description: 'Umístí razítko nebo vlastní symbol'
+    },
+    markupvis: {
+      description: 'Zobrazí nebo skryje poznámky'
+    },
+    clearmarkups: {
+      description: 'Vymaže všechny poznámky na aktuálním rozvržení'
+    },
+    markupexport: {
+      description: 'Exportuje poznámky do sidecar JSON souboru'
+    },
+    markupimport: {
+      description: 'Importuje poznámky ze sidecar JSON souboru'
+    },
+    markuppanel: {
+      description: 'Otevře paletu poznámek'
+    },
+    rotate: {
+      description: 'Otočí vybrané objekty kolem základního bodu',
+      prompt: 'Vyberte objekty'
+    },
+    scale: {
+      description:
+        'Zvětší nebo zmenší vybrané objekty se zachováním jejich proporcí',
+      prompt: 'Vyberte objekty'
+    },
+    select: {
+      description: 'Vybírá objekty'
+    },
+    shortcutmenu: {
+      description: 'Řídí dostupnost místních nabídek v oblasti výkresu'
+    },
+    sketch: {
+      description: 'Vytvoří řadu úseček kreslených od ruky'
+    },
+    spline: {
+      description: 'Vytvoří hladkou křivku splajn zadáním řídicích bodů'
+    },
+    textstyle: {
+      description: 'Nastaví název aktuálního textového stylu'
+    },
+    tilemode: {
+      description:
+        'Řídí, zda je aktivní karta Model, nebo rozvržení výkresového prostoru'
+    },
+    trimmode: {
+      description: 'Řídí, zda se vybrané hrany pro zkosení a zaoblení oříznou'
+    },
+    unitmode: {
+      description:
+        'Řídí zlomkové zobrazení souřadnic, když je LUNITS architektonický nebo zlomkový'
+    },
+    switchbg: {
+      description: 'Přepíná pozadí oblasti výkresu mezi bílou a černou'
+    },
+    readingmode: {
+      description:
+        'Přepíná režim čtení: černé čáry na bílém plátně pro snazší kontrolu'
+    },
+    unisolateobjects: {
+      description: 'Znovu zobrazí všechny objekty skryté příkazem HIDEOBJECTS'
+    },
+    undo: {
+      description: 'Vrátí zpět poslední operaci úpravy databáze',
+      nothingToUndo: 'Není co vrátit zpět.'
+    },
+    redo: {
+      description: 'Zopakuje poslední vrácenou operaci úpravy databáze',
+      nothingToRedo: 'Není co zopakovat.'
+    },
+    xline: {
+      description:
+        'Vytvoří konstrukční přímku, která se rozprostírá do nekonečna na obě strany'
+    },
+    zoom: {
+      description: 'Zvětší na maximální rozsah všech objektů'
+    },
+    view: {
+      description:
+        'Otevře Správce pohledů pro vytváření, obnovení a odstraňování pojmenovaných pohledů'
+    },
+    newview: {
+      description:
+        'Vytvoří nový pojmenovaný pohled z aktuálního zobrazení nebo okna'
+    },
+    viewrestore: {
+      description: 'Obnoví pojmenovaný pohled podle názvu'
+    },
+    ucs: {
+      description:
+        'Nastaví počátek a orientaci aktuálního uživatelského souřadnicového systému'
+    },
+    ucsman: {
+      description: 'Spravuje pojmenované definice USS a nastavení ikony USS'
+    }
+  },
+  USER: {}
+}

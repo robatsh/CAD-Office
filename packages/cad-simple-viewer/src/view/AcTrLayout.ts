@@ -1,0 +1,1401 @@
+import { AcDbObjectId, AcGeBox2d, AcGeBox3d } from '@mlightcad/data-model'
+import {
+  AcTrDirectEntityMeta,
+  AcTrEntity,
+  AcTrEntityPreview,
+  AcTrGroup,
+  AcTrMTextRenderer,
+  disposePreviewSubset
+} from '@mlightcad/three-renderer'
+import * as THREE from 'three'
+
+import { AcEdLayerInfo, AcEdSpatialQueryResultItem } from '../editor/index.js'
+import { unionSpatialQueryItems } from '../editor/view/AcEdSpatialQueryResult.js'
+import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex.js'
+import {
+  AcTrHierarchicalSpatialIndex,
+  type AcTrLazySpatialChildren
+} from '../spatialIndex/index.js'
+import { isFiniteSpatialBBox } from './AcTrGroupWcsBboxAssert.js'
+import { AcTrLayer, AcTrLayerStats } from './AcTrLayer.js'
+
+/** Options for {@link AcTrLayout.createEntityPreviewRoot}. */
+export interface AcTrEntityPreviewRootOptions {
+  /**
+   * Behavior when one entity id cannot be extracted from a layer batch group.
+   *
+   * - `fail` (default): dispose the partial preview and return `null`
+   * - `skip`: ignore that id and continue with the remaining ids
+   */
+  missingEntity?: 'fail' | 'skip'
+  /** When true, every requested id must exist in this layout. */
+  requireAllEntities?: boolean
+}
+
+/**
+ * Interface representing statistics for a layout.
+ * Provides detailed information about the layout's content including
+ * layer statistics and memory usage breakdown.
+ */
+export interface AcTrLayoutStats {
+  /** Statistics for each layer in the layout */
+  layers: AcTrLayerStats[]
+  /** Summary statistics for the entire layout */
+  summary: {
+    /** Total number of entities across all layers */
+    entityCount: number
+    /** Memory usage breakdown by object type */
+    totalSize: {
+      /** Memory used by line geometries (bytes) */
+      line: number
+      /** Memory used by mesh geometries (bytes) */
+      mesh: number
+      /** Memory used by point geometries (bytes) */
+      point: number
+      /** Memory used by unbatched geometries (bytes) */
+      unbatched: number
+      /** Total geometry memory usage (bytes) */
+      geometry: number
+      /** Memory used by entity mappings (bytes) */
+      mapping: number
+      /** Number of unbatched objects */
+      unbatchedCount: number
+      /** Unbatched object count by type */
+      unbatchedByType: {
+        line: number
+        mesh: number
+        point: number
+        other: number
+      }
+    }
+  }
+}
+
+/**
+ * This class represents objects contained in one AutoCAD layout (model space or paper space).
+ *
+ * A layout manages the organization and rendering of CAD entities within a specific coordinate space.
+ * It provides functionality for:
+ * - Managing entities organized by layers
+ * - Spatial indexing for efficient entity queries
+ * - Bounding box management for view operations
+ * - Entity selection and highlighting
+ * - Memory usage tracking and statistics
+ *
+ * Layouts use a spatial index (R-tree) for fast entity lookup operations and maintain
+ * a hierarchical structure where entities are grouped by layers for efficient rendering
+ * and visibility management.
+ *
+ * @example
+ * ```typescript
+ * const layout = new AcTrLayout();
+ * layout.addEntity(entity);
+ * const entities = layout.search(boundingBox);
+ * layout.select(['entity1', 'entity2']);
+ * ```
+ */
+export class AcTrLayout {
+  /** Reused by {@link extendDepthRangeFromDrawables} */
+  private static readonly _depthScratch = new THREE.Box3()
+
+  /** The group that contains all entities in this layout */
+  private _group: THREE.Group
+  /** Spatial index tree for efficient entity queries */
+  private _spatialIndex: AcTrHierarchicalSpatialIndex
+  /** Cached layout bounds derived from packed batch vertex buffers */
+  private _cachedBox: THREE.Box3
+  /** Cached smart-extents box; cleared whenever layout geometry extents change */
+  private _cachedSmartExtents: AcGeBox2d | undefined
+  /**
+   * Bumped whenever {@link _cachedSmartExtents} is cleared so in-flight async
+   * smart-extents work can detect stale results and skip writing the cache.
+   */
+  private _smartExtentsGeneration = 0
+  /** When true, {@link box} is recomputed from batch geometry on next read */
+  private _boxDirty: boolean
+  /** Grow-only WCS Z extent of rendered geometry; see {@link depthRange} */
+  private _depthMin = Infinity
+  private _depthMax = -Infinity
+  /** Entity ids excluded from layout bounds (e.g. RAY/XLINE) */
+  private _extentExcludedObjectIds: Set<AcDbObjectId>
+  /** Map of layers indexed by layer name */
+  private _layers: Map<string, AcTrLayer>
+  /**
+   * INSERT object id → INSERT's own layer name. Used when freezing an INSERT
+   * layer to hide fragments that were bucketed onto other layers, and when
+   * HTML export reparents those fragments onto the INSERT layer.
+   */
+  private _insertLayerByObjectId: Map<AcDbObjectId, string>
+  /** The flag indicating whether the layout is loaded/activated */
+  private _isLoaded: boolean
+  /**
+   * When true, {@link addEntity} / {@link addDirectEntity} skip spatial-index
+   * registration. Used by headless HTML/JPEG export where pick queries are unused.
+   */
+  skipSpatialIndex = false
+  /**
+   * True when this layout renders a read-only reference/overlay drawing.
+   * Reference layouts are not registered in {@link AcTrScene}'s layout map
+   * and must not participate in selection, grips, or host edits.
+   */
+  isReference = false
+  /**
+   * Last compare-display options applied to this layout. Replayed onto
+   * layers created after {@link setCompareDisplay} so late layer groups
+   * still receive role tints.
+   */
+  private _compareDisplayOptions?: Parameters<AcTrLayer['setCompareDisplay']>[0]
+
+  /**
+   * Creates a new layout instance.
+   * Initializes the layout with empty collections and a spatial index.
+   */
+  constructor() {
+    this._group = new THREE.Group()
+    this._spatialIndex = new AcTrHierarchicalSpatialIndex()
+    this._cachedBox = new THREE.Box3()
+    this._cachedSmartExtents = undefined
+    this._boxDirty = true
+    this._extentExcludedObjectIds = new Set()
+    this._layers = new Map()
+    this._insertLayerByObjectId = new Map()
+    this._isLoaded = false
+  }
+
+  /**
+   * The internal THREE.js object to use by scene. This is internally used only. Try to avoid using it.
+   * @internal
+   */
+  get internalObject() {
+    return this._group
+  }
+
+  /**
+   * Gets the map of layers in this layout.
+   *
+   * @returns Map of layer names to layer objects
+   */
+  get layers() {
+    return this._layers
+  }
+
+  /**
+   * INSERT object id → INSERT's own layer name.
+   *
+   * Used by HTML export to reparent cross-layer INSERT fragments onto a frozen
+   * INSERT layer so the offline layer panel can show the whole reference.
+   */
+  get insertLayerByObjectId(): ReadonlyMap<AcDbObjectId, string> {
+    return this._insertLayerByObjectId
+  }
+
+  /**
+   * Gets the bounding box that contains all entities in this layout.
+   *
+   * Derived from packed batch vertex buffers (same source as GPU draw data),
+   * not from accumulated {@link AcTrEntity.wcsBbox} metadata.
+   *
+   * @returns The layout's bounding box
+   */
+  get box() {
+    if (this._boxDirty) {
+      this.recomputeBox()
+    }
+    return this._cachedBox
+  }
+
+  /**
+   * WCS Z extent of the geometry in this layout since the last {@link clear}.
+   *
+   * Views fit their camera depth band to it so elevated geometry (e.g.
+   * contour polylines at their survey height) is not clipped. It grows as
+   * entities are added (from their drawable geometry, since block references
+   * report a 2D `wcsBbox`) and whenever {@link box} is recomputed. It never
+   * shrinks on removal, which only widens the band. O(1) to read, so views
+   * can query it every frame.
+   */
+  get depthRange() {
+    return {
+      min: this._depthMin,
+      max: this._depthMax,
+      isEmpty: this._depthMin > this._depthMax
+    }
+  }
+
+  /**
+   * Recomputes {@link box} from batch geometry across all visible layers.
+   */
+  computeBatchBoundingBox(target = new THREE.Box3()) {
+    if (this._boxDirty) {
+      this.recomputeBox()
+    }
+    return target.copy(this._cachedBox)
+  }
+
+  private recomputeBox() {
+    this._cachedBox.makeEmpty()
+    const scratch = new THREE.Box3()
+    this._layers.forEach(layer => {
+      layer.computeBatchBoundingBox(scratch, this._extentExcludedObjectIds)
+      if (!scratch.isEmpty()) {
+        this._cachedBox.union(scratch)
+      }
+    })
+    this._boxDirty = false
+    if (!this._cachedBox.isEmpty()) {
+      this.extendDepthRange(this._cachedBox)
+    }
+  }
+
+  private invalidateBox() {
+    this._boxDirty = true
+    this.clearSmartExtentsCache()
+  }
+
+  private extendDepthRange(wcsBbox: THREE.Box3) {
+    // Infinite boxes (XLINE/RAY) or empty boxes carry no usable depth.
+    if (Number.isFinite(wcsBbox.min.z) && Number.isFinite(wcsBbox.max.z)) {
+      this._depthMin = Math.min(this._depthMin, wcsBbox.min.z)
+      this._depthMax = Math.max(this._depthMax, wcsBbox.max.z)
+    }
+  }
+
+  /**
+   * Grows {@link depthRange} from the WCS bounds of an entity's drawable
+   * geometry. Needed because {@link AcTrGroup} (INSERT) reports a 2D
+   * `wcsBbox`, while the contour polylines inside carry their elevation.
+   * Geometry bounding boxes are cached on the (often shared block-template)
+   * geometry, so this stays proportional to the geometry being added.
+   */
+  private extendDepthRangeFromDrawables(entity: AcTrEntity) {
+    // Lightweight test doubles are not scene-graph objects.
+    if (!(entity instanceof THREE.Object3D)) return
+    entity.updateMatrixWorld(true)
+    this.extendDepthRange(AcTrLayout._depthScratch.setFromObject(entity))
+  }
+
+  private clearSmartExtentsCache() {
+    this._cachedSmartExtents = undefined
+    this._smartExtentsGeneration++
+  }
+
+  /**
+   * The flag indicating whether the layout is loaded/activated.
+   *
+   * @returns The flag indicating whether the layout is loaded/activated.
+   */
+  get isLoaded() {
+    return this._isLoaded
+  }
+
+  /**
+   * Sets the flag indicating whether the layout is loaded/activated.
+   *
+   * @param value - The flag indicating whether the layout is loaded/activated.
+   */
+  set isLoaded(value: boolean) {
+    this._isLoaded = value
+  }
+
+  /**
+   * The visibility of this layout.
+   * When set to false, the entire layout and all its contents are hidden.
+   */
+  get visible() {
+    return this._group.visible
+  }
+  set visible(value: boolean) {
+    this._group.visible = value
+  }
+
+  /**
+   * The number of entities stored in this layout.
+   * Calculates the total by summing entities across all layers.
+   */
+  get entityCount() {
+    let count = 0
+    this._layers.forEach(layer => (count += layer.entityCount))
+    return count
+  }
+
+  /**
+   * Approximate spatial-index memory / cardinality stats for this layout.
+   */
+  get spatialIndexStats() {
+    return this._spatialIndex.getStats()
+  }
+
+  /**
+   * The statistics of this layout.
+   * Provides detailed information about memory usage and entity counts.
+   */
+  get stats() {
+    const layers: AcTrLayerStats[] = []
+    let totalGeometrySize = 0
+    let totalMappingSize = 0
+    let lineTotalSize = 0
+    let meshTotalSize = 0
+    let pointTotalSize = 0
+    let unbatchedTotalSize = 0
+    let unbatchedTotalCount = 0
+    const unbatchedByType = {
+      line: 0,
+      mesh: 0,
+      point: 0,
+      other: 0
+    }
+    this._layers.forEach(layer => {
+      const stats = layer.stats
+      layers.push(stats)
+      lineTotalSize +=
+        stats.line.indexed.geometrySize + stats.line.nonIndexed.geometrySize
+      meshTotalSize +=
+        stats.mesh.indexed.geometrySize + stats.mesh.nonIndexed.geometrySize
+      pointTotalSize +=
+        stats.point.indexed.geometrySize + stats.point.nonIndexed.geometrySize
+      unbatchedTotalSize += stats.unbatched.geometrySize
+      unbatchedTotalCount += stats.unbatched.count
+      unbatchedByType.line += stats.unbatched.byType.line
+      unbatchedByType.mesh += stats.unbatched.byType.mesh
+      unbatchedByType.point += stats.unbatched.byType.point
+      unbatchedByType.other += stats.unbatched.byType.other
+      totalGeometrySize += stats.summary.totalGeometrySize
+      totalMappingSize += stats.summary.totalMappingSize
+    })
+    return {
+      layers,
+      summary: {
+        entityCount: this.entityCount,
+        totalSize: {
+          line: lineTotalSize,
+          mesh: meshTotalSize,
+          point: pointTotalSize,
+          unbatched: unbatchedTotalSize,
+          geometry: totalGeometrySize,
+          mapping: totalMappingSize,
+          unbatchedCount: unbatchedTotalCount,
+          unbatchedByType
+        }
+      }
+    } as AcTrLayoutStats
+  }
+
+  /**
+   * Clears all entities from the layout.
+   * Removes all layers, resets the bounding box, and clears the spatial index.
+   *
+   * @returns This layout instance for method chaining
+   */
+  clear() {
+    this._layers.forEach(layer => {
+      layer.clear()
+    })
+    this._layers.clear()
+    this._cachedBox.makeEmpty()
+    this.clearSmartExtentsCache()
+    this._boxDirty = true
+    this._depthMin = Infinity
+    this._depthMax = -Infinity
+    this._extentExcludedObjectIds.clear()
+    this._insertLayerByObjectId.clear()
+    this._spatialIndex.clear()
+    return this
+  }
+
+  /**
+   * Re-render points with latest point style settings.
+   * Updates the visual representation of all point entities across all layers
+   * and refreshes spatial-index boxes so enlarged markers stay selectable.
+   *
+   * @param displayMode - Input display mode of points
+   * @param displaySize - Input display size of points (`PDSIZE`)
+   */
+  rerenderPoints(displayMode: number, displaySize: number = 0) {
+    this._layers.forEach(layer => {
+      layer.rerenderPoints(displayMode, displaySize)
+    })
+    this.refreshPointSpatialIndexes()
+  }
+
+  /**
+   * Syncs root spatial-index boxes with point / point-symbol batch AABBs after
+   * a `PDMODE` / `PDSIZE` refresh.
+   *
+   * Pure point entities replace their root box. Block references that own a
+   * child index only expand so coarse INSERT bounds are never shrunk to the
+   * point-symbol subset.
+   */
+  private refreshPointSpatialIndexes() {
+    const boxes = new Map<string, THREE.Box3>()
+    this._layers.forEach(layer => {
+      layer.collectPointObjectWorldBoxes(boxes)
+    })
+
+    boxes.forEach((box, objectId) => {
+      if (this._spatialIndex.hasChildIndex(objectId)) {
+        const existing = this._spatialIndex.getRootById(objectId)
+        if (existing) {
+          this._spatialIndex.insert({
+            id: objectId,
+            minX: Math.min(existing.minX, box.min.x),
+            minY: Math.min(existing.minY, box.min.y),
+            maxX: Math.max(existing.maxX, box.max.x),
+            maxY: Math.max(existing.maxY, box.max.y)
+          })
+          return
+        }
+      }
+      this.registerSpatialIndexBox(objectId, box)
+    })
+    // Point symbol AABBs feed smart extents; discard any cached fit.
+    this.clearSmartExtentsCache()
+  }
+
+  /**
+   * Applies ACI-7 / foreground colour to owned batch material clones in this layout.
+   */
+  repaintForegroundMaterials(color: number) {
+    this._layers.forEach(layer => layer.repaintForegroundMaterials(color))
+  }
+
+  /**
+   * Applies LWDISPLAY to owned batch material clones in this layout.
+   */
+  applyShowLineWeight(show: boolean) {
+    this._layers.forEach(layer => layer.applyShowLineWeight(show))
+  }
+
+  /**
+   * Updates wipeout / background-fill materials after a canvas theme flip.
+   */
+  repaintBackgroundMaterials(color: number) {
+    this._layers.forEach(layer => layer.repaintBackgroundMaterials(color))
+  }
+
+  /**
+   * Return true if the object with the specified object id is intersected with the ray by using raycast.
+   *
+   * @param objectId - Input object id of object to check for intersection with the ray.
+   * @param raycaster - Input raycaster to check intersection
+   * @returns True if the object intersects with the ray, false otherwise
+   */
+  isIntersectWith(objectId: string, raycaster: THREE.Raycaster) {
+    const layers = this.getLayersByObjectId(objectId)
+    for (let index = 0; index < layers.length; ++index) {
+      const layer = layers[index]
+      if (layer && layer.isIntersectWith(objectId, raycaster)) return true
+    }
+    // Mesh-glyph InstancedMeshes live under layer groups but are not registered
+    // in BatchedGroup entity slots — test them after the batch path misses.
+    return AcTrMTextRenderer.getInstance().intersectMeshGlyphObjectId(
+      objectId,
+      raycaster
+    )
+  }
+
+  hasVisibleEntity(objectId: AcDbObjectId) {
+    return this.getLayersByObjectId(objectId).some(layer => layer.visible)
+  }
+
+  /**
+   * Add one AutoCAD entity into this layout. If layer group referenced by the entity doesn't exist, create one
+   * layer group and add this entity this group.
+   *
+   * @param entity - Input AutoCAD entity to be added into this layout.
+   * @param extendBbox - Input the flag whether to extend the bounding box of the scene by union the bounding box
+   * of the specified entity. Defaults to true.
+   * @returns This layout instance for method chaining
+   *
+   * @throws {Error} When entity is missing required objectId or layerName
+   */
+  addEntity(entity: AcTrEntity, extendBbox: boolean = true) {
+    if (!entity.objectId) {
+      throw new Error('Object id is required to add one entity!')
+    }
+    if (!entity.layerName) {
+      throw new Error('Layer name is required to add one entity!')
+    }
+
+    const layer = this._layers.get(entity.layerName)
+    if (!layer) {
+      throw new Error(`layer '${entity.layerName}' doesn't exist!`)
+    }
+
+    // Read drawable bounds before batching, which may consume the subtree.
+    this.extendDepthRange(entity.wcsBbox)
+    this.extendDepthRangeFromDrawables(entity)
+    layer.addEntity(entity)
+
+    const insertLayerName = entity.userData.insertLayerName
+    if (insertLayerName) {
+      this._insertLayerByObjectId.set(entity.objectId, insertLayerName)
+    }
+
+    if (!extendBbox) {
+      this._extentExcludedObjectIds.add(entity.objectId)
+    } else {
+      this._extentExcludedObjectIds.delete(entity.objectId)
+    }
+    this.invalidateBox()
+
+    this.registerEntitySpatialIndex(entity)
+
+    return this
+  }
+
+  /**
+   * Adds an entity via direct batch append (no temporary drawable tree).
+   *
+   * @returns `true` when geometry and spatial index were registered.
+   */
+  addDirectEntity(
+    meta: AcTrDirectEntityMeta,
+    extendBbox: boolean = true
+  ): boolean {
+    if (!meta.objectId) {
+      throw new Error('Object id is required to add one entity!')
+    }
+    if (!meta.layerName) {
+      throw new Error('Layer name is required to add one entity!')
+    }
+
+    const layer = this._layers.get(meta.layerName)
+    if (!layer) {
+      throw new Error(`layer '${meta.layerName}' doesn't exist!`)
+    }
+
+    const appended = layer.addDirectEntity(meta)
+    if (!appended) {
+      return false
+    }
+
+    if (!extendBbox) {
+      this._extentExcludedObjectIds.add(meta.objectId)
+    } else {
+      this._extentExcludedObjectIds.delete(meta.objectId)
+    }
+    this.invalidateBox()
+    this.extendDepthRange(meta.wcsBbox)
+    this.registerSpatialIndexBox(meta.objectId, meta.wcsBbox)
+    return true
+  }
+
+  /**
+   * Remove the specified entity from this layout.
+   *
+   * @param objectId - Input the object id of the entity to remove
+   * @returns Return true if remove the specified entity successfully. Otherwise, return false.
+   */
+  removeEntity(objectId: AcDbObjectId) {
+    let result = false
+    for (const [_, layer] of this._layers) {
+      if (layer.removeEntity(objectId)) {
+        result = true
+      }
+    }
+    if (result) {
+      this._spatialIndex.removeById(objectId)
+      this._extentExcludedObjectIds.delete(objectId)
+      this._insertLayerByObjectId.delete(objectId)
+      this.invalidateBox()
+    }
+    return result
+  }
+
+  /**
+   * Removes many entities from this layout, compacting each layer's batches
+   * once instead of once per entity.
+   *
+   * @param objectIds - Object ids to remove.
+   * @returns Ids removed from at least one layer of this layout.
+   */
+  removeEntities(objectIds: AcDbObjectId[]): Set<AcDbObjectId> {
+    const removed = new Set<AcDbObjectId>()
+    if (objectIds.length === 0) return removed
+    for (const [_, layer] of this._layers) {
+      for (const objectId of layer.removeEntities(objectIds)) {
+        removed.add(objectId)
+      }
+    }
+    if (removed.size > 0) {
+      for (const objectId of removed) {
+        this._spatialIndex.removeById(objectId)
+        this._extentExcludedObjectIds.delete(objectId)
+        this._insertLayerByObjectId.delete(objectId)
+      }
+      this.invalidateBox()
+    }
+    return removed
+  }
+
+  /**
+   * Update the specified entity in this layout.
+   *
+   * @param entity - Input the entity to update
+   * @returns Return true if update the specified entity successfully. Otherwise, return false.
+   */
+  updateEntity(entity: AcTrEntity) {
+    this.extendDepthRange(entity.wcsBbox)
+    this.extendDepthRangeFromDrawables(entity)
+    for (const [_, layer] of this._layers) {
+      if (layer.updateEntity(entity)) {
+        const insertLayerName = entity.userData.insertLayerName
+        if (insertLayerName) {
+          this._insertLayerByObjectId.set(entity.objectId, insertLayerName)
+        }
+        this._spatialIndex.removeById(entity.objectId)
+        this.registerEntitySpatialIndex(entity)
+        this.invalidateBox()
+        return true
+      }
+    }
+    return false
+  }
+
+  /**
+   * Returns true when any layer in this layout contains the entity.
+   */
+  hasEntity(objectId: AcDbObjectId) {
+    for (const [_, layer] of this._layers) {
+      if (layer.hasEntity(objectId)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  /**
+   * Updates entity visibility without rebuilding batched geometry.
+   */
+  setEntityVisible(objectId: AcDbObjectId, visible: boolean) {
+    let updated = false
+    for (const [_, layer] of this._layers) {
+      if (layer.setEntityVisible(objectId, visible)) {
+        updated = true
+      }
+    }
+    if (updated) {
+      this.invalidateBox()
+    }
+    return updated
+  }
+
+  /**
+   * Returns the current scene visibility for one entity.
+   */
+  getEntityVisible(objectId: AcDbObjectId) {
+    for (const [_, layer] of this._layers) {
+      const visible = layer.getEntityVisible(objectId)
+      if (visible !== undefined) {
+        return visible
+      }
+    }
+    return undefined
+  }
+
+  /**
+   * Returns true when requested entities can be previewed in this layout.
+   *
+   * Uses batch bounds only and does not clone preview geometry.
+   *
+   * @param entityIds - Database object ids required for preview creation
+   * @param options - When {@link AcTrEntityPreviewRootOptions.requireAllEntities} is
+   *   true (default), every id must be present; otherwise at least one id is enough
+   */
+  canCreateEntityPreview(
+    entityIds: AcDbObjectId[],
+    options?: Pick<AcTrEntityPreviewRootOptions, 'requireAllEntities'>
+  ): boolean {
+    if (entityIds.length === 0) {
+      return false
+    }
+
+    const requireAllEntities = options?.requireAllEntities ?? true
+    if (requireAllEntities) {
+      for (const id of entityIds) {
+        if (!this.hasEntity(id)) {
+          return false
+        }
+        const scratch = new THREE.Box3()
+        this.computeEntityPreviewBoundsBox([id], scratch)
+        if (scratch.isEmpty()) {
+          return false
+        }
+      }
+      return true
+    }
+
+    return !this.computeEntityPreviewBoundsBox(entityIds).isEmpty()
+  }
+
+  /**
+   * Returns entity ids that have drawable batch bounds in this layout.
+   *
+   * @param entityIds - Database object ids to check
+   */
+  findPreviewableEntityIds(entityIds: AcDbObjectId[]): AcDbObjectId[] {
+    const previewable: AcDbObjectId[] = []
+    for (const id of entityIds) {
+      if (!this.hasEntity(id)) {
+        continue
+      }
+      const scratch = new THREE.Box3()
+      this.computeEntityPreviewBoundsBox([id], scratch)
+      if (!scratch.isEmpty()) {
+        previewable.push(id)
+      }
+    }
+    return previewable
+  }
+
+  /**
+   * Computes world-space bounds for the requested entities from packed batch data.
+   *
+   * This avoids building a preview subset or traversing cloned drawables.
+   *
+   * @param entityIds - Database object ids to measure
+   * @param target - Optional output box
+   * @returns Axis-aligned bounds box, empty when nothing matched
+   */
+  computeEntityPreviewBoundsBox(
+    entityIds: AcDbObjectId[],
+    target = new THREE.Box3()
+  ) {
+    target.makeEmpty()
+    if (entityIds.length === 0) {
+      return target
+    }
+
+    const includeObjectIds = new Set(entityIds)
+    const scratch = new THREE.Box3()
+    for (const layer of this._layers.values()) {
+      layer.computeBatchBoundingBox(scratch, undefined, includeObjectIds)
+      if (!scratch.isEmpty()) {
+        target.union(scratch)
+      }
+    }
+    return target
+  }
+
+  /**
+   * Computes a 2D preview framing box for the requested entities in this layout.
+   *
+   * @param entityIds - Database object ids to measure
+   * @param margin - Margin multiplier applied around the raw bounds
+   */
+  computeEntityPreviewBounds2d(
+    entityIds: AcDbObjectId[],
+    margin = 1.1
+  ): AcGeBox2d | null {
+    const box = this.computeEntityPreviewBoundsBox(entityIds)
+    return AcTrEntityPreview.box3ToBounds2d(box, margin)
+  }
+
+  /**
+   * Builds one preview root group by extracting GPU-resident geometry from layer batches.
+   *
+   * Entities that are missing from this layout or cannot be extracted are skipped.
+   * Returns `null` only when no drawable geometry could be collected.
+   *
+   * @param entityIds - Database object ids to include in the preview overlay
+   * @returns Preview root group, or `null` when no preview geometry was extracted
+   */
+  createEntityPreviewRoot(
+    entityIds: AcDbObjectId[],
+    options?: AcTrEntityPreviewRootOptions
+  ): THREE.Group | null {
+    const missingEntity = options?.missingEntity ?? 'fail'
+    const requireAllEntities = options?.requireAllEntities ?? false
+
+    if (requireAllEntities) {
+      for (const id of entityIds) {
+        if (!this.hasEntity(id)) {
+          return null
+        }
+      }
+    }
+
+    const idsByLayer = new Map<AcTrLayer, Set<AcDbObjectId>>()
+
+    for (const id of entityIds) {
+      const layers = this.getLayersByObjectId(id)
+      if (layers.length === 0) {
+        if (requireAllEntities || missingEntity === 'fail') {
+          return null
+        }
+        continue
+      }
+      for (const layer of layers) {
+        let layerIds = idsByLayer.get(layer)
+        if (!layerIds) {
+          layerIds = new Set()
+          idsByLayer.set(layer, layerIds)
+        }
+        layerIds.add(id)
+      }
+    }
+
+    if (idsByLayer.size === 0) {
+      return null
+    }
+
+    const previewRoot = new THREE.Group()
+    previewRoot.name = 'EntityPreviewRoot'
+    for (const [layer, ids] of idsByLayer) {
+      const idList = [...ids]
+      const subset = layer.createPreviewSubset(idList, {
+        // Complex blocks/hatches may need several drawable slots per entity.
+        maxSlots: Math.max(10000, idList.length * 8),
+        missingEntity
+      })
+      if (!subset || subset.children.length === 0) {
+        if (missingEntity === 'fail') {
+          disposePreviewSubset(previewRoot)
+          return null
+        }
+        continue
+      }
+      previewRoot.add(subset)
+    }
+
+    if (previewRoot.children.length === 0) {
+      return null
+    }
+    return previewRoot
+  }
+
+  /**
+   * Resolves CAD layer names to layer groups in this layout.
+   *
+   * Matching is case-insensitive (AutoCAD layer names are). Names without a
+   * layer group here — unknown layers, or layers with no geometry in this
+   * layout — are skipped. Each layer group is returned at most once.
+   *
+   * @param layerNames - CAD layer names to look up
+   * @returns Matching layer groups in request order
+   */
+  findLayers(layerNames: readonly string[]): AcTrLayer[] {
+    const byUpperName = new Map<string, AcTrLayer>()
+    for (const layer of this._layers.values()) {
+      byUpperName.set(layer.name.toUpperCase(), layer)
+    }
+
+    const found: AcTrLayer[] = []
+    for (const name of layerNames) {
+      const layer =
+        this._layers.get(name) ?? byUpperName.get(name.toUpperCase())
+      if (layer && !found.includes(layer)) {
+        found.push(layer)
+      }
+    }
+    return found
+  }
+
+  /**
+   * Computes the union of batch bounds of the given CAD layers in this layout.
+   *
+   * Only geometry bucketed on those layers counts — INSERT fragments that
+   * live on other layers are excluded. Layer on/off/frozen state is ignored
+   * so explicitly requested layers can always be framed.
+   *
+   * @param layerNames - CAD layer names (case-insensitive)
+   * @param target - Optional output box
+   * @returns Axis-aligned bounds, empty when no geometry matched
+   */
+  computeLayerPreviewBoundsBox(
+    layerNames: readonly string[],
+    target = new THREE.Box3()
+  ) {
+    target.makeEmpty()
+    const scratch = new THREE.Box3()
+    for (const layer of this.findLayers(layerNames)) {
+      layer.computeContentBoundingBox(scratch)
+      if (!scratch.isEmpty()) {
+        target.union(scratch)
+      }
+    }
+    return target
+  }
+
+  /**
+   * Builds one preview root containing all geometry of the given CAD layers.
+   *
+   * Unlike {@link createEntityPreviewRoot}, extraction is restricted to the
+   * requested layer groups, so an INSERT contributes only its fragments on
+   * those layers.
+   *
+   * @param layerNames - CAD layer names (case-insensitive)
+   * @returns Preview root group, or `null` when no geometry was extracted
+   */
+  createLayerPreviewRoot(layerNames: readonly string[]): THREE.Group | null {
+    const previewRoot = new THREE.Group()
+    previewRoot.name = 'LayerPreviewRoot'
+    for (const layer of this.findLayers(layerNames)) {
+      const ids = layer.getEntityIds()
+      if (ids.length === 0) {
+        continue
+      }
+      const subset = layer.createPreviewSubset(ids, {
+        // A finite cap makes createPreviewSubset drop the whole layer once
+        // exceeded; the caller asked for the full layer, so extract all slots.
+        maxSlots: Number.POSITIVE_INFINITY,
+        missingEntity: 'skip'
+      })
+      if (!subset || subset.children.length === 0) {
+        continue
+      }
+      previewRoot.add(subset)
+    }
+
+    if (previewRoot.children.length === 0) {
+      return null
+    }
+    return previewRoot
+  }
+
+  /**
+   * Gets the layer with the specified name from this layout
+   * @param name - Layer name
+   * @returns - The layer with the specified name in this layout
+   */
+  getLayer(name: string) {
+    return this._layers.get(name)
+  }
+
+  /**
+   * Adds layer into this layout. If the layer already exist, do nothing.
+   *
+   * @param name - Input layer name
+   * @returns Return added layer or the existing layer in this layout if one layer
+   * group already exists in this layout.
+   */
+  addLayer(info: AcEdLayerInfo) {
+    const name = info.name
+    let layer = this._layers.get(name)
+    if (layer === undefined) {
+      layer = new AcTrLayer(info)
+      this._layers.set(name, layer)
+      this._group.add(layer.internalObject)
+      if (this._compareDisplayOptions) {
+        layer.setCompareDisplay(this._compareDisplayOptions)
+      }
+    }
+    return layer
+  }
+
+  /**
+   * Updates layer information (such as visibility). If the layer doesn't exist, do nothing.
+   * @param info - The layer information
+   * @returns Returns the updated layer group.
+   */
+  updateLayer(info: AcEdLayerInfo) {
+    const layer = this._layers.get(info.name)
+    if (layer) {
+      // TODO: Handle layer name changes
+      const wasVisible = layer.visible
+      layer.update(info)
+      if (wasVisible !== layer.visible) {
+        this.invalidateBox()
+      }
+    }
+    return layer
+  }
+
+  /**
+   * Applies AutoCAD INSERT-layer freeze semantics across decomposed fragments.
+   *
+   * Freezing the INSERT's own layer hides every scene bucket that shares that
+   * INSERT object id, including geometry bucketed onto other layers — even when
+   * the INSERT has no fragment on its own layer (only other-layer buckets).
+   * Thawing restores those other-layer buckets (the INSERT layer group
+   * visibility is handled separately by {@link updateLayer}).
+   *
+   * @param insertLayerName - Layer being frozen or thawed.
+   * @param frozen - True when the layer is now frozen.
+   * @returns Object ids whose cross-layer visibility was changed.
+   */
+  applyInsertLayerFreeze(
+    insertLayerName: string,
+    frozen: boolean
+  ): AcDbObjectId[] {
+    const touched: AcDbObjectId[] = []
+    for (const [objectId, layerName] of this._insertLayerByObjectId) {
+      if (layerName !== insertLayerName) {
+        continue
+      }
+      let changed = false
+      for (const layer of this.getLayersByObjectId(objectId)) {
+        // INSERT-layer bucket visibility comes from the layer group itself.
+        if (layer.name === insertLayerName) {
+          continue
+        }
+        if (layer.setEntityVisible(objectId, !frozen)) {
+          changed = true
+        }
+      }
+      if (changed) {
+        touched.push(objectId)
+      }
+    }
+    if (touched.length > 0) {
+      this.invalidateBox()
+    }
+    return touched
+  }
+
+  /**
+   * Hover the specified entities.
+   * Applies hover highlighting to the entities with the given IDs.
+   *
+   * @param ids - Array of entity object IDs to hover
+   */
+  hover(ids: AcDbObjectId[]) {
+    this.applyHighlightToLayers(ids, (layer, entityIds) =>
+      layer.hover(entityIds)
+    )
+  }
+
+  /**
+   * Unhover the specified entities.
+   * Removes hover highlighting from the entities with the given IDs.
+   *
+   * @param ids - Array of entity object IDs to unhover
+   */
+  unhover(ids: AcDbObjectId[]) {
+    this.applyHighlightToLayers(ids, (layer, entityIds) =>
+      layer.unhover(entityIds)
+    )
+  }
+
+  /**
+   * Select the specified entities.
+   * Applies selection highlighting to the entities with the given IDs.
+   *
+   * @param ids - Array of entity object IDs to select
+   */
+  select(ids: AcDbObjectId[]) {
+    this.applyHighlightToLayers(ids, (layer, entityIds) =>
+      layer.select(entityIds)
+    )
+  }
+
+  /**
+   * Unselect the specified entities.
+   * Removes selection highlighting from the entities with the given IDs.
+   *
+   * @param ids - Array of entity object IDs to unselect
+   */
+  unselect(ids: AcDbObjectId[]) {
+    this.applyHighlightToLayers(ids, (layer, entityIds) =>
+      layer.unselect(entityIds)
+    )
+  }
+
+  /**
+   * Applies compare-display coloring across all layers in this layout.
+   *
+   * @param options - Compare colors and per-entity role overrides.
+   */
+  setCompareDisplay(options: Parameters<AcTrLayer['setCompareDisplay']>[0]) {
+    this._compareDisplayOptions = options
+    this._layers.forEach(layer => layer.setCompareDisplay(options))
+  }
+
+  /**
+   * Groups entity ids by render layer and applies one bulk highlight call per layer.
+   *
+   * @param ids - Entity object ids whose highlight state should change.
+   * @param apply - Layer callback invoked once per layer with its grouped entity ids.
+   */
+  private applyHighlightToLayers(
+    ids: AcDbObjectId[],
+    apply: (layer: AcTrLayer, entityIds: AcDbObjectId[]) => void
+  ) {
+    const layerToIds = new Map<AcTrLayer, AcDbObjectId[]>()
+    for (const id of ids) {
+      const layers = this.getLayersByObjectId(id)
+      for (const layer of layers) {
+        const bucket = layerToIds.get(layer)
+        if (bucket) {
+          bucket.push(id)
+        } else {
+          layerToIds.set(layer, [id])
+        }
+      }
+    }
+    layerToIds.forEach((entityIds, layer) => apply(layer, entityIds))
+  }
+
+  /**
+   * Search entities intersected or contained in the specified bounding box.
+   * Uses the spatial index for efficient querying of entities within the given bounds.
+   *
+   * @param box - Input the query bounding box (2D or 3D)
+   * @returns Return query results containing entity IDs and their bounds
+   */
+  search(box: AcGeBox2d | AcGeBox3d, options?: AcTrSpatialSearchOptions) {
+    return this._spatialIndex.search(
+      {
+        minX: box.min.x,
+        minY: box.min.y,
+        maxX: box.max.x,
+        maxY: box.max.y
+      },
+      options
+    )
+  }
+
+  /**
+   * Collects finite spatial-index AABBs for intelligent zoom-to-fit.
+   *
+   * Prefers child-level boxes when present so INSERT/hatch islands contribute
+   * separately rather than one oversized root union.
+   *
+   * @returns Flat list of finite world XY boxes.
+   */
+  collectSpatialExtentBoxes(): AcEdSpatialQueryResultItem[] {
+    return this._spatialIndex.all().filter(isFiniteSpatialBBox)
+  }
+
+  /**
+   * Async variant of {@link collectSpatialExtentBoxes} that yields while
+   * flattening large spatial indexes.
+   *
+   * @param work - Cooperative yield helper.
+   */
+  async collectSpatialExtentBoxesAsync(work: {
+    maybeYield(): Promise<void>
+  }): Promise<AcEdSpatialQueryResultItem[]> {
+    const all = await this._spatialIndex.allAsync(work)
+    const result: AcEdSpatialQueryResultItem[] = []
+    for (let i = 0; i < all.length; i++) {
+      const item = all[i]!
+      if (isFiniteSpatialBBox(item)) {
+        result.push(item)
+      }
+      if ((i & 0x7ff) === 0x7ff) {
+        await work.maybeYield()
+      }
+    }
+    return result
+  }
+
+  /**
+   * Returns the cached smart-extents box when still valid for this layout.
+   */
+  get cachedSmartExtents(): AcGeBox2d | undefined {
+    return this._cachedSmartExtents
+  }
+
+  /**
+   * Generation counter for smart-extents cache invalidation. Capture before
+   * async work and compare after; mismatch means geometry changed mid-flight.
+   */
+  get smartExtentsGeneration(): number {
+    return this._smartExtentsGeneration
+  }
+
+  /**
+   * Stores the last computed smart-extents box until geometry extents change.
+   * Only write when {@link smartExtentsGeneration} still matches the value
+   * captured before the async computation started.
+   */
+  set cachedSmartExtents(box: AcGeBox2d | undefined) {
+    this._cachedSmartExtents = box
+  }
+
+  /**
+   * Returns all layers that contain renderable entities associated with
+   * the specified AutoCAD object ID.
+   *
+   * In AutoCAD, an INSERT entity may reference multiple child entities that
+   * reside on different layers. During rendering, this engine groups entities
+   * by layer and assigns each group the INSERT entity's object ID.
+   *
+   * As a result, a single object ID (typically from an INSERT entity) may
+   * correspond to multiple layers, and this method returns all such layers.
+   *
+   * @param objectId - The AutoCAD object ID to search for (e.g. an INSERT entity ID)
+   * @returns An array of layers containing entities associated with the given object ID;
+   *          returns an empty array if no matching layers are found
+   */
+  private getLayersByObjectId(objectId: AcDbObjectId) {
+    const layers = []
+    for (const [_, layer] of this._layers) {
+      if (layer.hasEntity(objectId)) {
+        layers.push(layer)
+      }
+    }
+    return layers
+  }
+
+  /**
+   * Gets optional child bounding boxes used to build a child-level spatial index
+   * for one render entity.
+   *
+   * Some rendering paths (for example INSERT decomposition across layers) cannot
+   * provide a single `AcTrGroup` hierarchy for child indexing. In these cases,
+   * precomputed child query items are attached to `entity.userData` and consumed
+   * here so snapping and fine-grained spatial queries can still resolve
+   * sub-entities correctly.
+   *
+   * @param entity - The render entity that may carry `spatialIndexChildBoxes` in
+   *                 its `userData`.
+   * @returns The child query boxes when available and non-empty; otherwise
+   *          `undefined`.
+   */
+  private getSpatialIndexChildBoxes(entity: AcTrEntity) {
+    const boxes = (
+      entity.userData as {
+        spatialIndexChildBoxes?: AcEdSpatialQueryResultItem[]
+      }
+    ).spatialIndexChildBoxes
+
+    if (!boxes || boxes.length === 0) {
+      return undefined
+    }
+
+    return boxes
+  }
+
+  /**
+   * Registers one render entity in the layout spatial index.
+   *
+   * Inserts a root bounding box for coarse queries and, when child geometry is
+   * available, builds a child-level index so snapping and fine-grained spatial
+   * queries can resolve sub-entities (for example block references).
+   *
+   * Root bounds are chosen in this order:
+   * 1. Union of {@link getSpatialIndexChildBoxes} when precomputed child boxes
+   *    are attached to `entity.userData`.
+   * 2. Union of `AcTrGroup.wcsChildBoxes` when the entity is a block group.
+   * 3. The entity's own `wcsBbox` as a fallback.
+   *
+   * Child indexing uses `ensureChildIndex` for userData child boxes (typical of
+   * INSERT paths split across layers) or `createChildIndex` for a single
+   * `AcTrGroup` hierarchy.
+   *
+   * @param entity - The render entity to index. Called from
+   *                 {@link addEntity} and {@link updateEntity} after layer
+   *                 membership is updated.
+   */
+  private registerEntitySpatialIndex(entity: AcTrEntity) {
+    if (this.skipSpatialIndex) {
+      return
+    }
+    const lazyChildren = (
+      entity.userData as { lazySpatialChildren?: AcTrLazySpatialChildren }
+    ).lazySpatialChildren
+    if (lazyChildren && lazyChildren.boxes.length > 0) {
+      const rootBox = {
+        minX: entity.wcsBbox.min.x,
+        minY: entity.wcsBbox.min.y,
+        maxX: entity.wcsBbox.max.x,
+        maxY: entity.wcsBbox.max.y,
+        id: entity.objectId
+      }
+      if (isFiniteSpatialBBox(rootBox)) {
+        this._spatialIndex.insert(rootBox)
+      }
+      this._spatialIndex.setLazyChildSource(entity.objectId, lazyChildren)
+      return
+    }
+    const spatialIndexChildBoxes = this.getSpatialIndexChildBoxes(entity)
+
+    let rootBox: {
+      minX: number
+      minY: number
+      maxX: number
+      maxY: number
+      id: AcDbObjectId
+    }
+
+    if (spatialIndexChildBoxes && spatialIndexChildBoxes.length > 0) {
+      const union = unionSpatialQueryItems(spatialIndexChildBoxes)
+      rootBox = {
+        minX: union.minX,
+        minY: union.minY,
+        maxX: union.maxX,
+        maxY: union.maxY,
+        id: entity.objectId
+      }
+    } else if (entity instanceof AcTrGroup && entity.wcsChildBoxes.length > 0) {
+      const union = unionSpatialQueryItems(
+        entity.wcsChildBoxes.map(box => ({
+          minX: box.minX,
+          minY: box.minY,
+          maxX: box.maxX,
+          maxY: box.maxY,
+          id: box.id
+        }))
+      )
+      rootBox = {
+        minX: union.minX,
+        minY: union.minY,
+        maxX: union.maxX,
+        maxY: union.maxY,
+        id: entity.objectId
+      }
+    } else {
+      rootBox = {
+        minX: entity.wcsBbox.min.x,
+        minY: entity.wcsBbox.min.y,
+        maxX: entity.wcsBbox.max.x,
+        maxY: entity.wcsBbox.max.y,
+        id: entity.objectId
+      }
+    }
+
+    // Skip non-finite roots (empty THREE.Box3 → ±Infinity, or NaN after a bad
+    // applyMatrix4). Inserting NaN into RBush poisons all spatial searches.
+    if (isFiniteSpatialBBox(rootBox)) {
+      this._spatialIndex.insert({
+        minX: rootBox.minX,
+        minY: rootBox.minY,
+        maxX: rootBox.maxX,
+        maxY: rootBox.maxY,
+        id: entity.objectId
+      })
+
+      if (spatialIndexChildBoxes && spatialIndexChildBoxes.length > 0) {
+        entity.wcsBbox.min.set(rootBox.minX, rootBox.minY, entity.wcsBbox.min.z)
+        entity.wcsBbox.max.set(rootBox.maxX, rootBox.maxY, entity.wcsBbox.max.z)
+      }
+    }
+
+    // Some INSERT rendering paths split one block reference into multiple layer
+    // groups (AcTrEntity instead of AcTrGroup). Keep child-box index via userData
+    // so object snap can still resolve gsMark to sub-entities.
+    // ensureChildIndex may still register a finite root from child unions when
+    // the coarse root above was skipped.
+    if (spatialIndexChildBoxes) {
+      this._spatialIndex.ensureChildIndex(
+        entity.objectId,
+        spatialIndexChildBoxes
+      )
+    } else if (entity instanceof AcTrGroup) {
+      // If it is one block group, build spatial index for entities in this block.
+      this._spatialIndex.createChildIndex(entity)
+    }
+  }
+
+  /**
+   * Registers a simple axis-aligned WCS box in the spatial index by object id.
+   */
+  private registerSpatialIndexBox(objectId: AcDbObjectId, wcsBbox: THREE.Box3) {
+    if (this.skipSpatialIndex) {
+      return
+    }
+    const box = {
+      minX: wcsBbox.min.x,
+      minY: wcsBbox.min.y,
+      maxX: wcsBbox.max.x,
+      maxY: wcsBbox.max.y,
+      id: objectId
+    }
+    if (!isFiniteSpatialBBox(box)) {
+      return
+    }
+    this._spatialIndex.insert(box)
+  }
+}

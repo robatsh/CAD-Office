@@ -1,0 +1,268 @@
+import * as THREE from 'three'
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
+
+import {
+  AcTrBatchedGroup,
+  clearAcTrDrawOrderZAllocator,
+  setAcTrDrawOrderZAllocator
+} from '../src/batch/AcTrBatchedGroup'
+import { AcTrLine } from '../src/object/AcTrLine'
+import {
+  buildLineGeometry,
+  buildPointGeometry
+} from '../src/object/AcTrLineGeometryBuilder'
+import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
+import { setMaterialMetadata } from '../src/style/AcTrMaterialMetadata'
+import { AcTrStyleManager } from '../src/style/AcTrStyleManager'
+import { AcTrSubEntityTraitsUtil } from '../src/util'
+
+const defaultTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+
+describe('AcTrBatchedGroup direct line append', () => {
+  it('registers objectId and supports visibility / remove', () => {
+    const material = new THREE.LineBasicMaterial({ color: 0xff0000 })
+    const built = buildLineGeometry(
+      [
+        { x: 0, y: 0, z: 0 },
+        { x: 10, y: 0, z: 0 }
+      ],
+      material
+    )
+    expect(built).not.toBeNull()
+    if (!built) return
+    const group = new AcTrBatchedGroup()
+
+    expect(
+      group.appendLineGeometry(
+        built.geometry as THREE.BufferGeometry,
+        material,
+        built.worldOffset,
+        {
+          objectId: 'line-1',
+          visible: true
+        }
+      )
+    ).toBe(true)
+    built.geometry.dispose()
+
+    expect(group.hasEntity('line-1')).toBe(true)
+    expect(group.getEntityIds()).toEqual(['line-1'])
+    expect(group.setEntityVisible('line-1', false)).toBe(true)
+    expect(group.getEntityVisible('line-1')).toBe(false)
+    expect(group.removeEntity('line-1')).toBe(true)
+    expect(group.hasEntity('line-1')).toBe(false)
+    expect(group.getEntityIds()).toEqual([])
+  })
+
+  it('skips append when visible is false', () => {
+    const material = new THREE.LineBasicMaterial()
+    const built = buildLineGeometry(
+      [
+        { x: 0, y: 0, z: 0 },
+        { x: 1, y: 0, z: 0 }
+      ],
+      material
+    )
+    expect(built).not.toBeNull()
+    if (!built) return
+    const group = new AcTrBatchedGroup()
+
+    expect(
+      group.appendLineGeometry(
+        built.geometry as THREE.BufferGeometry,
+        material,
+        built.worldOffset,
+        {
+          objectId: 'hidden',
+          visible: false
+        }
+      )
+    ).toBe(false)
+    built.geometry.dispose()
+    expect(group.hasEntity('hidden')).toBe(false)
+  })
+
+  it('merges direct-append geometry into the same batch as addEntity(AcTrLine)', () => {
+    const styleManager = new AcTrStyleManager()
+    const context = new AcTrRenderContext(styleManager)
+    const material = styleManager.getLineMaterial(defaultTraits, false)
+
+    const built = buildLineGeometry(
+      [
+        { x: 0, y: 0, z: 0 },
+        { x: 5, y: 0, z: 0 }
+      ],
+      material
+    )
+    expect(built).not.toBeNull()
+    if (!built) return
+    const group = new AcTrBatchedGroup()
+    group.appendLineGeometry(
+      built.geometry as THREE.BufferGeometry,
+      material,
+      built.worldOffset,
+      { objectId: 'direct-1' }
+    )
+    built.geometry.dispose()
+
+    const line = new AcTrLine(
+      [
+        { x: 10, y: 0, z: 0 },
+        { x: 15, y: 0, z: 0 }
+      ],
+      defaultTraits,
+      context,
+      false
+    )
+    line.objectId = 'legacy-1'
+    line.visible = true
+    group.addEntity(line)
+    line.dispose()
+
+    expect(group.hasEntity('direct-1')).toBe(true)
+    expect(group.hasEntity('legacy-1')).toBe(true)
+
+    let lineBatchCount = 0
+    group.traverse(child => {
+      if (child instanceof THREE.LineSegments) {
+        lineBatchCount++
+      }
+    })
+    expect(lineBatchCount).toBe(1)
+  })
+
+  it('appends fat-line geometry into LineSegments2 batches', () => {
+    const material = new LineMaterial({ color: 0xffffff, linewidth: 2 })
+    const built = buildLineGeometry(
+      [
+        { x: 0, y: 0, z: 0 },
+        { x: 8, y: 0, z: 0 }
+      ],
+      material
+    )
+    expect(built).not.toBeNull()
+    if (!built) return
+    expect(built.kind).toBe('fat')
+
+    const group = new AcTrBatchedGroup()
+    expect(
+      group.appendLine2Geometry(
+        built.geometry as import('three/examples/jsm/lines/LineSegmentsGeometry.js').LineSegmentsGeometry,
+        material,
+        built.worldOffset,
+        { objectId: 'fat-1' }
+      )
+    ).toBe(true)
+    built.geometry.dispose()
+    expect(group.hasEntity('fat-1')).toBe(true)
+    material.dispose()
+  })
+
+  it('appends point geometry into point batches', () => {
+    const material = new THREE.PointsMaterial({ color: 0xff0000 })
+    const built = buildPointGeometry({ x: 5, y: 6, z: 0 }, material)
+    const group = new AcTrBatchedGroup()
+
+    expect(
+      group.appendPointGeometry(built.geometry, material, built.worldOffset, {
+        objectId: 'pt-1',
+        position: built.position
+      })
+    ).toBe(true)
+    built.geometry.dispose()
+
+    expect(group.hasEntity('pt-1')).toBe(true)
+    expect(group.removeEntity('pt-1')).toBe(true)
+    material.dispose()
+  })
+
+  it('appends mesh geometry with draw-order renderOrder', () => {
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([-1, -1, 0, 1, -1, 0, 0, 1, 0], 3)
+    )
+    geometry.setIndex(new THREE.BufferAttribute(new Uint16Array([0, 1, 2]), 1))
+
+    const group = new AcTrBatchedGroup()
+    expect(
+      group.appendMeshGeometry(
+        geometry,
+        material,
+        new THREE.Vector3(50, 50, 0),
+        {
+          objectId: 'mesh-1'
+        }
+      )
+    ).toBe(true)
+    geometry.dispose()
+
+    expect(group.hasEntity('mesh-1')).toBe(true)
+    group.removeEntity('mesh-1')
+    material.dispose()
+  })
+})
+
+describe('AcTrBatchedGroup hatch-tier draw order', () => {
+  afterEach(() => clearAcTrDrawOrderZAllocator())
+
+  function triangle() {
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([-1, -1, 0, 1, -1, 0, 0, 1, 0], 3)
+    )
+    geometry.setIndex(new THREE.BufferAttribute(new Uint16Array([0, 1, 2]), 1))
+    return geometry
+  }
+
+  function fillMaterial(color: number, drawOrder: number) {
+    const material = new THREE.MeshBasicMaterial({ color })
+    setMaterialMetadata(material, { drawOrder })
+    return material
+  }
+
+  /** World Z of the one batch holding `material`'s geometry. */
+  function batchZ(group: AcTrBatchedGroup, color: number) {
+    let z: number | undefined
+    group.traverse(object => {
+      const mesh = object as THREE.Mesh
+      const material = mesh.material as THREE.MeshBasicMaterial | undefined
+      if (!mesh.isMesh || !material?.color) return
+      if (material.color.getHex() !== color) return
+      const box = new THREE.Box3().setFromObject(mesh)
+      z = box.min.z
+    })
+    return z
+  }
+
+  it('stacks overlapping hatches in creation order, below linework', () => {
+    let next = 0
+    setAcTrDrawOrderZAllocator(() => (next += 1e-4))
+    const group = new AcTrBatchedGroup()
+    // White panel first, then a green drop on it, then a text-like fill.
+    const white = fillMaterial(0xffffff, -1)
+    const green = fillMaterial(0x00ff00, -1)
+    const ink = fillMaterial(0x000000, 0)
+    for (const [id, material] of [
+      ['panel', white],
+      ['drop', green],
+      ['text', ink]
+    ] as const) {
+      const geometry = triangle()
+      group.appendMeshGeometry(geometry, material, new THREE.Vector3(), {
+        objectId: id
+      })
+      geometry.dispose()
+    }
+
+    const panelZ = batchZ(group, 0xffffff)!
+    const dropZ = batchZ(group, 0x00ff00)!
+    const textZ = batchZ(group, 0x000000)!
+    // A later hatch must occlude an earlier one on shared pixels.
+    expect(dropZ).toBeGreaterThan(panelZ)
+    // Every hatch stays under every piece of linework.
+    expect(textZ).toBeGreaterThan(dropZ)
+  })
+})

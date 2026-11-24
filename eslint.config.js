@@ -1,0 +1,153 @@
+import globals from 'globals'
+import jsLint from '@eslint/js'
+import vueI18n from '@intlify/eslint-plugin-vue-i18n'
+import tsLint from 'typescript-eslint'
+import vueLint from 'eslint-plugin-vue'
+import eslintConfigPrettier from 'eslint-config-prettier'
+import pluginSimpleImportSort from 'eslint-plugin-simple-import-sort'
+
+export default [
+  {
+    files: ["**/*.{js,mjs,cjs,ts,mts,jsx,tsx}"],
+    languageOptions: {
+      // common parser options, enable TypeScript and JSX
+      parser: "@typescript-eslint/parser",
+      parserOptions: {
+        sourceType: "module"
+      }
+    }
+  },
+  {
+    files: ["*.vue", "**/*.vue"],
+    languageOptions: {
+      parser: "vue-eslint-parser",
+      parserOptions: {
+        // <script lang="ts" /> to enable TypeScript in Vue SFC
+        parser: "@typescript-eslint/parser",
+        sourceType: "module"
+      }
+    }
+  },
+  { 
+    languageOptions: { 
+      globals: { 
+        ...globals.browser,
+      } 
+    }
+  },
+  {
+    plugins: {
+      // key "simple-import-sort" is the plugin namespace
+      "simple-import-sort": pluginSimpleImportSort
+    },
+    rules: {
+      "simple-import-sort/imports": [
+        "error"
+      ]
+    }
+  },
+  jsLint.configs.recommended,
+  ...tsLint.configs.recommended,
+  ...vueLint.configs["flat/essential"],
+  ...vueI18n.configs['flat/recommended'],
+  {
+    ignores: ['node_modules', 'dist', 'public', '.nuxt']
+  },
+  eslintConfigPrettier,
+  {
+    // cad-script-core runs without cad-simple-viewer: data-model + pdf-core only.
+    // HTML export goes through CadSession.exportHtml (filled by cad-agent-core).
+    files: ['packages/cad-script-core/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@mlightcad/*',
+                '!@mlightcad/data-model',
+                '!@mlightcad/cad-pdf-core',
+                '!@mlightcad/cad-script-core'
+              ],
+              message:
+                'cad-script-core may only depend on @mlightcad/data-model and @mlightcad/cad-pdf-core. Put viewer/HTML export in cad-agent-core.'
+            },
+            {
+              // Relative imports into higher-level workspace packages.
+              group: [
+                '**/cad-simple-viewer/**',
+                '**/three-renderer/**',
+                '**/cad-agent-core/**',
+                '**/cad-html-core/**'
+              ],
+              message:
+                'cad-script-core may only depend on @mlightcad/data-model and @mlightcad/cad-pdf-core. Put viewer/HTML export in cad-agent-core.'
+            },
+            {
+              group: ['three', 'three/*', 'vue', '@vue/*'],
+              message:
+                'cad-script-core may only depend on @mlightcad/data-model and @mlightcad/cad-pdf-core. Put viewer/HTML export in cad-agent-core.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    // Packages whose `lib/*.d.ts` is emitted by tsc and published as
+    // `"type": "module"`: relative specifiers must be Node-ESM (`./foo.js`,
+    // `./foo/index.js`) or `moduleResolution: node16/nodenext` consumers lose
+    // the re-exported types (#930).
+    files: [
+      'packages/{cad-agent-core,cad-diff-viewer,cad-google-drive-plugin,cad-html-core,cad-html-exporter,cad-html-plugin,cad-llm-plugin,cad-onedrive-plugin,cad-pdf-core,cad-pdf-exporter,cad-pdf-plugin,cad-script-core,cad-simple-viewer,cad-svg-converter,cad-svg-plugin,pdf-renderer,three-renderer}/src/**/*.ts'
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...[
+          'ImportDeclaration > Literal.source',
+          'ExportNamedDeclaration > Literal.source',
+          'ExportAllDeclaration > Literal.source',
+          'ImportExpression > Literal.source',
+          'TSImportType > Literal.source'
+        ].map(node => ({
+          selector: `${node}[value=/^\\.\\.?(\\x2F|$)/]:not([value=/\\.(js|json|css|svg)$/])`,
+          message:
+            'Relative imports must use an explicit Node-ESM path such as \'./foo.js\' or \'./foo/index.js\'.'
+        }))
+      ]
+    }
+  },
+  {
+    rules: {
+      '@intlify/vue-i18n/no-dynamic-keys': 'error',
+      '@intlify/vue-i18n/no-unused-keys': [
+        'error',
+        {
+          extensions: ['.js', '.ts', '.vue']
+        }
+      ],
+      "@typescript-eslint/no-empty-object-type": ["off"],
+      "@typescript-eslint/no-unused-expressions": ["off"],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          args: 'none',
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_'
+        }
+      ],
+      'quotes': ['error', 'single']
+    },
+    settings: {
+      'vue-i18n': {
+        localeDir: './**/locales/*.{json,json5,ts,js,yaml,yml}',
+        // Specify the version of `vue-i18n` you are using.
+        // If not specified, the message will be parsed twice.
+        messageSyntaxVersion: '^11.0.0'
+      }
+    }
+  }
+]

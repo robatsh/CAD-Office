@@ -1,0 +1,2590 @@
+export default {
+  arc: {
+    startPointOrCenter: '指定圆弧的起点或',
+    secondPointOrOptions: '指定圆弧上的第二点或',
+    secondPoint: '指定圆弧上的第二点',
+    startPoint: '指定圆弧的起点',
+    centerPoint: '指定圆弧的圆心',
+    endPoint: '指定圆弧的端点',
+    endPointOrOptions: '指定圆弧的端点或',
+    centerPointOrOptions: '指定圆弧的圆心或',
+    includedAngle: '指定圆弧的夹角',
+    chordLength: '指定圆弧的弦长',
+    tangentDirection: '指定圆弧起点的切线方向',
+    radius: '指定圆弧的半径',
+    keywords: {
+      center: {
+        display: '圆心(C)',
+        local: '圆心',
+        global: 'Center'
+      },
+      end: {
+        display: '端点(E)',
+        local: '端点',
+        global: 'End'
+      },
+      angle: {
+        display: '角度(A)',
+        local: '角度',
+        global: 'Angle'
+      },
+      chordLength: {
+        display: '弦长(L)',
+        local: '弦长',
+        global: 'ChordLength'
+      },
+      direction: {
+        display: '方向(D)',
+        local: '方向',
+        global: 'Direction'
+      },
+      radius: {
+        display: '半径(R)',
+        local: '半径',
+        global: 'Radius'
+      }
+    },
+    invalid: {
+      threePoint: '三点圆弧无效：三点共线或无法确定圆弧。',
+      center: '圆心输入无效：起点与终点必须在同一圆上。',
+      angle: '角度输入无效：夹角必须大于 0 且小于 360 度。',
+      chordLength: '弦长输入无效：该值超出当前半径可用范围。',
+      direction: '方向输入无效：无法根据该切线方向构造圆弧。',
+      radius: '半径输入无效：指定半径无法连接起点与终点。'
+    }
+  },
+  circle: {
+    center: '指定圆的圆心',
+    centerOrOptions: '指定圆的圆心或',
+    radius: '指定圆的半径',
+    radiusOrDiameter: '指定圆的半径或',
+    diameter: '指定圆的直径',
+    twoPointFirst: '指定圆直径的第一个端点',
+    twoPointSecond: '指定圆直径的第二个端点',
+    threePointFirst: '指定圆上的第一个点',
+    threePointSecond: '指定圆上的第二个点',
+    threePointThird: '指定圆上的第三个点',
+    keywords: {
+      threeP: {
+        display: '三点(3P)',
+        local: '三点',
+        global: '3P'
+      },
+      twoP: {
+        display: '两点(2P)',
+        local: '两点',
+        global: '2P'
+      },
+      diameter: {
+        display: '直径(D)',
+        local: '直径',
+        global: 'Diameter'
+      }
+    }
+  },
+  copy: {
+    basePointOrOptions: '指定基点或',
+    displacementOrArray: '指定位移或',
+    secondPointOrArray: '指定第二个点或',
+    modePrompt: '输入复制模式选项',
+    arrayItemCount: '输入阵列中的项目数（包括原对象）',
+    arraySecondPointOrFit: '指定第二个点或',
+    arrayFitSecondPoint: '指定第二个点',
+    keywords: {
+      displacement: {
+        display: '位移(D)',
+        local: '位移',
+        global: 'Displacement'
+      },
+      mode: {
+        display: '模式(O)',
+        local: '模式',
+        global: 'Mode'
+      },
+      multiple: {
+        display: '多个(M)',
+        local: '多个',
+        global: 'Multiple'
+      },
+      single: {
+        display: '单个(S)',
+        local: '单个',
+        global: 'Single'
+      },
+      array: {
+        display: '阵列(A)',
+        local: '阵列',
+        global: 'Array'
+      },
+      fit: {
+        display: '布满(F)',
+        local: '布满',
+        global: 'Fit'
+      }
+    }
+  },
+  copybase: {
+    basePoint: '指定基点'
+  },
+  pasteclip: {
+    insertionPoint: '指定插入点',
+    empty: '剪贴板中没有图形对象'
+  },
+  pasteorig: {
+    sameDrawing: 'PASTEORIG 不能粘贴到复制对象的源图形中'
+  },
+  pasteblock: {
+    insertionPoint: '指定插入点'
+  },
+  dimlinear: {
+    xLine1Point: '指定第一条尺寸界线原点或 <选择对象>',
+    xLine2Point: '指定第二条尺寸界线原点',
+    dimLinePoint: '指定尺寸线位置',
+    selectObject: '选择要标注的对象',
+    rejectObject: '无法使用 DIMLINEAR 标注该对象。',
+    dimensionText: '输入标注文字',
+    textAngle: '指定标注文字的角度',
+    rotationAngle: '指定尺寸线角度',
+    keywords: {
+      mtext: { display: '多行文字(M)', local: '多行文字', global: 'Mtext' },
+      text: { display: '文字(T)', local: '文字', global: 'Text' },
+      angle: { display: '角度(A)', local: '角度', global: 'Angle' },
+      horizontal: { display: '水平(H)', local: '水平', global: 'Horizontal' },
+      vertical: { display: '垂直(V)', local: '垂直', global: 'Vertical' },
+      rotated: { display: '旋转(R)', local: '旋转', global: 'Rotated' }
+    }
+  },
+  dimaligned: {
+    xLine1Point: '指定第一条尺寸界线原点或 <选择对象>',
+    xLine2Point: '指定第二条尺寸界线原点',
+    dimLinePoint: '指定尺寸线位置',
+    selectObject: '选择要标注的对象',
+    rejectObject: '无法使用 DIMALIGNED 标注该对象。',
+    dimensionText: '输入标注文字',
+    textAngle: '指定标注文字的角度',
+    keywords: {
+      mtext: { display: '多行文字(M)', local: '多行文字', global: 'Mtext' },
+      text: { display: '文字(T)', local: '文字', global: 'Text' },
+      angle: { display: '角度(A)', local: '角度', global: 'Angle' }
+    }
+  },
+  dimradius: {
+    selectObject: '选择圆弧或圆',
+    rejectObject: '必须选择圆弧或圆。',
+    dimLinePoint: '指定尺寸线位置',
+    dimensionText: '输入标注文字',
+    textAngle: '指定标注文字的角度',
+    keywords: {
+      mtext: { display: '多行文字(M)', local: '多行文字', global: 'Mtext' },
+      text: { display: '文字(T)', local: '文字', global: 'Text' },
+      angle: { display: '角度(A)', local: '角度', global: 'Angle' }
+    }
+  },
+  dimdiameter: {
+    selectObject: '选择圆弧或圆',
+    rejectObject: '必须选择圆弧或圆。',
+    dimLinePoint: '指定尺寸线位置',
+    dimensionText: '输入标注文字',
+    textAngle: '指定标注文字的角度',
+    keywords: {
+      mtext: { display: '多行文字(M)', local: '多行文字', global: 'Mtext' },
+      text: { display: '文字(T)', local: '文字', global: 'Text' },
+      angle: { display: '角度(A)', local: '角度', global: 'Angle' }
+    }
+  },
+  dimangular: {
+    vertexOrSelect: '指定角的顶点或 <选择直线>',
+    xLine1Point: '指定第一个角度端点',
+    xLine2Point: '指定第二个角度端点',
+    arcPoint: '指定标注弧线位置',
+    selectFirstLine: '选择第一条直线',
+    selectSecondLine: '选择第二条直线',
+    rejectObject: '必须选择直线。',
+    linesParallel: '两条直线平行，无法求交点。',
+    dimensionText: '输入标注文字',
+    textAngle: '指定标注文字的角度',
+    keywords: {
+      mtext: { display: '多行文字(M)', local: '多行文字', global: 'Mtext' },
+      text: { display: '文字(T)', local: '文字', global: 'Text' },
+      angle: { display: '角度(A)', local: '角度', global: 'Angle' }
+    }
+  },
+  dimarc: {
+    selectArc: '选择圆弧',
+    rejectObject: '必须选择圆弧。',
+    arcPoint: '指定弧长标注位置',
+    dimensionText: '输入标注文字',
+    textAngle: '指定标注文字的角度',
+    keywords: {
+      mtext: { display: '多行文字(M)', local: '多行文字', global: 'Mtext' },
+      text: { display: '文字(T)', local: '文字', global: 'Text' },
+      angle: { display: '角度(A)', local: '角度', global: 'Angle' }
+    }
+  },
+  dimordinate: {
+    featurePoint: '指定特征位置',
+    leaderEndpoint: '指定引线端点',
+    dimensionText: '输入标注文字',
+    textAngle: '指定标注文字的角度',
+    keywords: {
+      mtext: { display: '多行文字(M)', local: '多行文字', global: 'Mtext' },
+      text: { display: '文字(T)', local: '文字', global: 'Text' },
+      angle: { display: '角度(A)', local: '角度', global: 'Angle' },
+      xdatum: { display: 'X基准(X)', local: 'X基准', global: 'Xdatum' },
+      ydatum: { display: 'Y基准(Y)', local: 'Y基准', global: 'Ydatum' }
+    }
+  },
+  dimcontinue: {
+    nextPoint: '指定第二条尺寸界线原点或',
+    selectDimension: '选择连续标注',
+    rejectObject: '必须选择线性或角度标注。',
+    keywords: {
+      select: { display: '选择(S)', local: '选择', global: 'Select' }
+    }
+  },
+  dimbaseline: {
+    nextPoint: '指定第二条尺寸界线原点或',
+    selectDimension: '选择基准标注',
+    rejectObject: '必须选择线性或角度标注。',
+    keywords: {
+      select: { display: '选择(S)', local: '选择', global: 'Select' }
+    }
+  },
+  ellipse: {
+    axisEndpointOrOptions: '指定椭圆的轴端点或',
+    arcAxisEndpointOrCenter: '指定椭圆弧的轴端点或',
+    center: '指定椭圆中心点',
+    firstAxisEndpoint: '指定轴的端点',
+    secondAxisEndpoint: '指定轴的另一个端点',
+    otherAxisOrRotation: '指定到另一轴的距离或',
+    rotationAngle: '指定绕长轴的旋转角度',
+    arcStartAngle: '指定椭圆弧起始角',
+    arcEndAngle: '指定椭圆弧终止角',
+    keywords: {
+      arc: {
+        display: '圆弧(A)',
+        local: '圆弧',
+        global: 'Arc'
+      },
+      center: {
+        display: '中心点(C)',
+        local: '中心点',
+        global: 'Center'
+      },
+      rotation: {
+        display: '旋转(R)',
+        local: '旋转',
+        global: 'Rotation'
+      }
+    },
+    invalid: {
+      axis: '轴输入无效：轴长必须大于 0。',
+      otherAxis: '另一轴输入无效：距离必须大于 0。',
+      rotation: '旋转输入无效：计算得到的短轴必须大于 0。'
+    }
+  },
+  explode: {
+    notExplodable: '{count} 个对象无法分解',
+    minsert: '{count} 个用 MINSERT 插入的块无法分解'
+  },
+  trim: {
+    selectObject: '选择要修剪的对象，或按住 Shift 键选择要延伸的对象，或',
+    selectEdges: '选择剪切边或 <全部选择>',
+    modePrompt: '输入修剪模式选项'
+  },
+  extend: {
+    selectObject: '选择要延伸的对象，或按住 Shift 键选择要修剪的对象，或',
+    selectEdges: '选择边界边或 <全部选择>',
+    modePrompt: '输入延伸模式选项'
+  },
+  trimExtend: {
+    currentSettings: '当前设置：投影={projection}，边={edge}，模式={mode}',
+    settingValue: {
+      none: '无',
+      ucs: 'UCS',
+      view: '视图',
+      extend: '延伸',
+      noExtend: '无',
+      quick: '快速',
+      standard: '标准'
+    },
+    projectPrompt: '输入投影选项',
+    edgePrompt: '输入隐含边延伸模式',
+    fenceFirst: '指定第一个栏选点',
+    fenceNext: '指定下一个栏选点',
+    crossingFirst: '指定第一个角点',
+    crossingSecond: '指定对角点',
+    erasePrompt: '选择要删除的对象或 <退出>',
+    noObject: '未找到对象。',
+    noIntersection: '对象未与边相交。',
+    noEdgeInDirection: '该方向上没有边。',
+    cannotTrim: '无法修剪此对象。',
+    cannotExtend: '无法延伸此对象。',
+    lockedLayer: '对象位于锁定的图层上。',
+    nothingToUndo: '已放弃所有操作。',
+    keywords: {
+      cuttingEdges: {
+        display: '剪切边(T)',
+        local: '剪切边',
+        global: 'cuTting'
+      },
+      boundaryEdges: {
+        display: '边界边(B)',
+        local: '边界边',
+        global: 'Boundary'
+      },
+      fence: {
+        display: '栏选(F)',
+        local: '栏选',
+        global: 'Fence'
+      },
+      crossing: {
+        display: '窗交(C)',
+        local: '窗交',
+        global: 'Crossing'
+      },
+      mode: {
+        display: '模式(O)',
+        local: '模式',
+        global: 'mOde'
+      },
+      project: {
+        display: '投影(P)',
+        local: '投影',
+        global: 'Project'
+      },
+      edge: {
+        display: '边(E)',
+        local: '边',
+        global: 'Edge'
+      },
+      erase: {
+        display: '删除(R)',
+        local: '删除',
+        global: 'eRase'
+      },
+      undo: {
+        display: '放弃(U)',
+        local: '放弃',
+        global: 'Undo'
+      },
+      quick: {
+        display: '快速(Q)',
+        local: '快速',
+        global: 'Quick'
+      },
+      standard: {
+        display: '标准(S)',
+        local: '标准',
+        global: 'Standard'
+      },
+      projectNone: {
+        display: '无(N)',
+        local: '无',
+        global: 'None'
+      },
+      projectUcs: {
+        display: 'UCS(U)',
+        local: 'UCS',
+        global: 'Ucs'
+      },
+      projectView: {
+        display: '视图(V)',
+        local: '视图',
+        global: 'View'
+      },
+      edgeExtend: {
+        display: '延伸(E)',
+        local: '延伸',
+        global: 'Extend'
+      },
+      edgeNoExtend: {
+        display: '不延伸(N)',
+        local: '不延伸',
+        global: 'No'
+      }
+    }
+  },
+  join: {
+    needTwo: '请至少选择两条直线、圆弧或多段线进行合并。',
+    noneJoined: '没有可合并的对象。',
+    eraseFailed: '无法删除全部源对象，合并已取消。',
+    joined: '已合并 {count} 个对象。'
+  },
+  hatch: {
+    prompt: '选择边界对象或',
+    pickPoint: '指定内部点（或按 Enter 结束）',
+    select: '选择要填充的对象',
+    patternName: '输入填充图案名称',
+    scale: '指定填充图案比例',
+    angle: '指定填充图案角度',
+    style: '输入填充样式',
+    associative: '指定关联性',
+    invalidBoundary: '所选对象无法构成闭合边界。',
+    keywords: {
+      pick: {
+        display: '拾取点(P)',
+        local: '拾取点',
+        global: 'PickPoints'
+      },
+      select: {
+        display: '选择对象(S)',
+        local: '选择对象',
+        global: 'SelectObjects'
+      },
+      cancel: {
+        display: '放弃(C)',
+        local: '放弃',
+        global: 'Cancel'
+      },
+      pattern: {
+        display: '图案(P)',
+        local: '图案',
+        global: 'Pattern'
+      },
+      scale: {
+        display: '比例(S)',
+        local: '比例',
+        global: 'Scale'
+      },
+      angle: {
+        display: '角度(A)',
+        local: '角度',
+        global: 'Angle'
+      },
+      style: {
+        display: '样式(T)',
+        local: '样式',
+        global: 'HatchStyle'
+      },
+      associative: {
+        display: '关联(AS)',
+        local: '关联',
+        global: 'AssociativeMode'
+      },
+      normal: {
+        display: '普通(N)',
+        local: '普通',
+        global: 'Normal'
+      },
+      outer: {
+        display: '外部(O)',
+        local: '外部',
+        global: 'Outer'
+      },
+      ignore: {
+        display: '忽略(I)',
+        local: '忽略',
+        global: 'Ignore'
+      },
+      yes: {
+        display: '是(Y)',
+        local: '是',
+        global: 'Yes'
+      },
+      no: {
+        display: '否(N)',
+        local: '否',
+        global: 'No'
+      }
+    }
+  },
+  hideobjects: {
+    hidden: '个对象已隐藏',
+    restored: '个对象已恢复显示',
+    nothingToRestore: '没有可恢复显示的对象'
+  },
+  entout: {
+    longSidePrompt: '输入预览图长边像素尺寸',
+    exported: '个对象预览已导出',
+    skipped: '个对象已跳过',
+    failed: {
+      'no-preview-root': '无法为所选对象构建预览几何',
+      'no-bounds': '无法计算所选对象的预览范围',
+      'capture-failed': '无法渲染实体预览图',
+      'download-failed': '预览已渲染，但 PNG 下载失败'
+    }
+  },
+  layer: {
+    main: '输入选项',
+    listSummary: '图层列表已输出到浏览器控制台',
+    emptyInput: '未输入图层名。',
+    newPrompt: '输入新建图层名称（可用逗号分隔多个）',
+    makePrompt: '输入要创建并设为当前的图层名',
+    setPrompt: '输入要设为当前的图层名',
+    onPrompt: '输入要打开的图层名',
+    offPrompt: '输入要关闭的图层名',
+    freezePrompt: '输入要冻结的图层名',
+    thawPrompt: '输入要解冻的图层名',
+    lockPrompt: '输入要锁定的图层名',
+    unlockPrompt: '输入要解锁的图层名',
+    colorLayerPrompt: '输入要修改颜色的图层名',
+    colorValuePrompt: '输入颜色（ACI 1-255、RGB 如 255,0,0 或颜色名）',
+    invalidColor: '颜色输入无效。',
+    descriptionLayerPrompt: '输入要修改说明的图层名',
+    descriptionValuePrompt: '输入新的图层说明',
+    created: '已创建图层数量',
+    alreadyExists: '图层已存在',
+    notFound: '未找到图层',
+    cannotChangeCurrent: '不能关闭或冻结当前图层。',
+    keywords: {
+      list: {
+        display: '?(?)',
+        local: '?',
+        global: '?'
+      },
+      make: {
+        display: '创建并置为当前(M)',
+        local: '创建并置为当前',
+        global: 'Make'
+      },
+      set: {
+        display: '置为当前(S)',
+        local: '置为当前',
+        global: 'Set'
+      },
+      new: {
+        display: '新建(N)',
+        local: '新建',
+        global: 'New'
+      },
+      on: {
+        display: '打开(ON)',
+        local: '打开',
+        global: 'On'
+      },
+      off: {
+        display: '关闭(OF)',
+        local: '关闭',
+        global: 'Off'
+      },
+      color: {
+        display: '颜色(C)',
+        local: '颜色',
+        global: 'Color'
+      },
+      freeze: {
+        display: '冻结(F)',
+        local: '冻结',
+        global: 'Freeze'
+      },
+      thaw: {
+        display: '解冻(T)',
+        local: '解冻',
+        global: 'Thaw'
+      },
+      lock: {
+        display: '锁定(L)',
+        local: '锁定',
+        global: 'Lock'
+      },
+      unlock: {
+        display: '解锁(U)',
+        local: '解锁',
+        global: 'Unlock'
+      },
+      description: {
+        display: '说明(D)',
+        local: '说明',
+        global: 'Description'
+      }
+    }
+  },
+  layon: {
+    alreadyOn: '所有图层都已经打开。',
+    turnedOn: '已打开图层数量'
+  },
+  laycur: {
+    prompt: '选择要更改到当前图层的对象',
+    currentLayerNotFound: '未找到当前图层。',
+    noObjects: '没有选择有效对象。',
+    alreadyCurrent: '所选对象已位于当前图层。',
+    changed: '已将对象更改到当前图层'
+  },
+  layfrz: {
+    prompt: '选择要冻结其图层的对象或',
+    invalidSelection: '所选对象无效。',
+    settingsPrompt: '输入要修改的 LAYFRZ 设置',
+    viewportPrompt: '指定视口冻结行为',
+    blockSelectionPrompt: '指定嵌套块选择行为',
+    vpfreezeFallback:
+      '当前 viewer 不支持按视口冻结图层，已退化为普通 Freeze 行为。',
+    nestedSelectionLimited:
+      '嵌套块选择设置会被保存，但当前拾取仍只能解析顶层对象所在图层。',
+    layerNotFound: '未找到图层',
+    cannotFreezeCurrent: '不能冻结当前图层。',
+    alreadyFrozen: '图层已处于冻结状态',
+    frozen: '已冻结图层',
+    restored: '已恢复图层',
+    nothingToUndo: '当前没有可撤销的 LAYFRZ 操作。',
+    keywords: {
+      settings: {
+        display: '设置(S)',
+        local: '设置',
+        global: 'Settings'
+      },
+      undo: {
+        display: '放弃(U)',
+        local: '放弃',
+        global: 'Undo'
+      },
+      viewports: {
+        display: '视口(V)',
+        local: '视口',
+        global: 'Viewports'
+      },
+      blockSelection: {
+        display: '块选择(B)',
+        local: '块选择',
+        global: 'BlockSelection'
+      },
+      freeze: {
+        display: '冻结(F)',
+        local: '冻结',
+        global: 'Freeze'
+      },
+      vpfreeze: {
+        display: '视口冻结(V)',
+        local: '视口冻结',
+        global: 'Vpfreeze'
+      },
+      block: {
+        display: '块(B)',
+        local: '块',
+        global: 'Block'
+      },
+      entity: {
+        display: '对象(E)',
+        local: '对象',
+        global: 'Entity'
+      },
+      none: {
+        display: '无(N)',
+        local: '无',
+        global: 'None'
+      }
+    }
+  },
+  layiso: {
+    prompt: '选择要隔离其图层的对象或',
+    settingsPrompt: '输入未隔离图层的处理设置',
+    offModePrompt: '输入未隔离图层的关闭行为',
+    noLayers: '未选择有效图层。',
+    layerNotFound: '未找到图层',
+    isolated: '已隔离图层',
+    affectedLayers: '受影响图层数',
+    vpfreezeFallback:
+      '当前 viewer 不支持按视口冻结图层，已退化为普通 Off 行为。',
+    lockFadeFallback: '当前 viewer 不支持图层淡显显示，未隔离图层将仅被锁定。',
+    keywords: {
+      settings: {
+        display: '设置(S)',
+        local: '设置',
+        global: 'Settings'
+      },
+      off: {
+        display: '关闭(O)',
+        local: '关闭',
+        global: 'Off'
+      },
+      lockAndFade: {
+        display: '锁定并淡显(L)',
+        local: '锁定并淡显',
+        global: 'LockAndFade'
+      },
+      vpfreeze: {
+        display: '视口冻结(V)',
+        local: '视口冻结',
+        global: 'Vpfreeze'
+      }
+    }
+  },
+  laythw: {
+    alreadyThawed: '所有图层都已经解冻。',
+    thawed: '已解冻图层数量'
+  },
+  layuniso: {
+    noPrevious: '没有可恢复的上一次 LAYISO 图层状态。',
+    layerNotFound: '未找到图层',
+    nothingRestored: '没有恢复任何 LAYISO 图层改动。',
+    restored: '已恢复图层数量'
+  },
+  laylck: {
+    prompt: '选择要锁定其图层的对象',
+    invalidSelection: '所选对象无效。',
+    layerNotFound: '未找到图层',
+    alreadyLocked: '图层已处于锁定状态',
+    locked: '已锁定图层'
+  },
+  layulk: {
+    prompt: '选择要解锁其图层的对象',
+    invalidSelection: '所选对象无效。',
+    layerNotFound: '未找到图层',
+    alreadyUnlocked: '图层已处于解锁状态',
+    unlocked: '已解锁图层'
+  },
+  layoff: {
+    prompt: '选择要关闭其图层的对象或',
+    invalidSelection: '所选对象无效。',
+    settingsPrompt: '输入要修改的 LAYOFF 设置',
+    viewportPrompt: '指定视口行为',
+    blockSelectionPrompt: '指定嵌套块选择行为',
+    vpfreezeFallback:
+      '当前 viewer 不支持按视口关闭图层，已退化为普通 Off 行为。',
+    nestedSelectionLimited:
+      '嵌套块选择设置会被保存，但当前拾取仍只能解析顶层对象所在图层。',
+    layerNotFound: '未找到图层',
+    cannotTurnOffCurrent: '不能关闭当前图层。',
+    alreadyOff: '图层已处于关闭状态',
+    turnedOff: '已关闭图层',
+    restored: '已恢复图层',
+    nothingToUndo: '当前没有可撤销的 LAYOFF 操作。',
+    keywords: {
+      settings: {
+        display: '设置(S)',
+        local: '设置',
+        global: 'Settings'
+      },
+      undo: {
+        display: '放弃(U)',
+        local: '放弃',
+        global: 'Undo'
+      },
+      viewports: {
+        display: '视口(V)',
+        local: '视口',
+        global: 'Viewports'
+      },
+      blockSelection: {
+        display: '块选择(B)',
+        local: '块选择',
+        global: 'BlockSelection'
+      },
+      off: {
+        display: '关闭(O)',
+        local: '关闭',
+        global: 'Off'
+      },
+      vpfreeze: {
+        display: '视口冻结(V)',
+        local: '视口冻结',
+        global: 'Vpfreeze'
+      },
+      block: {
+        display: '块(B)',
+        local: '块',
+        global: 'Block'
+      },
+      entity: {
+        display: '对象(E)',
+        local: '对象',
+        global: 'Entity'
+      },
+      none: {
+        display: '无(N)',
+        local: '无',
+        global: 'None'
+      }
+    }
+  },
+  layerp: {
+    restored: '恢复了之前的图层状态。',
+    noPreviousState: '没有可恢复的先前图层状态。'
+  },
+  line: {
+    firstPoint: '指定第一个点',
+    firstPointOrContinue: '请指定第一个点或',
+    nextPoint: '指定下一个点',
+    nextPointWithOptions: '请指定下一个点或',
+    keywords: {
+      continue: {
+        display: '继续(C)',
+        local: '继续',
+        global: 'Continue'
+      },
+      undo: {
+        display: '放弃(U)',
+        local: '放弃',
+        global: 'Undo'
+      },
+      close: {
+        display: '闭合(C)',
+        local: '闭合',
+        global: 'Close'
+      }
+    }
+  },
+  xline: {
+    firstPointOrOptions: '指定点或',
+    secondPoint: '指定第二个点',
+    throughPoint: '指定穿过点',
+    angle: '输入构造线角度',
+    invalidDirection: 'XLINE 的方向无效。',
+    keywords: {
+      hor: {
+        display: '水平(H)',
+        local: '水平',
+        global: 'Hor'
+      },
+      ver: {
+        display: '垂直(V)',
+        local: '垂直',
+        global: 'Ver'
+      },
+      ang: {
+        display: '角度(A)',
+        local: '角度',
+        global: 'Ang'
+      }
+    }
+  },
+  ray: {
+    startPoint: '指定起点',
+    throughPoint: '指定通过点'
+  },
+  mline: {
+    startPointWithOptions: '指定起点或',
+    nextPointWithOptions: '指定下一点或',
+    justificationPrompt: '输入对正方式',
+    scalePrompt: '指定多线比例',
+    stylePrompt: '输入多线样式名或 [?] 列出样式',
+    styleNotFound: '未找到多线样式',
+    styleListHeader: '已加载的多线样式',
+    styleListEmpty: '当前图纸没有已加载的多线样式。',
+    keywords: {
+      justification: {
+        display: '对正(J)',
+        local: '对正',
+        global: 'Justification'
+      },
+      scale: {
+        display: '比例(S)',
+        local: '比例',
+        global: 'Scale'
+      },
+      style: {
+        display: '样式(ST)',
+        local: '样式',
+        global: 'Style'
+      },
+      undo: {
+        display: '放弃(U)',
+        local: '放弃',
+        global: 'Undo'
+      },
+      close: {
+        display: '闭合(C)',
+        local: '闭合',
+        global: 'Close'
+      },
+      top: {
+        display: '上(T)',
+        local: '上',
+        global: 'Top'
+      },
+      zero: {
+        display: '零(Z)',
+        local: '零',
+        global: 'Zero'
+      },
+      bottom: {
+        display: '下(B)',
+        local: '下',
+        global: 'Bottom'
+      }
+    }
+  },
+  measureArc: {
+    startPoint: '指定弧的起点',
+    throughPoint: '指定弧上的一个点',
+    endPoint: '指定弧的终点',
+    lockedEndPoint: '指定弧的终点（按 Ctrl 在大弧与小弧之间切换）',
+    invalidPoints: '三点共线，无法测量弧长。',
+    pickArc: '选择圆、圆弧或多段线圆弧',
+    noArc: '此处没有圆或圆弧。请单击曲线，或选择三点。',
+    keywords: {
+      threePoint: {
+        display: '三点(T)',
+        local: '三点',
+        global: 'ThreePoint'
+      }
+    }
+  },
+  measureAngle: {
+    vertex: '指定顶点',
+    arm1: '指定第一条边上的点',
+    arm2: '指定第二条边上的点'
+  },
+  measureArea: {
+    firstPoint: '指定第一个点',
+    nextPoint: '指定下一个点（或按 Enter 完成）'
+  },
+  measureDistance: {
+    firstPoint: '指定第一个点',
+    secondPoint: '指定第二个点'
+  },
+  measureContinuous: {
+    firstPoint: '指定第一个点',
+    nextPoint: '指定下一个点（或按 Enter 完成）'
+  },
+  measurePoint: {
+    point: '指定点'
+  },
+  measurement: {
+    import: {
+      chooseFile: '选择测量 sidecar JSON 文件'
+    }
+  },
+  markup: {
+    author: '指定批注作者（将保存供以后使用）',
+    text: {
+      point: '指定文字批注点',
+      content: '输入批注文字'
+    },
+    line: {
+      firstPoint: '指定直线批注的第一点',
+      secondPoint: '指定直线批注的第二点'
+    },
+    arrow: {
+      firstPoint: '指定箭头起点',
+      secondPoint: '指定箭头尖端'
+    },
+    cloud: {
+      firstCorner: '指定云线的第一个角点',
+      secondCorner: '指定云线的对角点'
+    },
+    rect: {
+      firstCorner: '指定矩形的第一个角点',
+      secondCorner: '指定矩形的对角点'
+    },
+    circle: {
+      center: '指定圆心',
+      radius: '指定圆的半径'
+    },
+    shape: {
+      calloutOn: '[标注开启]',
+      calloutOff: '[标注关闭]',
+      calloutAnchor: '指定标注文字框位置',
+      keywords: {
+        callout: {
+          display: '标注(C)',
+          local: '标注',
+          global: 'Callout'
+        },
+        noCallout: {
+          display: '无标注(N)',
+          local: '无标注',
+          global: 'NoCallout'
+        }
+      }
+    },
+    highlight: {
+      firstCorner: '指定高亮的第一个角点',
+      secondCorner: '指定高亮的对角点'
+    },
+    callout: {
+      tip: '指定引线起点，或选择尚无标注的云线/矩形/圆外框',
+      anchor: '指定标注文字框位置',
+      content: '输入标注文字'
+    },
+    stamp: {
+      kind: '输入图章类型 [approved/rejected/revised/for-review/custom]',
+      imageUrl: '输入自定义图章图片 URL（可选）',
+      caption: '输入图章说明文字（可选）',
+      point: '指定图章插入点'
+    },
+    import: {
+      chooseFile: '选择批注 sidecar JSON 文件'
+    }
+  },
+  move: {
+    basePointOrDisplacement: '指定基点或',
+    secondPointOrDisplacement: '指定第二个点或',
+    displacement: '指定位移',
+    keywords: {
+      displacement: {
+        display: '位移(D)',
+        local: '位移',
+        global: 'Displacement'
+      }
+    }
+  },
+  offset: {
+    distance: '指定偏移距离',
+    selectObject: '选择要偏移的对象，或按 Enter 结束',
+    sidePoint: '指定要偏移到的那一侧的点',
+    invalidDistance: '偏移距离必须大于 0。',
+    invalidSelection: '所选对象不能偏移。',
+    offsetFailed: '无法在指定侧创建偏移曲线。'
+  },
+  fillet: {
+    currentSettings: '当前设置：模式 = {mode}，半径 = {radius}',
+    modeTrim: '修剪',
+    modeNoTrim: '不修剪',
+    selectFirst: '选择第一个对象或 [放弃(U)/多段线(P)/半径(R)/修剪(T)/多个(M)]',
+    selectSecond: '选择第二个对象，或按住 Shift 选择对象以应用角点或 [半径(R)]',
+    selectPolyline: '选择二维多段线',
+    specifyRadius: '指定圆角半径',
+    trimPrompt: '输入修剪模式选项 [修剪(T)/不修剪(N)]',
+    rejectObject: '无法对该对象进行圆角。',
+    rejectPolyline: '选定的对象不是二维多段线。',
+    invalidRadius: '圆角半径必须大于或等于零。',
+    eraseFailed: '无法删除全部转换后的对象，圆角已取消。',
+    nothingToUndo: '命令已完全放弃。',
+    polylineResult: '已对 {filleted} 个顶点圆角；跳过 {skipped} 个。',
+    keywords: {
+      undo: {
+        display: '放弃(U)',
+        local: '放弃',
+        global: 'Undo'
+      },
+      polyline: {
+        display: '多段线(P)',
+        local: '多段线',
+        global: 'Polyline'
+      },
+      radius: {
+        display: '半径(R)',
+        local: '半径',
+        global: 'Radius'
+      },
+      trim: {
+        display: '修剪(T)',
+        local: '修剪',
+        global: 'Trim'
+      },
+      multiple: {
+        display: '多个(M)',
+        local: '多个',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: '修剪(T)',
+        local: '修剪',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: '不修剪(N)',
+        local: '不修剪',
+        global: 'NoTrim'
+      }
+    },
+    error: {
+      invalidRadius: '圆角半径无效。',
+      parallel: '直线平行，无法创建角点圆角。',
+      noIntersection: '对象不相交。',
+      radiusTooLarge: '圆角半径对于选定对象过大。',
+      noSolution: '无法为选定对象创建圆角。',
+      unsupported: '选定对象类型不支持圆角。'
+    }
+  },
+  chamfer: {
+    currentSettings:
+      '（{mode} 模式）当前倒角距离 Dist1 = {dist1}，Dist2 = {dist2}',
+    currentSettingsAngle:
+      '（{mode} 模式）当前倒角长度 = {length}，角度 = {angle}',
+    modeTrim: '修剪',
+    modeNoTrim: '不修剪',
+    selectFirst:
+      '选择第一条直线或 [放弃(U)/多段线(P)/距离(D)/角度(A)/修剪(T)/方式(E)/多个(M)]',
+    selectSecond:
+      '选择第二条直线，或按住 Shift 选择对象以应用角点或 [距离(D)/角度(A)/方式(E)]',
+    selectPolyline: '选择二维多段线',
+    specifyDist1: '指定第一个倒角距离',
+    specifyDist2: '指定第二个倒角距离',
+    specifyLength: '指定第一条直线上的倒角长度',
+    specifyAngle: '指定第一条直线的倒角角度',
+    trimPrompt: '输入修剪模式选项 [修剪(T)/不修剪(N)]',
+    methodPrompt: '输入倒角方式 [距离(D)/角度(A)]',
+    rejectObject: '无法对该对象进行倒角。',
+    rejectPolyline: '选定的对象不是二维多段线。',
+    eraseFailed: '无法删除全部转换后的对象，倒角已取消。',
+    nothingToUndo: '命令已完全放弃。',
+    polylineResult: '已对 {chamfered} 个顶点倒角；跳过 {skipped} 个。',
+    keywords: {
+      undo: {
+        display: '放弃(U)',
+        local: '放弃',
+        global: 'Undo'
+      },
+      polyline: {
+        display: '多段线(P)',
+        local: '多段线',
+        global: 'Polyline'
+      },
+      distance: {
+        display: '距离(D)',
+        local: '距离',
+        global: 'Distance'
+      },
+      angle: {
+        display: '角度(A)',
+        local: '角度',
+        global: 'Angle'
+      },
+      trim: {
+        display: '修剪(T)',
+        local: '修剪',
+        global: 'Trim'
+      },
+      method: {
+        display: '方式(E)',
+        local: '方式',
+        global: 'Method'
+      },
+      multiple: {
+        display: '多个(M)',
+        local: '多个',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: '修剪(T)',
+        local: '修剪',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: '不修剪(N)',
+        local: '不修剪',
+        global: 'NoTrim'
+      },
+      distanceMethod: {
+        display: '距离(D)',
+        local: '距离',
+        global: 'Distance'
+      },
+      angleMethod: {
+        display: '角度(A)',
+        local: '角度',
+        global: 'Angle'
+      }
+    },
+    error: {
+      invalidDistance: '倒角距离或角度无效。',
+      parallel: '直线平行，无法倒角。',
+      noIntersection: '对象不相交。',
+      distanceTooLarge: '倒角距离对于选定对象过大。',
+      noSolution: '无法为选定对象创建倒角。',
+      unsupported: '选定对象类型不支持倒角。'
+    }
+  },
+  leader: {
+    startPoint: '指定引线起点',
+    nextPoint: '指定下一点',
+    nextPointOrOptions: '指定下一点或 [注释(A)/格式(F)/放弃(U)]',
+    formatPrompt: '输入引线格式选项 [样条曲线(S)/直线(T)/箭头(A)/无(N)]',
+    annotationText: '输入注释文字的第一行或 <选项>',
+    nextAnnotationLine: '输入注释文字的下一行',
+    annotationOptions:
+      '输入注释选项 [公差(Tolerance)/复制(C)/块(B)/无(N)/多行文字(M)]',
+    selectAnnotation: '选择要复制的注释对象',
+    rejectAnnotation: '该对象不能用作引线注释。',
+    toleranceUnavailable: '当前版本尚不支持形位公差对话框。',
+    keywords: {
+      annotation: {
+        display: '注释(A)',
+        local: '注释',
+        global: 'Annotation'
+      },
+      format: { display: '格式(F)', local: '格式', global: 'Format' },
+      undo: { display: '放弃(U)', local: '放弃', global: 'Undo' },
+      spline: {
+        display: '样条曲线(S)',
+        local: '样条曲线',
+        global: 'Spline'
+      },
+      straight: {
+        display: '直线(T)',
+        local: '直线',
+        global: 'STraight'
+      },
+      arrow: { display: '箭头(A)', local: '箭头', global: 'Arrow' },
+      none: { display: '无(N)', local: '无', global: 'None' },
+      tolerance: {
+        display: '公差(Tolerance)',
+        local: '公差',
+        global: 'Tolerance'
+      },
+      copy: { display: '复制(C)', local: '复制', global: 'Copy' },
+      block: { display: '块(B)', local: '块', global: 'Block' },
+      mtext: {
+        display: '多行文字(M)',
+        local: '多行文字',
+        global: 'Mtext'
+      }
+    }
+  },
+  mleader: {
+    arrowheadOrOptions:
+      '指定引线箭头位置或 [引线基线优先(L)/内容优先(C)/选项(O)]',
+    landingLocation: '指定引线基线位置',
+    landingFirstPoint: '指定引线基线位置',
+    arrowheadLocation: '指定引线箭头位置',
+    contentLocation: '指定内容位置',
+    nextPoint: '指定下一点',
+    optionsPrompt:
+      '输入选项 [引线类型(T)/基线(A)/内容类型(C)/最大点数(M)/第一角度(F)/第二角度(S)/退出选项(X)]',
+    leaderTypePrompt: '选择引线类型 [直线(S)/样条曲线(P)/无(N)]',
+    landingPrompt: '是否使用基线 [是(Y)/否(N)]',
+    landingLength: '指定基线距离',
+    contentTypePrompt: '选择内容类型 [块(B)/多行文字(M)/无(N)]',
+    maxPoints: '输入引线的最大点数',
+    firstAngle: '输入第一角度约束',
+    secondAngle: '输入第二角度约束',
+    keywords: {
+      landingFirst: {
+        display: '引线基线优先(L)',
+        local: '引线基线优先',
+        global: 'Landing first'
+      },
+      contentFirst: {
+        display: '内容优先(C)',
+        local: '内容优先',
+        global: 'Content first'
+      },
+      options: { display: '选项(O)', local: '选项', global: 'Options' },
+      leaderType: {
+        display: '引线类型(T)',
+        local: '引线类型',
+        global: 'Leader type'
+      },
+      landing: { display: '基线(A)', local: '基线', global: 'lAnding' },
+      contentType: {
+        display: '内容类型(C)',
+        local: '内容类型',
+        global: 'Content type'
+      },
+      maxpoints: {
+        display: '最大点数(M)',
+        local: '最大点数',
+        global: 'Maxpoints'
+      },
+      firstAngle: {
+        display: '第一角度(F)',
+        local: '第一角度',
+        global: 'First angle'
+      },
+      secondAngle: {
+        display: '第二角度(S)',
+        local: '第二角度',
+        global: 'Second angle'
+      },
+      exitOptions: {
+        display: '退出选项(X)',
+        local: '退出选项',
+        global: 'eXit options'
+      },
+      straight: {
+        display: '直线(S)',
+        local: '直线',
+        global: 'Straight'
+      },
+      spline: {
+        display: '样条曲线(P)',
+        local: '样条曲线',
+        global: 'sPline'
+      },
+      noneLeader: { display: '无(N)', local: '无', global: 'None' },
+      yes: { display: '是(Y)', local: '是', global: 'Yes' },
+      no: { display: '否(N)', local: '否', global: 'No' },
+      block: { display: '块(B)', local: '块', global: 'Block' },
+      mtext: {
+        display: '多行文字(M)',
+        local: '多行文字',
+        global: 'Mtext'
+      },
+      none: { display: '无(N)', local: '无', global: 'None' }
+    }
+  },
+  mleaderedit: {
+    selectMLeader: '选择多重引线',
+    rejectMLeader: '必须选择多重引线。',
+    arrowheadOrRemove: '指定引线箭头位置或 [删除引线(R)]',
+    selectLeaderToRemove: '指定要删除的引线或按 Enter 结束',
+    cannotRemoveLast: '无法删除该多重引线的最后一条引线。',
+    noLeaderAtPoint: '在该点未找到引线。',
+    keywords: {
+      remove: {
+        display: '删除引线(R)',
+        local: '删除',
+        global: 'Remove'
+      }
+    }
+  },
+  mtext: {
+    point: '指定多行文本插入点'
+  },
+  bmpout: {
+    boundsFirstCorner: '指定边界的第一个角点',
+    boundsSecondCorner: '指定对角点',
+    longSidePrompt: '输入长边像素大小'
+  },
+  jpgout: {
+    boundsFirstCorner: '指定边界的第一个角点',
+    boundsSecondCorner: '指定对角点',
+    longSidePrompt: '输入长边像素大小'
+  },
+  pngout: {
+    boundsFirstCorner: '指定边界的第一个角点',
+    boundsSecondCorner: '指定对角点',
+    longSidePrompt: '输入长边像素大小'
+  },
+  imageattach: {
+    insertionPoint: '指定插入点：',
+    scale: '指定比例因子：',
+    rotation: '指定旋转角度：',
+    invalidScale: '比例因子必须大于 0。',
+    decodeFailed: '无法读取所选图像文件。'
+  },
+  insert: {
+    blockName: '输入块名：',
+    insertionPoint: '指定插入点：',
+    scale: '指定比例因子：',
+    rotation: '指定旋转角度：',
+    invalidScale: '比例因子必须大于 0。',
+    invalidBlockName: '无效的块名。',
+    blockNotFound: '未找到块',
+    xrefNotAllowed: '不能使用 -INSERT 插入外部参照。'
+  },
+  xattach: {
+    insertionPoint: '指定插入点：',
+    scale: '指定比例因子：',
+    rotation: '指定旋转角度：',
+    invalidScale: '比例因子必须大于 0。',
+    unsupportedFile: '请选择 DWG 或 DXF 文件。',
+    loading: '正在加载外部参照...',
+    loadFailed: '无法读取所选图形文件。'
+  },
+  point: {
+    point: '指定点'
+  },
+  polygon: {
+    numberOfSides: '输入边数',
+    centerOrEdge: '指定多边形中心点或',
+    radiusOrType: '输入选项',
+    edgeStart: '指定边的第一个端点',
+    edgeEnd: '指定边的第二个端点',
+    keywords: {
+      edge: {
+        display: '边(E)',
+        local: '边',
+        global: 'Edge'
+      },
+      inscribed: {
+        display: '内接于圆(I)',
+        local: '内接于圆',
+        global: 'Inscribed'
+      },
+      circumscribed: {
+        display: '外切于圆(C)',
+        local: '外切于圆',
+        global: 'Circumscribed'
+      }
+    },
+    invalid: {
+      sides: '边数无效：请输入 3 到 1024 之间的整数。',
+      radius: '半径无效：半径必须大于 0。',
+      edge: '边无效：边长必须大于 0。'
+    }
+  },
+  polyline: {
+    firstPoint: '指定第一个点',
+    nextPoint: '指定下一个点（或按 Enter 完成）',
+    nextPointWithOptions: '请指定下一个点或',
+    nextPointWithArcOptions: '请指定下一个点或',
+    keywords: {
+      arc: {
+        display: '圆弧(A)',
+        local: '圆弧',
+        global: 'Arc'
+      },
+      undo: {
+        display: '放弃(U)',
+        local: '放弃',
+        global: 'Undo'
+      },
+      close: {
+        display: '闭合(C)',
+        local: '闭合',
+        global: 'Close'
+      },
+      line: {
+        display: '直线(L)',
+        local: '直线',
+        global: 'Line'
+      },
+      angle: {
+        display: '角度(A)',
+        local: '角度',
+        global: 'Angle'
+      },
+      center: {
+        display: '圆心(C)',
+        local: '圆心',
+        global: 'Center'
+      },
+      secondPoint: {
+        display: '第二点(P)',
+        local: '第二点',
+        global: 'SecondPoint'
+      },
+      radius: {
+        display: '半径(R)',
+        local: '半径',
+        global: 'Radius'
+      }
+    },
+    arcAngle: '指定弧角度',
+    arcCenter: '指定圆心',
+    arcSecondPoint: '指定弧上的第二点',
+    arcEndPoint: '指定弧的终点',
+    arcRadius: '指定弧半径'
+  },
+  mirror: {
+    firstPoint: '指定镜像线的第一点',
+    secondPoint: '指定镜像线的第二点',
+    eraseSource: '是否删除源对象？',
+    keywords: {
+      yes: {
+        display: '是(Y)',
+        local: '是',
+        global: 'Yes'
+      },
+      no: {
+        display: '否(N)',
+        local: '否',
+        global: 'No'
+      }
+    },
+    invalid: {
+      mirrorLine: '镜像线无效：两点必须不同。'
+    }
+  },
+  rotate: {
+    basePoint: '指定基点',
+    rotationAngleOrOptions: '指定旋转角度或',
+    referenceAngleOrPoints: '指定参考角或',
+    firstReferencePoint: '指定参考角的第一点',
+    secondReferencePoint: '指定第二点',
+    newAngle: '指定新角度',
+    keywords: {
+      copy: {
+        display: '复制(C)',
+        local: '复制',
+        global: 'Copy'
+      },
+      reference: {
+        display: '参照(R)',
+        local: '参照',
+        global: 'Reference'
+      },
+      points: {
+        display: '点(P)',
+        local: '点',
+        global: 'Points'
+      }
+    },
+    invalid: {
+      referencePoints: '参考点输入无效：两点必须不同。'
+    }
+  },
+  scale: {
+    basePoint: '指定基点',
+    scaleFactorOrOptions: '指定比例因子或',
+    referenceLength: '指定参照长度',
+    newLengthOrPoints: '指定新的长度或',
+    newLengthFirstPoint: '指定第一点',
+    copyMessage: '缩放一组选定对象。',
+    keywords: {
+      copy: {
+        display: '复制(C)',
+        local: '复制',
+        global: 'Copy'
+      },
+      reference: {
+        display: '参照(R)',
+        local: '参照',
+        global: 'Reference'
+      },
+      points: {
+        display: '点(P)',
+        local: '点',
+        global: 'Points'
+      }
+    },
+    invalid: {
+      factor: '需要正的非零值。',
+      length: '需要正的非零值。'
+    }
+  },
+  rect: {
+    firstPoint: '指定第一个角点',
+    nextPoint: '指定另一个角点',
+    firstPointWithOptions: '指定第一个角点或者',
+    otherCornerWithOptions: '指定另一个角点或者',
+    chamferFirst: '指定第一个倒角距离',
+    chamferSecond: '指定第二个倒角距离',
+    filletRadius: '指定圆角半径',
+    segmentWidth: '指定矩形线宽',
+    elevationValue: '指定标高',
+    thicknessValue: '指定厚度',
+    rotationAngle: '指定矩形旋转角度',
+    dimensionLength: '指定矩形长度',
+    dimensionWidth: '指定矩形宽度',
+    areaValue: '指定矩形面积',
+    areaLengthOrWidth: '指定矩形长度',
+    areaSpecifyWidth: '指定矩形宽度',
+    invalidPositive: '输入无效：请输入大于 0 的数值。',
+    invalidRect: '无法创建矩形：请输入有效的角点或尺寸。',
+    thicknessNotSupported:
+      '当前版本暂不支持将矩形厚度写入图元，已忽略厚度设置。',
+    keywords: {
+      chamfer: {
+        display: '倒角(C)',
+        local: '倒角',
+        global: 'Chamfer'
+      },
+      elevation: {
+        display: '标高(E)',
+        local: '标高',
+        global: 'Elevation'
+      },
+      fillet: {
+        display: '圆角(F)',
+        local: '圆角',
+        global: 'Fillet'
+      },
+      thickness: {
+        display: '厚度(T)',
+        local: '厚度',
+        global: 'Thickness'
+      },
+      width: {
+        display: '宽度(W)',
+        local: '宽度',
+        global: 'Width'
+      },
+      area: {
+        display: '面积(A)',
+        local: '面积',
+        global: 'Area'
+      },
+      dimensions: {
+        display: '尺寸(D)',
+        local: '尺寸',
+        global: 'Dimensions'
+      },
+      rotation: {
+        display: '旋转(R)',
+        local: '旋转',
+        global: 'Rotation'
+      },
+      length: {
+        display: '长度(L)',
+        local: '长度',
+        global: 'Length'
+      },
+      rectWidth: {
+        display: '宽度(W)',
+        local: '宽度',
+        global: 'Width'
+      }
+    }
+  },
+  revcloud: {
+    firstCornerOrOptions: '指定第一个角点或',
+    firstCorner: '指定第一个角点',
+    oppositeCorner: '指定对角点',
+    startPoint: '指定起点',
+    nextPoint: '指定下一点',
+    nextPointOrUndo: '指定下一点或',
+    firstPoint: '指定第一个点',
+    guideCursor: '沿云线路径移动光标（按 Enter 结束）',
+    arcLength: '指定圆弧长度',
+    selectObject: '选择对象',
+    style: '输入修订云线圆弧样式',
+    reverseDirection: '反转方向',
+    invalidArcLength: '圆弧长度必须大于 0。',
+    invalidObject: '所选对象无法转换为修订云线。',
+    keywords: {
+      arcLength: {
+        display: '圆弧长度(A)',
+        local: '圆弧长度',
+        global: 'ArcLength'
+      },
+      object: {
+        display: '对象(O)',
+        local: '对象',
+        global: 'Object'
+      },
+      rectangular: {
+        display: '矩形(R)',
+        local: '矩形',
+        global: 'Rectangular'
+      },
+      polygonal: {
+        display: '多边形(P)',
+        local: '多边形',
+        global: 'Polygonal'
+      },
+      freehand: {
+        display: '手绘(F)',
+        local: '手绘',
+        global: 'Freehand'
+      },
+      style: {
+        display: '样式(S)',
+        local: '样式',
+        global: 'Style'
+      },
+      normal: {
+        display: '普通(N)',
+        local: '普通',
+        global: 'Normal'
+      },
+      calligraphy: {
+        display: '书法(C)',
+        local: '书法',
+        global: 'Calligraphy'
+      },
+      undo: {
+        display: '放弃(U)',
+        local: '放弃',
+        global: 'Undo'
+      },
+      yes: {
+        display: '是(Y)',
+        local: '是',
+        global: 'Yes'
+      },
+      no: {
+        display: '否(N)',
+        local: '否',
+        global: 'No'
+      }
+    }
+  },
+  sketch: {
+    specifySketch: '指定草图或',
+    sketching: '移动指针进行草图绘制（单击或按 Enter 停止）',
+    type: '输入草图类型',
+    increment: '指定草图增量',
+    tolerance: '指定样条曲线公差',
+    firstPoint: '指定第一个点',
+    nextPoint: '指定结束点',
+    keywords: {
+      type: {
+        display: '类型(T)',
+        local: '类型',
+        global: 'Type'
+      },
+      increment: {
+        display: '增量(I)',
+        local: '增量',
+        global: 'Increment'
+      },
+      tolerance: {
+        display: '公差(L)',
+        local: '公差',
+        global: 'Tolerance'
+      },
+      line: {
+        display: '直线(L)',
+        local: '直线',
+        global: 'Lines'
+      },
+      polyline: {
+        display: '多段线(P)',
+        local: '多段线',
+        global: 'Polyline'
+      },
+      spline: {
+        display: '样条曲线(S)',
+        local: '样条曲线',
+        global: 'Spline'
+      }
+    }
+  },
+  spline: {
+    firstPoint: '指定第一个点',
+    nextPoint: '指定下一个点（或按 Enter 完成）',
+    firstPointWithOptions: '指定第一个点或',
+    nextPointWithFitOptions: '指定下一个点或',
+    nextPointWithCvOptions: '指定下一个控制顶点或',
+    methodPrompt: '输入样条创建方式',
+    knotsPrompt: '输入节点参数化方式',
+    degreePrompt: '指定样条次数',
+    keywords: {
+      method: {
+        display: '方法(M)',
+        local: '方法',
+        global: 'Method'
+      },
+      fit: {
+        display: '拟合(F)',
+        local: '拟合',
+        global: 'Fit'
+      },
+      cv: {
+        display: '控制顶点(C)',
+        local: '控制顶点',
+        global: 'CV'
+      },
+      knots: {
+        display: '节点(K)',
+        local: '节点',
+        global: 'Knots'
+      },
+      degree: {
+        display: '次数(D)',
+        local: '次数',
+        global: 'Degree'
+      },
+      undo: {
+        display: '放弃(U)',
+        local: '放弃',
+        global: 'Undo'
+      },
+      close: {
+        display: '闭合(C)',
+        local: '闭合',
+        global: 'Close'
+      },
+      chord: {
+        display: '弦长(C)',
+        local: '弦长',
+        global: 'Chord'
+      },
+      sqrtChord: {
+        display: '平方根弦长(S)',
+        local: '平方根弦长',
+        global: 'SqrtChord'
+      },
+      uniform: {
+        display: '均匀(U)',
+        local: '均匀',
+        global: 'Uniform'
+      }
+    }
+  },
+  objectscale: {
+    action: '输入选项',
+    scaleName: '输入注释比例名称',
+    done: '已更新对象',
+    none: '（无）',
+    keywords: {
+      add: {
+        display: '添加(A)',
+        local: '添加',
+        global: 'Add'
+      },
+      delete: {
+        display: '删除(D)',
+        local: '删除',
+        global: 'Delete'
+      },
+      list: {
+        display: '列表(L)',
+        local: '列表',
+        global: 'List'
+      }
+    }
+  },
+  sysvar: {
+    prompt: '请输入新的值'
+  },
+  view: {
+    enterName: '输入要恢复的视图名称',
+    notFound: '未找到视图“{name}”。'
+  },
+  zoom: {
+    mainPrompt: '指定窗口角点或',
+    firstCorner: '指定第一个角点',
+    secondCorner: '指定对角点',
+    centerPoint: '指定缩放中心点',
+    heightOrScale: '输入高度或比例因子（nX 或 nXP）',
+    scaleFactor: '输入比例因子（nX 或 nXP）',
+    keywords: {
+      all: {
+        display: '全部(A)',
+        local: '全部',
+        global: 'All'
+      },
+      center: {
+        display: '中心(C)',
+        local: '中心',
+        global: 'Center'
+      },
+      extents: {
+        display: '范围(E)',
+        local: '范围',
+        global: 'Extents'
+      },
+      previous: {
+        display: '上一个(P)',
+        local: '上一个',
+        global: 'Previous'
+      },
+      original: {
+        display: '原始视口(O)',
+        local: '原始视口',
+        global: 'Original'
+      },
+      saved: {
+        display: '保存的视图(V)',
+        local: '保存的视图',
+        global: 'Saved'
+      },
+      smart: {
+        display: '智能范围(I)',
+        local: '智能范围',
+        global: 'Smart'
+      },
+      scale: {
+        display: '比例(S)',
+        local: '比例',
+        global: 'Scale'
+      },
+      window: {
+        display: '窗口(W)',
+        local: '窗口',
+        global: 'Window'
+      }
+    }
+  },
+  chtml: {
+    exportFormat: '导出格式',
+    exportInvisibleLayers: '是否导出不可见图层',
+    exportLayouts: '是否导出布局',
+    exportEmptyLayouts: '是否导出空布局',
+    background: '背景颜色',
+    initialView: '打开 HTML 时的初始视图',
+    viewerMode: '离线查看器模式',
+    chunkSizeMiB: '每个分片大小（MiB，多文件包）',
+    compressChunks: '是否压缩分片（多文件包）',
+    keywords: {
+      single: {
+        display: '单文件(S)',
+        local: '单文件',
+        global: 'Single'
+      },
+      multi: {
+        display: '多文件包(M)',
+        local: '多文件包',
+        global: 'Multi'
+      },
+      yes: {
+        display: '是(Y)',
+        local: '是',
+        global: 'Yes'
+      },
+      no: {
+        display: '否(N)',
+        local: '否',
+        global: 'No'
+      },
+      extents: {
+        display: '范围(E)',
+        local: '范围',
+        global: 'Extents'
+      },
+      current: {
+        display: '当前(C)',
+        local: '当前',
+        global: 'Current'
+      },
+      view: {
+        display: '查看(V)',
+        local: '查看',
+        global: 'View'
+      },
+      measure: {
+        display: '测量与批注(M)',
+        local: '测量与批注',
+        global: 'Measure'
+      },
+      black: {
+        display: '黑色(B)',
+        local: '黑色',
+        global: 'Black'
+      },
+      white: {
+        display: '白色(W)',
+        local: '白色',
+        global: 'White'
+      },
+      space: {
+        display: '随空间(S)',
+        local: '随空间',
+        global: 'Space'
+      }
+    }
+  },
+  cpdf: {
+    modelSpaceFit: '模型空间范围',
+    exportLayouts: '是否导出布局',
+    exportEmptyLayouts: '是否导出空布局',
+    textMode: '文字渲染方式',
+    colorMode: '颜色模式',
+    keywords: {
+      extents: {
+        display: '范围(E)',
+        local: '范围',
+        global: 'Extents'
+      },
+      display: {
+        display: '显示(D)',
+        local: '显示',
+        global: 'Display'
+      },
+      text: {
+        display: '文字(T)',
+        local: '文字',
+        global: 'Text'
+      },
+      vector: {
+        display: '矢量(V)',
+        local: '矢量',
+        global: 'Vector'
+      },
+      yes: {
+        display: '是(Y)',
+        local: '是',
+        global: 'Yes'
+      },
+      no: {
+        display: '否(N)',
+        local: '否',
+        global: 'No'
+      },
+      color: {
+        display: '彩色(C)',
+        local: '彩色',
+        global: 'Color'
+      },
+      monochrome: {
+        display: '黑白(M)',
+        local: '黑白',
+        global: 'Monochrome'
+      }
+    }
+  },
+  ucs: {
+    originOrOptions: '指定 UCS 的原点或',
+    pointOnXAxis: '指定 X 轴上的点或',
+    pointOnXyPlane: '指定 XY 平面上的点或',
+    rotationAngle: '指定绕 {axis} 轴的旋转角度',
+    zAxisOrigin: '指定新的原点',
+    pointOnZAxis: '指定 Z 轴正方向上的点',
+    selectObject: '选择要对齐 UCS 的对象',
+    namedOption: '输入选项',
+    enterName: '输入要恢复的 UCS 名称或 [?]',
+    saveName: '输入用于保存当前 UCS 的名称',
+    deleteName: '输入要删除的 UCS 名称',
+    noPrevious: '当前会话中没有上一个 UCS。',
+    noNamed: '没有命名 UCS 定义。',
+    notFound: '未找到 UCS "{name}"。',
+    invalidName: '无效的 UCS 名称。',
+    invalidObject: '无法将 UCS 对齐到所选对象。',
+    keywords: {
+      named: {
+        display: '命名(A)',
+        local: '命名',
+        global: 'Named'
+      },
+      object: {
+        display: '对象(B)',
+        local: '对象',
+        global: 'Object'
+      },
+      previous: {
+        display: '上一个(P)',
+        local: '上一个',
+        global: 'Previous'
+      },
+      view: {
+        display: '视图(V)',
+        local: '视图',
+        global: 'View'
+      },
+      world: {
+        display: '世界(W)',
+        local: '世界',
+        global: 'World'
+      },
+      x: {
+        display: 'X',
+        local: 'X',
+        global: 'X'
+      },
+      y: {
+        display: 'Y',
+        local: 'Y',
+        global: 'Y'
+      },
+      z: {
+        display: 'Z',
+        local: 'Z',
+        global: 'Z'
+      },
+      zAxis: {
+        display: 'Z 轴(N)',
+        local: 'ZAxis',
+        global: 'ZAxis'
+      },
+      apply: {
+        display: '应用(L)',
+        local: '应用',
+        global: 'Apply'
+      },
+      restore: {
+        display: '恢复(R)',
+        local: '恢复',
+        global: 'Restore'
+      },
+      save: {
+        display: '保存(S)',
+        local: '保存',
+        global: 'Save'
+      },
+      delete: {
+        display: '删除(D)',
+        local: '删除',
+        global: 'Delete'
+      },
+      list: {
+        display: '?(?)',
+        local: '?',
+        global: '?'
+      }
+    }
+  },
+  group: {
+    selectOrOption: '选择对象或',
+    createOrOption: '创建编组或',
+    selectObjects: '选择编组对象',
+    enterName: '输入编组名称',
+    enterDescription: '输入编组说明',
+    invalidName: '无效的编组名称',
+    nameExists: '编组名称已存在',
+    created: '已创建编组 {name}',
+    keywords: {
+      name: {
+        display: '名称(N)',
+        local: '名称',
+        global: 'Name'
+      },
+      description: {
+        display: '说明(D)',
+        local: '说明',
+        global: 'Description'
+      }
+    }
+  },
+  ungroup: {
+    selectOrOption: '选择编组或',
+    selectGroup: '选择编组',
+    enterName: '输入编组名称',
+    notFound: '未找到编组',
+    notInGroup: '对象不是编组成员',
+    multiGroup: '对象属于多个编组 [{name}]',
+    exploded: '已分解编组 {name}',
+    explodedCount: '已分解 {count} 个编组',
+    keywords: {
+      name: {
+        display: '名称(N)',
+        local: '名称',
+        global: 'Name'
+      },
+      all: {
+        display: '全部(A)',
+        local: '全部',
+        global: 'All'
+      },
+      accept: {
+        display: '接受(A)',
+        local: '接受',
+        global: 'Accept'
+      },
+      next: {
+        display: '下一个(N)',
+        local: '下一个',
+        global: 'Next'
+      }
+    }
+  },
+  groupedit: {
+    selectGroup: '选择一个编组',
+    enterName: '输入编组名称',
+    notFound: '未找到编组',
+    multiGroup: '对象属于多个编组 [{name}]',
+    action: '为编组 {name} 输入选项',
+    selectToAdd: '选择要添加到编组的对象',
+    selectToRemove: '选择要从编组中删除的对象',
+    newName: '输入新的编组名称',
+    keywords: {
+      add: {
+        display: '添加对象(A)',
+        local: '添加',
+        global: 'Add'
+      },
+      remove: {
+        display: '删除对象(R)',
+        local: '删除',
+        global: 'Remove'
+      },
+      rename: {
+        display: '重命名(N)',
+        local: '重命名',
+        global: 'Rename'
+      },
+      accept: {
+        display: '接受(A)',
+        local: '接受',
+        global: 'Accept'
+      },
+      next: {
+        display: '下一个(N)',
+        local: '下一个',
+        global: 'Next'
+      }
+    }
+  },
+  dashgroup: {
+    option: '输入选项',
+    empty: '未定义编组',
+    listEntry: '{name}  {description}  [{selectable}]  ({count})',
+    yes: '是',
+    no: '否',
+    enterNameOrBlank: '输入编组名称，或按 Enter 创建未命名编组',
+    enterGroupName: '输入编组名称',
+    selectableSet: '编组 {name} 可选择 = {value}',
+    orderOption: '输入重排选项',
+    fromPosition: '输入要重排对象的位置编号（从 0 开始）',
+    toPosition: '输入对象的新位置编号（从 0 开始）',
+    keywords: {
+      list: {
+        display: '?(?)',
+        local: '?',
+        global: '?'
+      },
+      create: {
+        display: '创建(C)',
+        local: '创建',
+        global: 'Create'
+      },
+      add: {
+        display: '添加(A)',
+        local: '添加',
+        global: 'Add'
+      },
+      remove: {
+        display: '删除(R)',
+        local: '删除',
+        global: 'Remove'
+      },
+      explode: {
+        display: '分解(X)',
+        local: '分解',
+        global: 'Explode'
+      },
+      rename: {
+        display: '重命名(N)',
+        local: '重命名',
+        global: 'Rename'
+      },
+      selectable: {
+        display: '可选择(S)',
+        local: '可选择',
+        global: 'Selectable'
+      },
+      order: {
+        display: '重排(O)',
+        local: '重排',
+        global: 'Order'
+      },
+      reverse: {
+        display: '反向(R)',
+        local: '反向',
+        global: 'Reverse'
+      },
+      position: {
+        display: '位置(P)',
+        local: '位置',
+        global: 'Position'
+      }
+    }
+  },
+  pdfimport: {
+    pageNumber: '输入页码 (1-{count})',
+    insertionPoint: '指定插入点（比例 {scale}，模式 {mode}，文字 {text}）或',
+    modePrompt: '选择导入方式',
+    modeRecover: '复原图纸',
+    modeVisual: '保留 PDF 视觉效果',
+    scaleFactor: '输入比例因子',
+    textPrompt: '选择打散文字识别方式',
+    textOff: '关闭',
+    textLocal: '本地字形词典',
+    textOcr: 'OCR 服务',
+    keywords: {
+      scale: {
+        display: '比例(S)',
+        local: '比例',
+        global: 'Scale'
+      },
+      mode: {
+        display: '模式(M)',
+        local: '模式',
+        global: 'Mode'
+      },
+      text: {
+        display: '文字(T)',
+        local: '文字',
+        global: 'Text'
+      },
+      recover: {
+        display: '复原(R)',
+        local: '复原',
+        global: 'Recover'
+      },
+      visual: {
+        display: '视觉(V)',
+        local: '视觉',
+        global: 'Visual'
+      },
+      off: {
+        display: '关闭(O)',
+        local: '关闭',
+        global: 'Off'
+      },
+      local: {
+        display: '本地(L)',
+        local: '本地',
+        global: 'Local'
+      },
+      ocr: {
+        display: '识别(C)',
+        local: '识别',
+        global: 'Ocr'
+      }
+    },
+    pickInsertionPoint: '指定插入点',
+    dialog: {
+      title: '输入 PDF',
+      close: '关闭',
+      fileName: '文件名:',
+      browse: '浏览...',
+      pagesGroup: '要输入的页面',
+      page: '页面:',
+      total: '总计: {count}',
+      singleView: '显示页面预览',
+      gridView: '显示页面缩略图',
+      pageLabel: '第 {page} 页',
+      pageSize:
+        '页面大小: {width} × {height} 毫米（{widthIn} × {heightIn} 英寸）',
+      previewError: '无法预览',
+      positionGroup: '位置',
+      onScreen: '在屏幕上指定插入点',
+      x: 'X:',
+      y: 'Y:',
+      scale: '比例:',
+      modeGroup: '输入方式',
+      modeRecover: '复原图纸',
+      recoverHint: '重建圆、圆弧、曲线、文字、填充和块',
+      modeVisual: '保留 PDF 视觉效果',
+      visualHint: '按 PDF 中的原样输入路径和文字',
+      recognizeDimensions: '识别标注',
+      recognizeDimensionsHint: '将分解的标注还原为标注对象',
+      recognizeExplodedText: '识别打散文字',
+      recognizeExplodedTextHint:
+        '将 SHX / 轮廓笔画文字还原为文字对象（本地词典或可用的 OCR 提供方）',
+      recognizeExplodedTextOff: '关闭',
+      recognizeExplodedTextLocal: '本地字形词典',
+      recognizeExplodedTextOcr: 'OCR',
+      ok: '确定',
+      cancel: '取消'
+    }
+  },
+  pdfdim: {
+    cancelled: '已取消识别标注，未做任何更改。',
+    noDimensions:
+      '所选范围内没有找到标注（需要箭头或斜线标记、尺寸线和数值文字）。',
+    summary:
+      '已转换 {count} 个标注；标注样式 {style} 的测量比例因子为 {scale}。',
+    panel: {
+      title: '识别标注',
+      style: '标注样式',
+      dimStyle: '样式',
+      newStyle: '新建标注样式…',
+      newStyleName: '新标注样式的名称',
+      createStyle: '创建',
+      nameEmpty: '请输入名称。',
+      nameInvalid: '名称包含不允许的字符。',
+      nameExists: '已存在同名的标注样式。',
+      scale: '图纸比例',
+      stylePreview: '所选标注样式的预览（已套用识别到的尺寸）',
+      dimensions: '标注',
+      selectHint: '选择一个标注可缩放到该处；应用前可修改文字。',
+      empty: '所选范围内没有找到标注。',
+      include: '转换此标注',
+      kindLinear: '线性',
+      kindRadius: '半径',
+      kindDiameter: '直径',
+      kindAngular: '角度',
+      kindAligned: '对齐',
+      kindArcLength: '弧长',
+      kindOrdinate: '坐标',
+      textTip: '标注文字（替代）',
+      measured: '测量值 {value}',
+      hideStrokes: '隐藏原始线条',
+      ready: '{ready}/{count} 个标注就绪',
+      cancel: '取消',
+      apply: '应用'
+    }
+  },
+  pdfhatch: {
+    cancelled: '已取消识别填充，未做任何更改。',
+    pickPoint: '在要填充的区域内拾取一点',
+    panel: {
+      title: '识别填充',
+      hatches: '图案填充',
+      addArea: '添加区域',
+      addAreaTip:
+        '在识别遗漏的区域内拾取一点，将为其中的线条匹配最合适的图案。',
+      picking: '请在图形中拾取区域内部的一点…',
+      noBoundary: '该点周围没有找到封闭区域。',
+      noStrokes: '该区域内没有找到规则的图案。',
+      empty: '未找到图案填充。可使用“添加区域”拾取。',
+      include: '转换此图案填充',
+      addedTag: '新增',
+      entities: '{count} 个对象',
+      selectHint: '选择一个图案填充以修改其图案、比例或角度。',
+      ownGroup: '测量 / 用户定义',
+      libraryGroup: '预定义',
+      pattern: '图案',
+      scale: '比例',
+      spacing: '间距',
+      angle: '角度',
+      autoFit: '自动拟合',
+      autoFitTip: '根据线条重新测量此图案的比例、角度和原点。',
+      match: '图案落在线条上：{precision} · 线条被重绘：{recall}',
+      noEntities: '此图案不能完整重绘任何对象，不会替换任何内容。',
+      guessed: '线条中没有此图案的特征，比例和角度为估计值。',
+      poorMatch: '匹配度低：填充未能重绘的线条将被保留。',
+      userSingle: '用户定义',
+      userDouble: '用户定义（双向）',
+      measured: '测量的图案',
+      hideStrokes: '隐藏原始线条',
+      ready: '{ready}/{count} 个图案填充就绪',
+      cancel: '取消',
+      apply: '应用'
+    },
+    noHatches:
+      '所选范围内没有找到图案填充（需要规则排列的平行线段及其边界线）。',
+    summary:
+      '已转换 {count} 个图案填充（{patterns}），替换了 {strokes} 个对象。'
+  },
+  bsearch: {
+    unsupported:
+      '所选对象均无法匹配（支持直线、圆弧、圆、多段线、椭圆、样条曲线、文字、多行文字和块参照）。',
+    skipped: '{count} 个所选对象无法匹配，已忽略。',
+    found: '找到 {count} 个匹配实例，将转换 {included} 个。请选择',
+    noMatches: '未找到其他实例。',
+    reviewOne: '实例 {index}/{count}（{state}）',
+    included: '已包含',
+    excluded: '已排除',
+    options:
+      '旋转 {rotation}，镜像 {mirror}，比例 {scale}，相同图层 {layer}，现有块 {blocks}，文字变化 {text}。切换',
+    on: '开',
+    off: '关',
+    target: '转换为',
+    name: '输入新块名',
+    nameExists: '名为“{name}”的块已存在。',
+    nameInvalid: '“{name}”不是有效的块名。',
+    basePoint: '指定插入点',
+    attributeTag: '输入文字“{text}”的属性标记',
+    existingName: '输入现有块名',
+    blockNotFound: '未找到块“{name}”。',
+    rotation: '指定块的旋转角度',
+    scale: '指定块的比例因子',
+    scope: '同时转换找到的 {count} 个实例，还是只转换源对象？',
+    summary: '已转换为块“{name}”：{count} 个参照。',
+    keywords: {
+      convert: {
+        display: '转换(C)',
+        local: '转换',
+        global: 'Convert'
+      },
+      review: {
+        display: '查看(R)',
+        local: '查看',
+        global: 'Review'
+      },
+      options: {
+        display: '选项(O)',
+        local: '选项',
+        global: 'Options'
+      },
+      exit: {
+        display: '退出(X)',
+        local: '退出',
+        global: 'eXit'
+      },
+      include: {
+        display: '包含(I)',
+        local: '包含',
+        global: 'Include'
+      },
+      exclude: {
+        display: '排除(E)',
+        local: '排除',
+        global: 'Exclude'
+      },
+      next: {
+        display: '下一个(N)',
+        local: '下一个',
+        global: 'Next'
+      },
+      previous: {
+        display: '上一个(P)',
+        local: '上一个',
+        global: 'Previous'
+      },
+      done: {
+        display: '完成(D)',
+        local: '完成',
+        global: 'Done'
+      },
+      rotation: {
+        display: '旋转(R)',
+        local: '旋转',
+        global: 'Rotation'
+      },
+      mirror: {
+        display: '镜像(M)',
+        local: '镜像',
+        global: 'Mirror'
+      },
+      scale: {
+        display: '比例(S)',
+        local: '比例',
+        global: 'Scale'
+      },
+      layer: {
+        display: '图层(L)',
+        local: '图层',
+        global: 'Layer'
+      },
+      blocks: {
+        display: '块(B)',
+        local: '块',
+        global: 'Blocks'
+      },
+      text: {
+        display: '文字(T)',
+        local: '文字',
+        global: 'Text'
+      },
+      new: {
+        display: '新建(N)',
+        local: '新建',
+        global: 'New'
+      },
+      existing: {
+        display: '现有(E)',
+        local: '现有',
+        global: 'Existing'
+      },
+      instances: {
+        display: '实例(I)',
+        local: '实例',
+        global: 'Instances'
+      },
+      source: {
+        display: '源对象(S)',
+        local: '源对象',
+        global: 'Source'
+      }
+    }
+  },
+  pdftext: {
+    panel: {
+      title: '识别文字',
+      shxGroup: 'SHX 文字（线条字体）',
+      meshGroup: 'TrueType 文字（轮廓字体）',
+      style: '文字样式',
+      newStyle: '新建文字样式…',
+      newTag: '新建',
+      newStyleName: '新文字样式名',
+      create: '创建',
+      cancel: '取消',
+      apply: '应用',
+      nameError: {
+        empty: '请输入名称。',
+        invalid: '名称包含不允许的字符。',
+        exists: '已存在同名的文字样式。'
+      },
+      font: '字体',
+      bigFont: '大字体',
+      noBigFont: '（无）',
+      shxFonts: 'SHX 字体',
+      ttfFonts: 'TrueType 字体',
+      fontsUsed: '使用：{fonts}',
+      fontMissing: '字体“{font}”不可用，将以“{fallback}”显示。',
+      fontNotShx: '这是 TrueType 字体：文字外观不会像 SHX 线条文字。',
+      fontNotTtf: '这是 SHX 字体：文字外观不会像 TrueType 轮廓文字。',
+      styleChanges:
+        '将修改文字样式“{style}”的字体：已使用该样式的文字也会改变。',
+      heightScale: '高度比例',
+      widthFactor: '宽度因子',
+      autoWidth: '适配原宽度',
+      lines: '文字行',
+      include: '转换此行',
+      textPlaceholder: '输入文字，留空则跳过',
+      switchKind: '在 SHX 和 TrueType 文字之间切换',
+      kind: {
+        shx: 'SHX',
+        mesh: 'TrueType'
+      },
+      source: {
+        dictionary: '已学习',
+        ocr: 'OCR',
+        typed: '已编辑',
+        unread: '未识别'
+      },
+      hideStrokes: '隐藏原始线条',
+      ready: '{ready}/{count} 行就绪',
+      merge: '合并为多行文字',
+      mergeTip: '将选中的行合并为一个多行文字（MTEXT）',
+      split: '拆分',
+      splitTip: '将选中的合并文字拆分回原来的行',
+      mergeAdjacent: '合并相邻字符',
+      mergeAdjacentTip: '把同一基线上相邻的字符和词合并为多行文字',
+      mergedCount: '已合并为 {count} 个多行文字。',
+      selectHint: 'Ctrl+单击或 Shift+单击可选择多行。',
+      mtextTag: '多行文字'
+    },
+    cancelled: '已取消识别文字，未做任何更改。',
+    ocrNotConfigured:
+      '文字识别（OCR）未启用：尚未配置支持图片的 AI 模型。运行 LLMSETTINGS 进行配置。',
+    recognizing: '正在识别 {count} 行文字…',
+    ocrFailed:
+      '文字识别（OCR）失败：{message}。请手动输入文字，或运行 LLMSETTINGS 检查 AI 模型设置。',
+    noCandidates: '所选对象中没有找到类似文字的笔画。',
+    summary:
+      '已转换 {converted} 行文字，其中 {automatic} 行自动识别；跳过 {skipped} 行。'
+  },
+  pdfscale: {
+    firstPoint: '指定已知距离的第一点',
+    secondPoint: '指定第二点',
+    realLength: '输入实际长度（测量值 {measured}）',
+    realLengthFromDimensions:
+      '输入实际长度（测量值 {measured}；标注文字显示比例为 1:{scale}）',
+    zeroDistance: '两点重合。',
+    applied: '已按比例 {factor} 缩放 {count} 个对象。'
+  },
+  txt2mtxt: {
+    needTwo: '请至少选择两个单行文字或多行文字进行合并。',
+    mergeFailed: '无法合并所选文字。',
+    eraseFailed: '无法删除全部源文字，合并已取消。'
+  }
+}

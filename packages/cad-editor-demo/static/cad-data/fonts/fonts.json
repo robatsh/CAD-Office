@@ -1,0 +1,32 @@
+[
+  {
+    "name": ["Liberation Sans", "Arial", "Arial Regular"],
+    "file": "LiberationSans-Regular.ttf",
+    "type": "mesh"
+  },
+  {
+    "name": ["Liberation Sans Bold", "Arial Bold", "arialbd"],
+    "file": "LiberationSans-Bold.ttf",
+    "type": "mesh"
+  },
+  {
+    "name": ["Liberation Sans Italic", "Arial Italic", "ariali"],
+    "file": "LiberationSans-Italic.ttf",
+    "type": "mesh"
+  },
+  {
+    "name": ["Liberation Sans Bold Italic", "Arial Bold Italic", "arialbi"],
+    "file": "LiberationSans-BoldItalic.ttf",
+    "type": "mesh"
+  },
+  {
+    "name": ["Liberation Serif", "Times New Roman", "times"],
+    "file": "LiberationSerif-Regular.ttf",
+    "type": "mesh"
+  },
+  {
+    "name": ["Liberation Mono", "Courier New", "cour"],
+    "file": "LiberationMono-Regular.ttf",
+    "type": "mesh"
+  }
+]

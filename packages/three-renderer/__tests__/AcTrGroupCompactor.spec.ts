@@ -1,0 +1,349 @@
+import { AcCmColor } from '@mlightcad/data-model'
+import * as THREE from 'three'
+import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
+
+import { AcTrEntity } from '../src/object/AcTrEntity'
+import { AcTrGroup } from '../src/object/AcTrGroup'
+import { AcTrLine } from '../src/object/AcTrLine'
+import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
+import { AcTrSubEntityTraitsUtil, getSceneDrawableUserData } from '../src/util'
+
+const defaultTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+
+function createLine(
+  objectId: string,
+  start: { x: number; y: number },
+  end: { x: number; y: number },
+  context: AcTrRenderContext,
+  options: {
+    layerName?: string
+    basicMaterialOnly?: boolean
+    color?: number
+  } = {}
+) {
+  const traits = {
+    ...defaultTraits,
+    layer: options.layerName ?? '0',
+    color: new AcCmColor().setRGBValue(options.color ?? 0xffffff)
+  }
+  const line = new AcTrLine(
+    [
+      { x: start.x, y: start.y, z: 0 },
+      { x: end.x, y: end.y, z: 0 }
+    ],
+    traits,
+    context,
+    options.basicMaterialOnly ?? true
+  )
+  line.objectId = objectId
+  line.layerName = options.layerName ?? '0'
+  line.userData.layerName = options.layerName ?? '0'
+  return line
+}
+
+function countVertices(object: THREE.Object3D): number {
+  let total = 0
+  object.traverse(child => {
+    if (!('geometry' in child)) return
+    const geometry = (child as THREE.Mesh).geometry as THREE.BufferGeometry
+    if (!geometry) return
+    if (geometry.getAttribute('instanceStart')) {
+      total += geometry.getAttribute('instanceStart').count * 2
+      return
+    }
+    const position = geometry.getAttribute('position')
+    if (position) {
+      total += position.count
+    }
+  })
+  return total
+}
+
+describe('AcTrGroupCompactor', () => {
+  it('merges same-material leaves into fewer drawables while preserving vertex count', () => {
+    const context = new AcTrRenderContext()
+    const lines = Array.from({ length: 8 }, (_, i) =>
+      createLine(
+        `line-${i}`,
+        { x: i * 10, y: 0 },
+        { x: i * 10 + 5, y: 0 },
+        context
+      )
+    )
+    const group = new AcTrGroup(lines, context)
+    const beforeChildren = group.children.length
+    const beforeVertices = countVertices(group)
+    expect(beforeChildren).toBeGreaterThan(1)
+
+    group.compactForInstancing()
+
+    expect(group.isCompacted).toBe(true)
+    expect(group.children.length).toBeLessThan(beforeChildren)
+    expect(countVertices(group)).toBe(beforeVertices)
+    // Spatial index metadata is unchanged.
+    expect(group.wcsChildBoxes).toHaveLength(8)
+  })
+
+  it('keeps different materials in separate buckets', () => {
+    const context = new AcTrRenderContext()
+    const red = createLine('red', { x: 0, y: 0 }, { x: 10, y: 0 }, context, {
+      color: 0xff0000
+    })
+    const green = createLine(
+      'green',
+      { x: 0, y: 5 },
+      { x: 10, y: 5 },
+      context,
+      { color: 0x00ff00 }
+    )
+    const group = new AcTrGroup([red, green], context)
+    const beforeChildren = [...group.children]
+
+    group.compactForInstancing()
+
+    // Two materials → still two leaves (nothing to merge across materials).
+    expect(group.children.length).toBe(beforeChildren.length)
+    // Singletons must not be rebuilt — open-time compact skips bake/rebase.
+    expect(group.children).toEqual(expect.arrayContaining(beforeChildren))
+  })
+
+  it('keeps different layers in separate buckets', () => {
+    const context = new AcTrRenderContext()
+    const a = createLine('a', { x: 0, y: 0 }, { x: 10, y: 0 }, context, {
+      layerName: 'A'
+    })
+    const b = createLine('b', { x: 0, y: 5 }, { x: 10, y: 5 }, context, {
+      layerName: 'B'
+    })
+    const group = new AcTrGroup([a, b], context)
+
+    group.compactForInstancing()
+
+    const layers = group.children.map(child => child.userData.layerName).sort()
+    expect(layers).toEqual(['A', 'B'])
+  })
+
+  it('recomputes lineDistance per leaf when present before merge', () => {
+    const context = new AcTrRenderContext()
+    const lineA = createLine('a', { x: 0, y: 0 }, { x: 10, y: 0 }, context)
+    const lineB = createLine('b', { x: 20, y: 0 }, { x: 30, y: 0 }, context)
+    const group = new AcTrGroup([lineA, lineB], context)
+
+    // basic LineBasicMaterial leaves may not carry lineDistance; inject it so
+    // the per-leaf recompute path is exercised before mergeGeometries.
+    for (const child of group.children) {
+      if (!(child instanceof THREE.LineSegments)) continue
+      const geometry = child.geometry
+      const position = geometry.getAttribute('position')
+      const distances = new Float32Array(position.count)
+      for (let i = 0; i < position.count; i++) {
+        distances[i] = i === 0 ? 0 : 1
+      }
+      geometry.setAttribute(
+        'lineDistance',
+        new THREE.Float32BufferAttribute(distances, 1)
+      )
+    }
+
+    group.compactForInstancing()
+
+    const leaf = group.children[0] as THREE.LineSegments
+    const lineDistance = leaf.geometry.getAttribute('lineDistance')
+    expect(lineDistance).toBeDefined()
+    // Each original leaf restarts dash distance at 0 after per-leaf recompute.
+    expect(lineDistance.getX(0)).toBe(0)
+  })
+
+  it('does not merge noBatch leaves', () => {
+    const context = new AcTrRenderContext()
+    const a = createLine('a', { x: 0, y: 0 }, { x: 10, y: 0 }, context)
+    const b = createLine('b', { x: 0, y: 5 }, { x: 10, y: 5 }, context)
+    const group = new AcTrGroup([a, b], context)
+    for (const child of group.children) {
+      getSceneDrawableUserData(child).noBatch = true
+    }
+    const before = group.children.length
+
+    group.compactForInstancing()
+
+    expect(group.children.length).toBe(before)
+  })
+
+  it('does not merge AcTrEntity wrappers still present as children', () => {
+    const context = new AcTrRenderContext()
+    const line = createLine('a', { x: 0, y: 0 }, { x: 10, y: 0 }, context)
+    const group = new AcTrGroup([line], context)
+    const wrapper = new AcTrEntity(context)
+    wrapper.userData.layerName = '0'
+    group.add(wrapper)
+    const before = group.children.length
+
+    group.compactForInstancing()
+
+    expect(group.children.some(child => child instanceof AcTrEntity)).toBe(true)
+    expect(group.children.length).toBe(before)
+  })
+
+  it('preserves relative order of masks ahead of AcTrEntity glyph wrappers', () => {
+    // Mirrors MTEXT background-mask + deferred AcTrMText under an INSERT:
+    // compact used to rebuild as [wrappers..., meshes...], so the mask packed
+    // after glyphs and received a higher draw-order Z that hid the text.
+    // Distinct colours keep the leaves as singletons so identity stays stable.
+    const context = new AcTrRenderContext()
+    const early = createLine(
+      'early',
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+      context,
+      { color: 0xff0000 }
+    )
+    const mask = createLine(
+      'mask',
+      { x: 0, y: 5 },
+      { x: 10, y: 5 },
+      context,
+      { color: 0x00ff00 }
+    )
+    const late = createLine(
+      'late',
+      { x: 0, y: 10 },
+      { x: 10, y: 10 },
+      context,
+      { color: 0x0000ff }
+    )
+    const group = new AcTrGroup([early, mask, late], context)
+
+    const glyphShell = new AcTrEntity(context)
+    glyphShell.objectId = 'mtext'
+    glyphShell.userData.layerName = '0'
+    // Insert the empty MTEXT shell immediately after the mask, matching the
+    // flatten order from AcDbMText's [background, textDrawable] group.
+    const maskLeaf = group.children[1]
+    group.children.splice(2, 0, glyphShell)
+    glyphShell.parent = group
+
+    expect(group.children.indexOf(maskLeaf)).toBeLessThan(
+      group.children.indexOf(glyphShell)
+    )
+
+    group.compactForInstancing()
+
+    const orderAfter = group.children.slice()
+    const maskAfter = orderAfter.indexOf(maskLeaf)
+    const shellAfter = orderAfter.indexOf(glyphShell)
+    expect(maskAfter).toBeGreaterThan(-1)
+    expect(shellAfter).toBeGreaterThan(-1)
+    // Mask must stay before the glyph shell so batching allocates it a lower Z.
+    expect(maskAfter).toBeLessThan(shellAfter)
+    // Without the order-preserving rebuild, glyphShell would land at index 0
+    // (all AcTrEntity wrappers were appended before singleton meshes).
+    expect(shellAfter).not.toBe(0)
+  })
+
+  it('keeps merged linework before a glyph shell that sits between sources', () => {
+    // Title-block pattern: same-material linework merges, while an empty
+    // MTEXT shell stays between the first and later sources. The merged leaf
+    // must replace the first source slot so the shell is not rebuilt first.
+    const context = new AcTrRenderContext()
+    const lineA = createLine('a', { x: 0, y: 0 }, { x: 10, y: 0 }, context)
+    const lineB = createLine('b', { x: 0, y: 5 }, { x: 10, y: 5 }, context)
+    const lineC = createLine('c', { x: 0, y: 10 }, { x: 10, y: 10 }, context)
+    const group = new AcTrGroup([lineA, lineB, lineC], context)
+
+    const glyphShell = new AcTrEntity(context)
+    glyphShell.objectId = 'mtext'
+    glyphShell.userData.layerName = '0'
+    // Place the shell after the first flattened leaf: [leafA, shell, leafB, leafC].
+    group.children.splice(1, 0, glyphShell)
+    glyphShell.parent = group
+
+    const beforeVertices = countVertices(group)
+    expect(group.children.length).toBe(4)
+
+    group.compactForInstancing()
+
+    expect(group.isCompacted).toBe(true)
+    expect(countVertices(group)).toBe(beforeVertices)
+    expect(group.children.length).toBe(2)
+    expect(group.children[0]).not.toBe(glyphShell)
+    expect(group.children[1]).toBe(glyphShell)
+    expect(group.children.some(child => child instanceof AcTrEntity)).toBe(true)
+  })
+
+  it('merges LineSegments2 fat-line leaves', () => {
+    const context = new AcTrRenderContext()
+    // basicMaterialOnly=false may produce LineSegments2 depending on style.
+    const lines = Array.from({ length: 4 }, (_, i) =>
+      createLine(
+        `fat-${i}`,
+        { x: i * 10, y: 0 },
+        { x: i * 10 + 5, y: 0 },
+        context,
+        { basicMaterialOnly: false }
+      )
+    )
+    const group = new AcTrGroup(lines, context)
+    const hadLine2 = group.children.some(
+      child => child instanceof LineSegments2
+    )
+    if (!hadLine2) {
+      // Style manager chose basic lines in this environment; skip.
+      return
+    }
+    const beforeVertices = countVertices(group)
+    const beforeChildren = group.children.length
+
+    group.compactForInstancing()
+
+    expect(group.children.length).toBeLessThan(beforeChildren)
+    expect(countVertices(group)).toBe(beforeVertices)
+    expect(group.children.every(child => child instanceof LineSegments2)).toBe(
+      true
+    )
+  })
+
+  it('keeps sub-unit precision when baking survey-scale leaves', () => {
+    // Survey contours sit at X ~ 3.36e7, where float32 holds only every 4th
+    // unit. Baking the leaf translation into float32 vertices before
+    // subtracting the bucket origin snapped contours onto that grid.
+    const context = new AcTrRenderContext()
+    const x0 = 33593852.123
+    const y0 = 2940437.456
+    const ends = Array.from({ length: 8 }, (_, i) => ({
+      start: { x: x0 + i * 0.3, y: y0 + i * 0.37 },
+      end: { x: x0 + i * 0.3 + 1.1, y: y0 + i * 0.37 + 0.6 }
+    }))
+    const lines = ends.map(({ start, end }, i) =>
+      createLine(`contour-${i}`, start, end, context)
+    )
+    const group = new AcTrGroup(lines, context)
+
+    group.compactForInstancing()
+
+    const expected = ends.flatMap(({ start, end }) => [start, end])
+    const actual: THREE.Vector3[] = []
+    group.updateMatrixWorld(true)
+    group.traverse(child => {
+      if (!(child instanceof THREE.LineSegments)) return
+      const geometry = child.geometry as THREE.BufferGeometry
+      const position = geometry.getAttribute('position')
+      const index = geometry.getIndex()
+      const count = index ? index.count : position.count
+      for (let i = 0; i < count; i++) {
+        const vertex = index ? index.getX(i) : i
+        actual.push(
+          new THREE.Vector3()
+            .fromBufferAttribute(position, vertex)
+            .applyMatrix4(child.matrixWorld)
+        )
+      }
+    })
+    expect(actual.length).toBe(expected.length)
+    for (const point of expected) {
+      const nearest = Math.min(
+        ...actual.map(v => Math.hypot(v.x - point.x, v.y - point.y))
+      )
+      expect(nearest).toBeLessThan(1e-3)
+    }
+  })
+})

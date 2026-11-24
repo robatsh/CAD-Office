@@ -1,0 +1,284 @@
+import { AcApDocManager } from '../app/index.js'
+import { runMarkupEdit } from '../command/markup/AcApMarkupHistory.js'
+import { runMeasurementEdit } from '../command/measure/AcApMeasurementHistory.js'
+import { MEASUREMENT_LAYER } from '../command/measure/AcApMeasurementStore.js'
+import { acedIsSpaceActivatedTarget } from '../editor/input/ui/AcEdKeyboardUtil.js'
+import { AcEdMTextEditor } from '../editor/input/ui/AcEdMTextEditor.js'
+import type { AcTrView2d } from './AcTrView2d.js'
+
+/**
+ * Document-level undo/redo shortcut resolved from a keyboard event.
+ *
+ * - Windows: Ctrl+Z (undo), Ctrl+Y (redo)
+ * - macOS: Cmd+Z (undo), Shift+Cmd+Z (redo)
+ *
+ * Ctrl/Cmd+Shift+Z is also accepted as redo on Windows for convenience.
+ */
+export type AcEdUndoRedoShortcut = 'undo' | 'redo'
+
+/**
+ * AutoCAD clipboard command resolved from a keyboard event.
+ *
+ * - Ctrl/Cmd+C: COPYCLIP
+ * - Ctrl/Cmd+X: CUTCLIP
+ * - Ctrl/Cmd+V: PASTECLIP
+ * - Ctrl/Cmd+Shift+C: COPYBASE
+ * - Ctrl/Cmd+Shift+V: PASTEBLOCK
+ */
+export type AcEdClipboardShortcut =
+  | 'copyclip'
+  | 'cutclip'
+  | 'pasteclip'
+  | 'copybase'
+  | 'pasteblock'
+
+/**
+ * Handles global keyboard shortcuts for a CAD view.
+ *
+ * Shortcuts are suppressed while the user is typing in editable fields, during
+ * IME composition, while a command is acquiring input, or while MText is being
+ * edited inline.
+ *
+ * Printable keys pressed on the view are typed into the command line so a
+ * command can be started without clicking it first, and Space on an idle view
+ * repeats the last command (AutoCAD behavior).
+ */
+export class AcEdViewKeyHandler {
+  private static readonly COMMAND_LINE_INPUT_CLASS = 'ml-cli-text'
+
+  constructor(private readonly view: AcTrView2d) {}
+
+  /**
+   * Handles a document `keydown` event for global view shortcuts.
+   *
+   * @returns `true` when the event was consumed and default action prevented.
+   */
+  handleKeyDown(e: KeyboardEvent): boolean {
+    const undoRedoShortcut = this.resolveUndoRedoShortcut(e)
+    const clipboardShortcut = undoRedoShortcut
+      ? null
+      : this.resolveClipboardShortcut(e)
+    const commandShortcut = undoRedoShortcut ?? clipboardShortcut
+    const ignoreEditableTarget = this.shouldIgnoreEditableTargetShortcut(e)
+
+    if (ignoreEditableTarget && !commandShortcut) {
+      return false
+    }
+
+    if (commandShortcut) {
+      // Editable fields keep their native undo/copy/paste behavior.
+      if (
+        !this.shouldHandleUndoRedoShortcut(e) ||
+        AcEdMTextEditor.getActiveInputBox() ||
+        this.view.editor.isActive
+      ) {
+        return false
+      }
+
+      // lookupGlobalCmd returns undefined when the clipboard command is not
+      // registered or not allowed in the current open mode; leave the event
+      // alone then.
+      if (
+        clipboardShortcut &&
+        !AcApDocManager.instance.lookupGlobalCmd(clipboardShortcut)
+      ) {
+        return false
+      }
+
+      // Focus in the (empty) command line: without drawing data on the app
+      // clipboard, Ctrl+V should paste text into the command line instead.
+      if (
+        (clipboardShortcut === 'pasteclip' ||
+          clipboardShortcut === 'pasteblock') &&
+        ignoreEditableTarget &&
+        !AcApDocManager.instance.clipboard?.hasContent
+      ) {
+        return false
+      }
+
+      AcApDocManager.instance.sendStringToExecute(commandShortcut)
+      e.preventDefault()
+      return true
+    }
+
+    switch (e.code) {
+      case 'Escape':
+        this.view.selectionSet.clear()
+        this.view.htmlTransientManager.deselectAll()
+        this.view.isHtmlDirty = true
+        return false
+
+      case 'Delete':
+      case 'Backspace':
+        // Only dispatch erase when no command is currently active.
+        // Dispatching erase mid-command (e.g. while LINE awaits the next
+        // point) corrupts the active command's input pipeline because
+        // sendStringToExecute clears scripted inputs unconditionally.
+        if (!this.view.editor.isActive) {
+          let removed = false
+          const ht = this.view.htmlTransientManager
+          if (ht.hasSelection()) {
+            const selected = ht.getSelectedGroups()
+            const measurements = selected.filter(
+              group => group.layer === MEASUREMENT_LAYER
+            )
+            if (measurements.length > 0) {
+              runMeasurementEdit(this.view, 'Delete Measurement', () => {
+                for (const group of measurements) {
+                  if (ht.detach(group.id)) removed = true
+                }
+              })
+            }
+            const hasMarkupSelection =
+              selected.some(group => group.layer !== MEASUREMENT_LAYER) ||
+              (selected.length === 0 && ht.hasSelection())
+            if (hasMarkupSelection) {
+              runMarkupEdit(this.view, 'Delete Markup', () => {
+                removed = ht.deleteSelected() || removed
+              })
+            }
+          }
+          if (removed) {
+            this.view.isHtmlDirty = true
+            e.preventDefault()
+            return true
+          }
+          // lookupGlobalCmd applies the current document's open mode, so it
+          // returns undefined in read/review mode and the keypress is
+          // silently ignored instead of surfacing an error message.
+          if (AcApDocManager.instance.lookupGlobalCmd('erase')) {
+            AcApDocManager.instance.sendStringToExecute('erase')
+          }
+        }
+        return false
+    }
+
+    return this.handleTypedKey(e)
+  }
+
+  /**
+   * Routes a printable key pressed on the view to the command line.
+   *
+   * Space repeats the last command when no prompt is active; prompts handle
+   * Space themselves (as Enter). Other characters start typing in the command
+   * line, which also covers keywords of the active prompt.
+   */
+  private handleTypedKey(e: KeyboardEvent): boolean {
+    if (e.ctrlKey || e.metaKey || e.altKey) return false
+    if (typeof e.key !== 'string' || e.key.length !== 1) return false
+    if (AcEdMTextEditor.getActiveInputBox() || this.isModalDialogOpen()) {
+      return false
+    }
+
+    const editor = this.view.editor
+    if (e.key === ' ') {
+      // A held Space must not relaunch the command on every auto-repeat.
+      if (e.repeat || editor.isActive || acedIsSpaceActivatedTarget(e.target)) {
+        return false
+      }
+      editor.inputManager.repeatLastCommand()
+      e.preventDefault()
+      return true
+    }
+
+    if (!editor.inputManager.typeIntoCommandLine(e.key)) return false
+    e.preventDefault()
+    return true
+  }
+
+  /**
+   * Whether a modal dialog is showing; its controls own the keyboard even when
+   * the dialog is mounted inside the view container.
+   */
+  private isModalDialogOpen(): boolean {
+    const candidates = document.querySelectorAll<HTMLElement>(
+      '.ml-ui-dialog-backdrop, [aria-modal="true"]'
+    )
+    return Array.from(candidates).some(el => el.getClientRects().length > 0)
+  }
+
+  private resolveUndoRedoShortcut(
+    e: Pick<KeyboardEvent, 'code' | 'ctrlKey' | 'metaKey' | 'shiftKey'>
+  ): AcEdUndoRedoShortcut | null {
+    if (!e.ctrlKey && !e.metaKey) {
+      return null
+    }
+
+    if (e.code === 'KeyY') {
+      return 'redo'
+    }
+
+    if (e.code === 'KeyZ') {
+      return e.shiftKey ? 'redo' : 'undo'
+    }
+
+    return null
+  }
+
+  private resolveClipboardShortcut(
+    e: Pick<KeyboardEvent, 'code' | 'ctrlKey' | 'metaKey' | 'shiftKey'>
+  ): AcEdClipboardShortcut | null {
+    if (!e.ctrlKey && !e.metaKey) {
+      return null
+    }
+
+    switch (e.code) {
+      case 'KeyC':
+        return e.shiftKey ? 'copybase' : 'copyclip'
+      case 'KeyX':
+        return e.shiftKey ? null : 'cutclip'
+      case 'KeyV':
+        return e.shiftKey ? 'pasteblock' : 'pasteclip'
+      default:
+        return null
+    }
+  }
+
+  private shouldIgnoreEditableTargetShortcut(
+    e: Pick<KeyboardEvent, 'target' | 'isComposing' | 'keyCode'>
+  ): boolean {
+    if (e.isComposing || e.keyCode === 229) {
+      return true
+    }
+
+    const target = e.target as HTMLElement | null
+    if (target?.tagName === 'TEXTAREA') {
+      return true
+    }
+
+    if (target?.isContentEditable) {
+      return true
+    }
+
+    return target?.tagName === 'INPUT'
+  }
+
+  private shouldHandleUndoRedoShortcut(
+    e: Pick<KeyboardEvent, 'target' | 'isComposing' | 'keyCode'>
+  ): boolean {
+    if (e.isComposing || e.keyCode === 229) {
+      return false
+    }
+
+    const target = e.target as HTMLElement | null
+    if (target?.tagName === 'TEXTAREA') {
+      return false
+    }
+
+    if (target?.isContentEditable) {
+      return false
+    }
+
+    if (target?.tagName === 'INPUT') {
+      const input = target as HTMLInputElement
+      if (
+        input.classList.contains(AcEdViewKeyHandler.COMMAND_LINE_INPUT_CLASS)
+      ) {
+        return input.value.trim() === '' && !input.readOnly
+      }
+      return false
+    }
+
+    return true
+  }
+}

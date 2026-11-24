@@ -1,0 +1,13 @@
+.git
+.nx
+**/node_modules
+**/dist
+**/lib
+**/test-results
+**/playwright-report
+**/coverage
+**/*.tsbuildinfo
+**/*.log
+**/.env
+**/.env.*
+**/dist-ssr

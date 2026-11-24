@@ -1,0 +1,606 @@
+import {
+  AcDbEntity,
+  AcDbObjectId,
+  AcDbSystemVariables,
+  AcDbSysVarManager,
+  AcGePoint3dLike
+} from '@mlightcad/data-model'
+
+import { AcApDocManager } from '../../app/index.js'
+import { isEntityOnLockedLayer } from '../../service/AcApLockedLayer.js'
+import { AcEdMTextEditor } from '../input/ui/AcEdMTextEditor.js'
+import { AcEdBaseView } from '../view/AcEdBaseView.js'
+import {
+  applyGripAppearanceToHost,
+  isGripAppearanceSysVar,
+  readGripAppearance
+} from './AcEdGripAppearance.js'
+import { AcEdGripEditSession, AcEdGripEditTarget } from './AcEdGripEditSession.js'
+import { AcEdGripHandle } from './AcEdGripHandle.js'
+import { acedShouldShowGrips } from './AcEdGripPolicy.js'
+import { AcEdGroupGripEditSession } from './AcEdGroupGripEditSession.js'
+import {
+  acedCoveredGroupGripUnits,
+  acedEffectiveGroupDisplayMode,
+  acedIdsForEntityGrips,
+  acedSelectionBoundingBox,
+  acedSelectionCenter
+} from './AcEdGroupGripPolicy.js'
+
+/** Sentinel grip index for the group-center grip. */
+const GROUP_CENTER_GRIP_INDEX = -1
+
+/**
+ * Internal record that binds a database grip point to its on-screen handle.
+ *
+ * Each entry represents one grip square for a single entity grip index. The
+ * manager keeps these in sync with the current selection set and view transform.
+ */
+interface AcEdGripEntry {
+  /** Object id of the entity that owns this grip. */
+  entityId: AcDbObjectId
+  /** Zero-based index into the entity's grip point array. */
+  gripIndex: number
+  /**
+   * Grip location in the entity's native WCS (model space for entities
+   * selected through a paper-space viewport).
+   */
+  wcsPoint: AcGePoint3dLike
+  /**
+   * Paper-space viewport that shows this model-space entity, when grips
+   * must be mapped with {@link AcEdViewportCoordinateMapper}.
+   */
+  viewportId?: AcDbObjectId
+  /** DOM handle rendered in the view container for this grip. */
+  handle: AcEdGripHandle
+  /** True when this is the group-center grip (GROUPDISPLAYMODE 1/2). */
+  isGroupCenter?: boolean
+  /** Member ids translated when dragging this group-center grip. */
+  groupMemberIds?: AcDbObjectId[]
+}
+
+interface AcEdGroupBboxOverlay {
+  el: HTMLDivElement
+  wcs: {
+    min: AcGePoint3dLike
+    max: AcGePoint3dLike
+  }
+  /** Maps model bbox corners into paper WCS when set. */
+  viewportId?: AcDbObjectId
+}
+
+/**
+ * Manages grip point display and drag editing for the active view.
+ *
+ * Grip handles are shown for entities in the view's selection set when the
+ * editor is idle, the document is writable, and selection count is within the
+ * `GRIPOBJLIMIT` system variable. Grip size and colours follow `GRIPSIZE`,
+ * `GRIPCOLOR`, and `GRIPHOT`. The manager listens for selection, view,
+ * command, and system-variable changes to refresh or reposition handles.
+ *
+ * Clicking a grip starts an {@link AcEdGripEditSession} that previews and
+ * commits entity geometry changes; while dragging, all grip handles are hidden.
+ *
+ * ## Key Responsibilities
+ * - **Display**: Create and position grip handles from entity grip points
+ * - **Interaction**: Route hover, hot, and mousedown events to edit sessions
+ * - **Lifecycle**: Subscribe/unsubscribe view events and dispose DOM on teardown
+ *
+ * @example
+ * ```typescript
+ * const gripManager = new AcEdGripManager(view);
+ * // Handles appear automatically when entities are selected.
+ * // On view dispose:
+ * gripManager.dispose();
+ * ```
+ */
+export class AcEdGripManager {
+  /** View that owns selection, coordinate conversion, and the handle container. */
+  private readonly _view: AcEdBaseView
+  /** Active grip entries, one per grip point on each selected entity. */
+  private readonly _entries: AcEdGripEntry[] = []
+  /** In-progress grip drag session, or `null` when not editing. */
+  private _editSession: AcEdGripEditSession | AcEdGroupGripEditSession | null =
+    null
+  /** Entry currently under the pointer during mousedown (hot grip), if any. */
+  private _hotEntry: AcEdGripEntry | null = null
+  /** Dashed bbox overlays for GROUPDISPLAYMODE 2 (one per covered group). */
+  private _groupBboxes: AcEdGroupBboxOverlay[] = []
+
+  /** Stable listener reference for selection/command refresh. */
+  private readonly _boundRefresh = () => this.refresh()
+  /** Stable listener reference for view pan/zoom/resize repositioning. */
+  private readonly _boundReposition = () => this.repositionAll()
+  /** Stable listener reference for grip-related system variable changes. */
+  private readonly _boundSysVarChanged = (args: { name: string }) =>
+    this.onGripSysVarChanged(args.name)
+
+  /**
+   * Creates a grip manager bound to the given view.
+   *
+   * Registers event listeners on the view's selection set, editor, view
+   * events, and `GRIPOBJLIMIT` system variable so grips stay in sync with
+   * application state.
+   *
+   * @param view - The CAD view whose selection and container host grip handles
+   */
+  constructor(view: AcEdBaseView) {
+    this._view = view
+    this.bindEvents()
+    // The view is constructed during `AcApDocManager.createInstance()`, before
+    // the singleton is assigned. Defer so CAD square grips still inherit GRIPSIZE.
+    queueMicrotask(() => this.applyAppearance())
+  }
+
+  /**
+   * Whether a grip drag edit is currently in progress.
+   *
+   * While `true`, hover styling on other handles is suppressed and grip
+   * handles are hidden until the session ends.
+   */
+  get isDragging(): boolean {
+    return this._editSession != null
+  }
+
+  /**
+   * Tears down the manager and releases all resources.
+   *
+   * Unsubscribes from view events, cancels any active edit session, and
+   * destroys all grip handle DOM elements.
+   */
+  dispose() {
+    this.unbindEvents()
+    this.clear()
+  }
+
+  /**
+   * Rebuilds the grip handle set from the current selection.
+   *
+   * Clears existing entries first. If grips are not allowed (read-only mode,
+   * active command, MText editor, or selection over limit), no new handles are
+   * created. Otherwise, iterates selected entities, queries grip points via
+   * `subGetGripPoints()`, creates handles, wires pointer events, and positions
+   * each entry in container coordinates.
+   */
+  refresh() {
+    this.clearEntries()
+    this.clearGroupBbox()
+    this.applyAppearance()
+    if (!this.canShowGrips()) {
+      return
+    }
+
+    const doc = AcApDocManager.instance.curDocument
+    const db = doc.database
+    const blockTable = db.tables.blockTable
+    const appearance = readGripAppearance(db)
+    const selectedIds = this._view.selectionSet.ids
+    const groupMode = acedEffectiveGroupDisplayMode(db, selectedIds)
+    const groupUnits =
+      groupMode === 1 || groupMode === 2
+        ? acedCoveredGroupGripUnits(db, selectedIds)
+        : []
+
+    for (const unit of groupUnits) {
+      const center = acedSelectionCenter(db, unit.memberIds)
+      const viewportId = this.resolveViewportId(unit.representativeId)
+      if (center) {
+        const handle = new AcEdGripHandle(this._view.container, appearance)
+        const entry: AcEdGripEntry = {
+          entityId: unit.representativeId,
+          gripIndex: GROUP_CENTER_GRIP_INDEX,
+          wcsPoint: center,
+          viewportId,
+          handle,
+          isGroupCenter: true,
+          groupMemberIds: unit.memberIds
+        }
+        this.wireHandleEvents(entry)
+        this._entries.push(entry)
+        this.positionEntry(entry)
+      }
+      if (groupMode === 2) {
+        const box = acedSelectionBoundingBox(db, unit.memberIds)
+        if (box) {
+          this.addGroupBbox(
+            {
+              min: { x: box.min.x, y: box.min.y, z: box.min.z },
+              max: { x: box.max.x, y: box.max.y, z: box.max.z }
+            },
+            viewportId
+          )
+        }
+      }
+    }
+
+    const entityGripIds = acedIdsForEntityGrips(
+      selectedIds,
+      groupUnits,
+      groupMode
+    )
+    for (const entityId of entityGripIds) {
+      const entity = blockTable.getEntityById(entityId)
+      if (!entity || isEntityOnLockedLayer(db, entity)) continue
+
+      const viewportId = this.resolveViewportId(entityId)
+      const gripPoints = entity.subGetGripPoints()
+      for (let gripIndex = 0; gripIndex < gripPoints.length; ++gripIndex) {
+        const wcsPoint = gripPoints[gripIndex]
+        const handle = new AcEdGripHandle(this._view.container, appearance)
+        const entry: AcEdGripEntry = {
+          entityId,
+          gripIndex,
+          wcsPoint,
+          viewportId,
+          handle
+        }
+        this.wireHandleEvents(entry)
+        this._entries.push(entry)
+        this.positionEntry(entry)
+      }
+    }
+  }
+
+  /**
+   * Determines whether grip handles may be shown for the current view state.
+   *
+   * Delegates to {@link acedShouldShowGrips} using document open mode, editor
+   * activity, MText input focus, selection count, and `GRIPOBJLIMIT`.
+   *
+   * @returns `true` if grips should be displayed; otherwise `false`
+   */
+  private canShowGrips(): boolean {
+    const doc = AcApDocManager.instance.curDocument
+    const gripObjLimit = AcDbSysVarManager.instance().getVar(
+      AcDbSystemVariables.GRIPOBJLIMIT,
+      doc.database
+    ) as number
+
+    return acedShouldShowGrips(
+      doc.openMode,
+      this._view.editor.isActive,
+      !!AcEdMTextEditor.getActiveInputBox(),
+      this._view.selectionSet.count,
+      gripObjLimit
+    )
+  }
+
+  /**
+   * Subscribes to events that require a full grip refresh or reposition.
+   *
+   * Refresh triggers: selection added/removed, command start/end,
+   * `GRIPOBJLIMIT` sysvar change. Reposition triggers: view changed, view resize.
+   * Appearance updates: `GRIPSIZE`, `GRIPCOLOR`, `GRIPHOT` sysvar changes.
+   */
+  private bindEvents() {
+    const { selectionSet, editor, events } = this._view
+
+    selectionSet.events.selectionAdded.addEventListener(this._boundRefresh)
+    selectionSet.events.selectionRemoved.addEventListener(this._boundRefresh)
+    events.viewChanged.addEventListener(this._boundReposition)
+    events.viewResize.addEventListener(this._boundReposition)
+    editor.events.commandWillStart.addEventListener(this._boundRefresh)
+    editor.events.commandEnded.addEventListener(this._boundRefresh)
+
+    AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(
+      this._boundSysVarChanged
+    )
+  }
+
+  /**
+   * Removes all event listeners registered by {@link bindEvents}.
+   */
+  private unbindEvents() {
+    const { selectionSet, editor, events } = this._view
+
+    selectionSet.events.selectionAdded.removeEventListener(this._boundRefresh)
+    selectionSet.events.selectionRemoved.removeEventListener(this._boundRefresh)
+    events.viewChanged.removeEventListener(this._boundReposition)
+    events.viewResize.removeEventListener(this._boundReposition)
+    editor.events.commandWillStart.removeEventListener(this._boundRefresh)
+    editor.events.commandEnded.removeEventListener(this._boundRefresh)
+
+    AcDbSysVarManager.instance().events.sysVarChanged.removeEventListener(
+      this._boundSysVarChanged
+    )
+  }
+
+  /**
+   * Reacts to grip-related system variable changes.
+   */
+  private onGripSysVarChanged(name: string) {
+    const normalized = name.toLowerCase()
+    if (
+      normalized === AcDbSystemVariables.GRIPOBJLIMIT.toLowerCase() ||
+      normalized === AcDbSystemVariables.GROUPDISPLAYMODE.toLowerCase() ||
+      normalized === AcDbSystemVariables.PICKSTYLE.toLowerCase()
+    ) {
+      this.refresh()
+      return
+    }
+    if (isGripAppearanceSysVar(normalized)) {
+      this.applyAppearance()
+    }
+  }
+
+  /**
+   * Updates size and colours on the view container (and existing handles)
+   * from current sysvars. Always writes CSS variables so CAD square grips
+   * inherit `GRIPSIZE` even when no entities are currently selected.
+   */
+  private applyAppearance() {
+    try {
+      const doc = AcApDocManager.instance.curDocument
+      if (!doc?.database) return
+      const appearance = readGripAppearance(doc.database)
+      applyGripAppearanceToHost(this._view.container, appearance)
+      for (const entry of this._entries) {
+        entry.handle.applyAppearance(appearance)
+      }
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes('instance is not created yet')
+      ) {
+        return
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Attaches pointer event handlers to a grip handle element.
+   *
+   * - **mouseenter**: Sets hover state unless a drag is active
+   * - **mouseleave**: Reverts to normal unless this entry is the hot grip
+   * - **mousedown** (left button): Marks hot, prevents default propagation,
+   *   and starts a grip edit session when grips are allowed
+   *
+   * @param entry - The grip entry whose handle receives the listeners
+   */
+  private wireHandleEvents(entry: AcEdGripEntry) {
+    const { element } = entry.handle
+
+    element.addEventListener('mouseenter', () => {
+      if (this.isDragging) return
+      entry.handle.setState('hover')
+    })
+
+    element.addEventListener('mouseleave', () => {
+      if (this._hotEntry === entry) return
+      entry.handle.setState('normal')
+    })
+
+    element.addEventListener('mousedown', e => {
+      if (e.button !== 0) return
+      if (!this.canShowGrips()) return
+
+      e.preventDefault()
+      e.stopPropagation()
+
+      this._hotEntry = entry
+      entry.handle.setState('hot')
+      this.startEdit(entry)
+    })
+  }
+
+  /**
+   * Begins a grip drag edit for the given entry.
+   *
+   * Resolves the entity from the document, hides all grip handles for the
+   * duration of the drag, and constructs an {@link AcEdGripEditSession} that
+   * calls {@link endEdit} when the session completes.
+   *
+   * If the entity no longer exists, {@link endEdit} is invoked immediately.
+   *
+   * @param entry - The grip entry that was activated by the user
+   */
+  private startEdit(entry: AcEdGripEntry) {
+    if (entry.isGroupCenter) {
+      this.startGroupCenterEdit(entry)
+      return
+    }
+
+    const entity =
+      AcApDocManager.instance.curDocument.database.tables.blockTable.getEntityById(
+        entry.entityId
+      )
+    if (!entity) {
+      this.endEdit()
+      return
+    }
+
+    this.hideEntriesForDrag()
+
+    const target: AcEdGripEditTarget = {
+      entityId: entry.entityId,
+      gripIndex: entry.gripIndex,
+      gripBaseWcs: entry.wcsPoint,
+      viewportId: entry.viewportId
+    }
+
+    this._editSession = new AcEdGripEditSession(
+      this._view,
+      entity,
+      target,
+      () => this.endEdit()
+    )
+  }
+
+  private startGroupCenterEdit(entry: AcEdGripEntry) {
+    const doc = AcApDocManager.instance.curDocument
+    const blockTable = doc.database.tables.blockTable
+    const memberIds = entry.groupMemberIds ?? this._view.selectionSet.ids
+    const entities: AcDbEntity[] = []
+    for (const id of memberIds) {
+      const entity = blockTable.getEntityById(id)
+      if (!entity || isEntityOnLockedLayer(doc.database, entity)) continue
+      entities.push(entity)
+    }
+    if (entities.length === 0) {
+      this.endEdit()
+      return
+    }
+
+    this.hideEntriesForDrag()
+    this.clearGroupBbox()
+    this._editSession = new AcEdGroupGripEditSession(
+      this._view,
+      entities,
+      entry.wcsPoint,
+      () => this.endEdit(),
+      entry.viewportId
+    )
+  }
+
+  /**
+   * Completes or aborts the current grip edit and restores grip display.
+   *
+   * Clears the edit session and hot entry, then rebuilds handles via
+   * {@link refresh} so geometry and selection state are reflected on screen.
+   */
+  private endEdit() {
+    this._editSession = null
+    this._hotEntry = null
+    this.refresh()
+  }
+
+  /**
+   * Removes all visible grip handles while a drag edit is in progress.
+   *
+   * Called when starting an edit so only the preview jig is shown, not the
+   * static grip squares.
+   */
+  private hideEntriesForDrag() {
+    this.clearEntries()
+  }
+
+  /**
+   * Resolves the paper-space viewport that should own grip mapping for a
+   * model-space entity (or `undefined` in model space / paper entities).
+   */
+  private resolveViewportId(entityId: AcDbObjectId): AcDbObjectId | undefined {
+    return this._view.findViewportMapperForModelEntity(entityId)?.viewportId
+  }
+
+  /**
+   * Maps a native (often model-space) WCS point into the active layout's
+   * display WCS when the grip is shown through a paper-space viewport.
+   */
+  private toDisplayWcs(
+    wcsPoint: AcGePoint3dLike,
+    viewportId?: AcDbObjectId
+  ): AcGePoint3dLike {
+    if (viewportId == null) return wcsPoint
+    const mapper = this._view.getViewportCoordinateMapper(viewportId)
+    if (!mapper) return wcsPoint
+    const paper = mapper.modelToPaper(wcsPoint)
+    return { x: paper.x, y: paper.y, z: wcsPoint.z ?? 0 }
+  }
+
+  /**
+   * Updates a single grip handle's screen position from its WCS point.
+   *
+   * Converts world coordinates to canvas, then to container-local pixels,
+   * and applies the result to the handle's DOM element. Model-space grips
+   * selected through a viewport are mapped to paper WCS first so
+   * {@link AcEdBaseView.worldToScreen} (active layout camera) places them
+   * on the entity as drawn inside the viewport.
+   *
+   * @param entry - The grip entry to reposition
+   */
+  private positionEntry(entry: AcEdGripEntry) {
+    const displayWcs = this.toDisplayWcs(entry.wcsPoint, entry.viewportId)
+    const canvasPos = this._view.worldToScreen(displayWcs)
+    const containerPos = this._view.canvasToContainer(canvasPos)
+    entry.handle.setPosition(containerPos)
+  }
+
+  /**
+   * Repositions every active grip handle after a view transform or resize.
+   *
+   * Does not recreate entries; only updates DOM positions from stored WCS points.
+   */
+  private repositionAll() {
+    for (const entry of this._entries) {
+      this.positionEntry(entry)
+    }
+    this.repositionGroupBbox()
+  }
+
+  /**
+   * Destroys all grip handle DOM elements and clears the entry list.
+   *
+   * Also resets {@link _hotEntry}. Does not cancel an active edit session;
+   * use {@link clear} for full teardown including session cancellation.
+   */
+  private clearEntries() {
+    for (const entry of this._entries) {
+      entry.handle.destroy()
+    }
+    this._entries.length = 0
+    this._hotEntry = null
+  }
+
+  private addGroupBbox(
+    wcs: AcEdGroupBboxOverlay['wcs'],
+    viewportId?: AcDbObjectId
+  ) {
+    const el = document.createElement('div')
+    el.className = 'ml-group-bbox'
+    el.style.position = 'absolute'
+    el.style.pointerEvents = 'none'
+    el.style.border = '1px dashed var(--ml-grip-color, #96f)'
+    el.style.boxSizing = 'border-box'
+    el.style.zIndex = '5'
+    this._view.container.appendChild(el)
+    const overlay: AcEdGroupBboxOverlay = { el, wcs, viewportId }
+    this._groupBboxes.push(overlay)
+    this.repositionGroupBboxOverlay(overlay)
+  }
+
+  private repositionGroupBboxOverlay(overlay: AcEdGroupBboxOverlay) {
+    const { min, max } = overlay.wcs
+    const displayMin = this.toDisplayWcs(min, overlay.viewportId)
+    const displayMax = this.toDisplayWcs(max, overlay.viewportId)
+    const c1 = this._view.canvasToContainer(
+      this._view.worldToScreen({ x: displayMin.x, y: displayMin.y })
+    )
+    const c2 = this._view.canvasToContainer(
+      this._view.worldToScreen({ x: displayMax.x, y: displayMax.y })
+    )
+    const left = Math.min(c1.x, c2.x)
+    const top = Math.min(c1.y, c2.y)
+    const width = Math.abs(c2.x - c1.x)
+    const height = Math.abs(c2.y - c1.y)
+    overlay.el.style.left = `${left}px`
+    overlay.el.style.top = `${top}px`
+    overlay.el.style.width = `${width}px`
+    overlay.el.style.height = `${height}px`
+  }
+
+  private repositionGroupBbox() {
+    for (const overlay of this._groupBboxes) {
+      this.repositionGroupBboxOverlay(overlay)
+    }
+  }
+
+  private clearGroupBbox() {
+    for (const overlay of this._groupBboxes) {
+      overlay.el.remove()
+    }
+    this._groupBboxes.length = 0
+  }
+
+  /**
+   * Cancels any in-progress edit and removes all grip handles.
+   *
+   * Used by {@link dispose} and internally when a full reset is required.
+   */
+  private clear() {
+    this._editSession?.cancel()
+    this._editSession = null
+    this.clearEntries()
+    this.clearGroupBbox()
+  }
+}

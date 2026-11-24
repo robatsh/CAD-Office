@@ -1,0 +1,950 @@
+jest.mock('rbush', () => {
+  class RBushMock<
+    T extends { minX: number; minY: number; maxX: number; maxY: number }
+  > {
+    private items: T[] = []
+
+    insert(item: T) {
+      this.items.push(item)
+    }
+
+    load(items: readonly T[]) {
+      this.items.push(...items)
+    }
+
+    remove(item: T, equals?: (a: T, b: T) => boolean) {
+      if (equals) {
+        const index = this.items.findIndex(entry => equals(entry, item))
+        if (index >= 0) this.items.splice(index, 1)
+        return
+      }
+      const index = this.items.indexOf(item)
+      if (index >= 0) this.items.splice(index, 1)
+    }
+
+    clear() {
+      this.items = []
+    }
+
+    search(bbox: { minX: number; minY: number; maxX: number; maxY: number }) {
+      return this.items.filter(
+        item =>
+          !(
+            item.maxX < bbox.minX ||
+            item.minX > bbox.maxX ||
+            item.maxY < bbox.minY ||
+            item.minY > bbox.maxY
+          )
+      )
+    }
+
+    collides(bbox: { minX: number; minY: number; maxX: number; maxY: number }) {
+      return this.search(bbox).length > 0
+    }
+
+    all() {
+      return [...this.items]
+    }
+  }
+
+  return {
+    __esModule: true,
+    default: RBushMock
+  }
+})
+
+import { AcCmColor, AcGeBox2d } from '@mlightcad/data-model'
+import type { AcTrEntity } from '@mlightcad/three-renderer'
+import * as THREE from 'three'
+
+const mockComputeBoundingBox = jest.fn(
+  (
+    target: THREE.Box3,
+    options?: { excludeObjectIds?: ReadonlySet<string> }
+  ) => {
+    lastCapturedExclude = options?.excludeObjectIds
+    target.min.set(0, 0, 0)
+    target.max.set(10, 10, 0)
+    return target
+  }
+)
+const mockRemoveEntity = jest.fn()
+const mockAddEntity = jest.fn()
+let lastCapturedExclude: ReadonlySet<string> | undefined
+
+const mockAppendLineGeometry = jest.fn().mockReturnValue(true)
+const mockAppendLine2Geometry = jest.fn().mockReturnValue(true)
+const mockAppendPointGeometry = jest.fn().mockReturnValue(true)
+const mockAppendMeshGeometry = jest.fn().mockReturnValue(true)
+const mockSetCompareDisplay = jest.fn()
+const mockRerenderPoints = jest.fn()
+const mockCollectPointObjectWorldBoxes = jest.fn(
+  (out: Map<string, THREE.Box3> = new Map()) => out
+)
+
+jest.mock('@mlightcad/three-renderer', () => {
+  const THREE = require('three')
+  return {
+    AcTrBatchedGroup: jest.fn().mockImplementation(() => {
+      const group = new THREE.Group()
+      group.addEntity = mockAddEntity
+      group.removeEntity = mockRemoveEntity
+      group.hasEntity = jest.fn()
+      group.setEntityVisible = jest.fn().mockReturnValue(true)
+      group.getEntityVisible = jest.fn()
+      group.clear = jest.fn()
+      group.computeBoundingBox = mockComputeBoundingBox
+      group.appendLineGeometry = mockAppendLineGeometry
+      group.appendLine2Geometry = mockAppendLine2Geometry
+      group.appendPointGeometry = mockAppendPointGeometry
+      group.appendMeshGeometry = mockAppendMeshGeometry
+      group.setCompareDisplay = mockSetCompareDisplay
+      group.rerenderPoints = mockRerenderPoints
+      group.collectPointObjectWorldBoxes = mockCollectPointObjectWorldBoxes
+      return group
+    }),
+    AcTrGroup: class AcTrGroup {}
+  }
+})
+
+import { AcTrLayout } from '../src/view/AcTrLayout'
+import { isEffectiveSpatialQueryHit } from '../src/editor/view/AcEdSpatialQueryResult'
+
+function createLayerInfo(name = '0') {
+  return {
+    name,
+    isFrozen: false,
+    isOff: false,
+    color: new AcCmColor()
+  }
+}
+
+function createEntity(
+  objectId: string,
+  layerName = '0'
+): AcTrEntity & { wcsBbox: THREE.Box3 } {
+  return {
+    objectId,
+    layerName,
+    ownerId: 'layout-1',
+    userData: {},
+    wcsBbox: new THREE.Box3(
+      new THREE.Vector3(1, 1, 0),
+      new THREE.Vector3(2, 2, 0)
+    )
+  } as AcTrEntity & { wcsBbox: THREE.Box3 }
+}
+
+describe('AcTrLayout bounding box', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockRemoveEntity.mockReturnValue(false)
+    mockAppendLineGeometry.mockReturnValue(true)
+    mockAppendLine2Geometry.mockReturnValue(true)
+    mockAppendPointGeometry.mockReturnValue(true)
+    mockAppendMeshGeometry.mockReturnValue(true)
+    mockCollectPointObjectWorldBoxes.mockImplementation(
+      (out: Map<string, THREE.Box3> = new Map()) => out
+    )
+    lastCapturedExclude = undefined
+  })
+
+  it('registers spatial index for direct line entities', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    const material = new THREE.LineBasicMaterial()
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, 10, 0, 0], 3)
+    )
+
+    const added = layout.addDirectEntity({
+      objectId: 'direct-line-1',
+      ownerId: 'layout-1',
+      layerName: '0',
+      visible: true,
+      kind: 'lineBasic',
+      geometry,
+      material,
+      worldOffset: new THREE.Vector3(5, 0, 0),
+      wcsBbox: new THREE.Box3(
+        new THREE.Vector3(0, -1, 0),
+        new THREE.Vector3(10, 1, 0)
+      )
+    })
+
+    expect(added).toBe(true)
+    expect(mockAppendLineGeometry).toHaveBeenCalled()
+    const query = new AcGeBox2d().set({ x: -1, y: -2 }, { x: 11, y: 2 })
+    const hits = layout.search(query)
+    expect(hits.some(hit => hit.id === 'direct-line-1')).toBe(true)
+
+    mockRemoveEntity.mockReturnValue(true)
+    expect(layout.removeEntity('direct-line-1')).toBe(true)
+    const afterRemove = layout.search(query)
+    expect(afterRemove.some(hit => hit.id === 'direct-line-1')).toBe(false)
+    geometry.dispose()
+    material.dispose()
+  })
+
+  it('recomputes layout box when a layer is turned off', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    layout.addEntity(createEntity('line-1'))
+
+    layout.box
+    expect(mockComputeBoundingBox).toHaveBeenCalledTimes(1)
+
+    layout.updateLayer({ ...createLayerInfo(), isOff: true })
+
+    mockComputeBoundingBox.mockClear()
+    expect(layout.box.isEmpty()).toBe(true)
+    expect(mockComputeBoundingBox).not.toHaveBeenCalled()
+  })
+
+  it('recomputes layout box when entity visibility changes', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    layout.addEntity(createEntity('line-1'))
+
+    layout.box
+    expect(mockComputeBoundingBox).toHaveBeenCalledTimes(1)
+
+    layout.setEntityVisible('line-1', false)
+
+    layout.box
+    expect(mockComputeBoundingBox).toHaveBeenCalledTimes(2)
+  })
+
+  it('tracks extendBbox exclusions for zoom framing', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    const entity = createEntity('ray-1')
+
+    layout.addEntity(entity, false)
+    layout.box
+    expect(lastCapturedExclude?.has('ray-1')).toBe(true)
+
+    layout.addEntity(entity, true)
+    layout.box
+    expect(lastCapturedExclude?.has('ray-1')).toBe(false)
+  })
+
+  it('recomputes layout box when an entity is removed', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    layout.addEntity(createEntity('line-1'))
+
+    layout.box
+    expect(layout.box.isEmpty()).toBe(false)
+    expect(mockComputeBoundingBox).toHaveBeenCalledTimes(1)
+
+    mockRemoveEntity.mockReturnValue(true)
+    mockComputeBoundingBox.mockImplementationOnce((target: THREE.Box3) => {
+      target.makeEmpty()
+      return target
+    })
+
+    expect(layout.removeEntity('line-1')).toBe(true)
+
+    expect(layout.box.isEmpty()).toBe(true)
+    expect(mockComputeBoundingBox).toHaveBeenCalledTimes(2)
+    expect(mockRemoveEntity).toHaveBeenCalledWith('line-1')
+  })
+
+  it('does not recompute layout box when entity removal fails', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    layout.addEntity(createEntity('line-1'))
+
+    layout.box
+    expect(mockComputeBoundingBox).toHaveBeenCalledTimes(1)
+
+    mockComputeBoundingBox.mockClear()
+    expect(layout.removeEntity('missing-id')).toBe(false)
+    layout.box
+
+    expect(mockComputeBoundingBox).not.toHaveBeenCalled()
+  })
+
+  it('recomputes layout box when an entity is updated', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    layout.addEntity(createEntity('line-1'))
+
+    layout.box
+    expect(mockComputeBoundingBox).toHaveBeenCalledTimes(1)
+
+    mockRemoveEntity.mockReturnValue(true)
+    mockComputeBoundingBox.mockImplementationOnce((target: THREE.Box3) => {
+      target.min.set(5, 5, 0)
+      target.max.set(20, 20, 0)
+      return target
+    })
+
+    expect(layout.updateEntity(createEntity('line-1'))).toBe(true)
+
+    expect(layout.box.max.x).toBe(20)
+    expect(mockComputeBoundingBox).toHaveBeenCalledTimes(2)
+    expect(mockRemoveEntity).toHaveBeenCalledWith('line-1')
+    expect(mockAddEntity).toHaveBeenCalled()
+  })
+
+  it('does not recompute layout box when entity update fails', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    layout.addEntity(createEntity('line-1'))
+
+    layout.box
+    mockComputeBoundingBox.mockClear()
+
+    mockRemoveEntity.mockReturnValue(false)
+    const entity = createEntity('line-1')
+    entity.visible = false
+    expect(layout.updateEntity(entity)).toBe(false)
+
+    layout.box
+    expect(mockComputeBoundingBox).not.toHaveBeenCalled()
+  })
+})
+
+describe('AcTrLayout spatial index', () => {
+  function collectBoxSelectionIds(
+    layout: AcTrLayout,
+    pickBox: import('@mlightcad/data-model').AcGeBox2d,
+    mode: 'window' | 'crossing'
+  ) {
+    const results = layout.search(pickBox, { selectionMode: mode })
+    const ids: string[] = []
+    results.forEach(item => {
+      if (!isEffectiveSpatialQueryHit(item)) {
+        return
+      }
+      ids.push(item.id)
+    })
+    return ids
+  }
+
+  it('indexes INSERT root bbox from child-box union when aggregate wcsBbox is stale', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+
+    const entity = createEntity('INSERT-1')
+    entity.wcsBbox = new THREE.Box3(
+      new THREE.Vector3(-180, 0, 0),
+      new THREE.Vector3(574, 56, 0)
+    )
+    ;(
+      entity.userData as {
+        spatialIndexChildBoxes?: Array<{
+          minX: number
+          minY: number
+          maxX: number
+          maxY: number
+          id: string
+        }>
+      }
+    ).spatialIndexChildBoxes = [
+      { minX: 394, minY: 0, maxX: 574, maxY: 56, id: 'line-1' }
+    ]
+
+    layout.addEntity(entity)
+
+    const hits = layout.search({
+      min: { x: -10, y: -72 },
+      max: { x: 584, y: 410 }
+    } as unknown as import('@mlightcad/data-model').AcGeBox2d)
+
+    expect(hits).toHaveLength(1)
+    expect(hits[0].id).toBe('INSERT-1')
+    expect(hits[0].minX).toBeCloseTo(394)
+    expect(hits[0].maxX).toBeCloseTo(574)
+  })
+
+  it('does not window-select INSERT when only part of its geometry fits the pick box', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+
+    const entity = createEntity('INSERT-2')
+    entity.wcsBbox = new THREE.Box3(
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(300, 10, 0)
+    )
+    ;(
+      entity.userData as {
+        spatialIndexChildBoxes?: Array<{
+          minX: number
+          minY: number
+          maxX: number
+          maxY: number
+          id: string
+        }>
+      }
+    ).spatialIndexChildBoxes = [
+      { minX: 0, minY: 0, maxX: 100, maxY: 10, id: 'line-left' },
+      { minX: 200, minY: 0, maxX: 300, maxY: 10, id: 'line-right' }
+    ]
+
+    layout.addEntity(entity)
+
+    const pickBox = {
+      min: { x: 0, y: 0 },
+      max: { x: 100, y: 10 }
+    } as unknown as import('@mlightcad/data-model').AcGeBox2d
+
+    const hits = layout.search(pickBox)
+    expect(hits).toHaveLength(1)
+    expect(hits[0].maxX).toBeCloseTo(300)
+
+    const windowContained =
+      hits[0].minX >= pickBox.min.x &&
+      hits[0].maxX <= pickBox.max.x &&
+      hits[0].minY >= pickBox.min.y &&
+      hits[0].maxY <= pickBox.max.y
+
+    expect(windowContained).toBe(false)
+  })
+
+  it('crossing-selects INSERT when child geometry intersects the pick box', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+
+    const entity = createEntity('INSERT-cross')
+    entity.wcsBbox = new THREE.Box3(
+      new THREE.Vector3(-180, 0, 0),
+      new THREE.Vector3(574, 56, 0)
+    )
+    ;(
+      entity.userData as {
+        spatialIndexChildBoxes?: Array<{
+          minX: number
+          minY: number
+          maxX: number
+          maxY: number
+          id: string
+        }>
+      }
+    ).spatialIndexChildBoxes = [
+      { minX: 394, minY: 0, maxX: 574, maxY: 56, id: 'line-1' }
+    ]
+
+    layout.addEntity(entity)
+
+    const pickBox = {
+      min: { x: 400, y: 0 },
+      max: { x: 500, y: 56 }
+    } as unknown as import('@mlightcad/data-model').AcGeBox2d
+
+    expect(collectBoxSelectionIds(layout, pickBox, 'crossing')).toEqual([
+      'INSERT-cross'
+    ])
+  })
+
+  it('window-selects INSERT when the child union fits entirely inside the pick box', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+
+    const entity = createEntity('INSERT-window')
+    entity.wcsBbox = new THREE.Box3(
+      new THREE.Vector3(-180, 0, 0),
+      new THREE.Vector3(574, 56, 0)
+    )
+    ;(
+      entity.userData as {
+        spatialIndexChildBoxes?: Array<{
+          minX: number
+          minY: number
+          maxX: number
+          maxY: number
+          id: string
+        }>
+      }
+    ).spatialIndexChildBoxes = [
+      { minX: 394, minY: 0, maxX: 574, maxY: 56, id: 'line-1' }
+    ]
+
+    layout.addEntity(entity)
+
+    const pickBox = {
+      min: { x: 390, y: -5 },
+      max: { x: 580, y: 60 }
+    } as unknown as import('@mlightcad/data-model').AcGeBox2d
+
+    expect(collectBoxSelectionIds(layout, pickBox, 'window')).toEqual([
+      'INSERT-window'
+    ])
+  })
+
+  it('refreshes point spatial-index boxes after PDSIZE rerender', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+
+    const point = createEntity('point-1')
+    point.wcsBbox = new THREE.Box3(
+      new THREE.Vector3(100, 200, 0),
+      new THREE.Vector3(100, 200, 0)
+    )
+    layout.addEntity(point)
+
+    const farPick = {
+      min: { x: 101.5, y: 198.5 },
+      max: { x: 102.5, y: 201.5 }
+    } as unknown as import('@mlightcad/data-model').AcGeBox2d
+    expect(layout.search(farPick).some(hit => hit.id === 'point-1')).toBe(
+      false
+    )
+
+    mockCollectPointObjectWorldBoxes.mockImplementation(
+      (out: Map<string, THREE.Box3> = new Map()) => {
+        out.set(
+          'point-1',
+          new THREE.Box3(
+            new THREE.Vector3(98, 198, 0),
+            new THREE.Vector3(102, 202, 0)
+          )
+        )
+        return out
+      }
+    )
+
+    layout.rerenderPoints(35, 2)
+
+    expect(mockRerenderPoints).toHaveBeenCalledWith(35, 2)
+    expect(layout.search(farPick).some(hit => hit.id === 'point-1')).toBe(true)
+  })
+})
+
+describe('AcTrLayout entity preview helpers', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockRemoveEntity.mockReturnValue(false)
+    lastCapturedExclude = undefined
+  })
+
+  it('canCreateEntityPreview requires every entity when requireAllEntities is true', () => {
+    const layout = new AcTrLayout()
+    const group = layout.addLayer(createLayerInfo())
+      .internalObject as unknown as {
+      hasEntity: jest.Mock
+      computeBoundingBox: jest.Mock
+    }
+    group.hasEntity = jest
+      .fn()
+      .mockImplementation((id: string) => id === 'line-1' || id === 'line-2')
+    group.computeBoundingBox = jest.fn(
+      (
+        target: THREE.Box3,
+        options?: { includeObjectIds?: ReadonlySet<string> }
+      ) => {
+        target.makeEmpty()
+        if (options?.includeObjectIds?.has('line-1')) {
+          target.min.set(0, 0, 0)
+          target.max.set(10, 10, 0)
+        }
+        if (options?.includeObjectIds?.has('line-2')) {
+          target.min.set(20, 0, 0)
+          target.max.set(30, 10, 0)
+        }
+        return target
+      }
+    )
+
+    expect(
+      layout.canCreateEntityPreview(['line-1', 'line-2'], {
+        requireAllEntities: true
+      })
+    ).toBe(true)
+    expect(
+      layout.canCreateEntityPreview(['line-1', 'missing'], {
+        requireAllEntities: true
+      })
+    ).toBe(false)
+  })
+
+  it('findPreviewableEntityIds returns only ids with batch bounds in this layout', () => {
+    const layout = new AcTrLayout()
+    const group = layout.addLayer(createLayerInfo())
+      .internalObject as unknown as {
+      hasEntity: jest.Mock
+      computeBoundingBox: jest.Mock
+    }
+    group.hasEntity = jest
+      .fn()
+      .mockImplementation((id: string) => id === 'line-1' || id === 'line-2')
+    group.computeBoundingBox = jest.fn(
+      (
+        target: THREE.Box3,
+        options?: { includeObjectIds?: ReadonlySet<string> }
+      ) => {
+        target.makeEmpty()
+        if (options?.includeObjectIds?.has('line-1')) {
+          target.min.set(0, 0, 0)
+          target.max.set(10, 10, 0)
+        }
+        return target
+      }
+    )
+
+    expect(
+      layout.findPreviewableEntityIds(['line-1', 'line-2', 'missing'])
+    ).toEqual(['line-1'])
+  })
+})
+
+describe('AcTrLayout layer preview helpers', () => {
+  type MockGroup = {
+    computeBoundingBox: jest.Mock
+    getEntityIds: jest.Mock
+    createPreviewSubset: jest.Mock
+  }
+
+  function mockLayer(
+    layout: AcTrLayout,
+    name: string,
+    box: [number, number, number, number] | null,
+    ids: string[],
+    options: { isOff?: boolean } = {}
+  ) {
+    const group = layout.addLayer({
+      ...createLayerInfo(name),
+      isOff: options.isOff ?? false
+    }).internalObject as unknown as MockGroup
+    group.computeBoundingBox = jest.fn((target: THREE.Box3) => {
+      target.makeEmpty()
+      if (box) {
+        target.min.set(box[0], box[1], 0)
+        target.max.set(box[2], box[3], 0)
+      }
+      return target
+    })
+    group.getEntityIds = jest.fn(() => ids)
+    group.createPreviewSubset = jest.fn((subsetIds: string[]) => {
+      const subset = new THREE.Group()
+      subset.name = `subset:${name}`
+      subset.userData.ids = subsetIds
+      subset.add(new THREE.Object3D())
+      return subset
+    })
+    return group
+  }
+
+  it('findLayers matches names case-insensitively and skips unknown ones', () => {
+    const layout = new AcTrLayout()
+    mockLayer(layout, 'Walls', null, [])
+    mockLayer(layout, 'Doors', null, [])
+
+    expect(
+      layout.findLayers(['walls', 'WALLS', 'missing', 'Doors']).map(l => l.name)
+    ).toEqual(['Walls', 'Doors'])
+  })
+
+  it('frames only the requested layers, even when a layer is off', () => {
+    const layout = new AcTrLayout()
+    mockLayer(layout, 'Walls', [0, 0, 10, 5], ['w1'])
+    mockLayer(layout, 'Doors', [20, 2, 30, 8], ['d1'], { isOff: true })
+    mockLayer(layout, 'Far', [1000, 1000, 2000, 2000], ['f1'])
+
+    const box = layout.computeLayerPreviewBoundsBox(['walls', 'doors'])
+
+    expect(box.min.toArray()).toEqual([0, 0, 0])
+    expect(box.max.toArray()).toEqual([30, 8, 0])
+  })
+
+  it('returns an empty box when no requested layer has geometry', () => {
+    const layout = new AcTrLayout()
+    mockLayer(layout, 'Empty', null, [])
+
+    expect(
+      layout.computeLayerPreviewBoundsBox(['Empty', 'missing']).isEmpty()
+    ).toBe(true)
+  })
+
+  it('createLayerPreviewRoot extracts every id of the requested layers only', () => {
+    const layout = new AcTrLayout()
+    const walls = mockLayer(layout, 'Walls', [0, 0, 1, 1], ['w1', 'insert-1'])
+    const other = mockLayer(layout, 'Other', [0, 0, 1, 1], ['insert-1'])
+
+    const root = layout.createLayerPreviewRoot(['Walls'])
+
+    expect(root?.children.map(child => child.name)).toEqual(['subset:Walls'])
+    expect(walls.createPreviewSubset).toHaveBeenCalledWith(['w1', 'insert-1'], {
+      maxSlots: Number.POSITIVE_INFINITY,
+      missingEntity: 'skip'
+    })
+    expect(other.createPreviewSubset).not.toHaveBeenCalled()
+  })
+
+  it('createLayerPreviewRoot returns null when nothing is extracted', () => {
+    const layout = new AcTrLayout()
+    mockLayer(layout, 'Empty', null, [])
+
+    expect(layout.createLayerPreviewRoot(['Empty', 'missing'])).toBeNull()
+  })
+})
+
+describe('AcTrLayout insert layer freeze', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockRemoveEntity.mockReturnValue(false)
+  })
+
+  it('hides other-layer INSERT fragments when the INSERT layer is frozen', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo('Wall'))
+    layout.addLayer(createLayerInfo('DIM'))
+
+    const onWall = createEntity('insert-a', 'Wall')
+    onWall.userData.insertLayerName = 'Wall'
+    const onDim = createEntity('insert-a', 'DIM')
+    onDim.userData.insertLayerName = 'Wall'
+    layout.addEntity(onWall)
+    layout.addEntity(onDim)
+
+    const wall = layout.getLayer('Wall')!
+    const dim = layout.getLayer('DIM')!
+    jest.spyOn(wall, 'hasEntity').mockReturnValue(true)
+    jest.spyOn(dim, 'hasEntity').mockReturnValue(true)
+    const dimSetVisible = jest
+      .spyOn(dim, 'setEntityVisible')
+      .mockReturnValue(true)
+    const wallSetVisible = jest
+      .spyOn(wall, 'setEntityVisible')
+      .mockReturnValue(true)
+
+    expect(layout.applyInsertLayerFreeze('Wall', true)).toEqual(['insert-a'])
+    expect(dimSetVisible).toHaveBeenCalledWith('insert-a', false)
+    expect(wallSetVisible).not.toHaveBeenCalled()
+
+    dimSetVisible.mockClear()
+    expect(layout.applyInsertLayerFreeze('Wall', false)).toEqual(['insert-a'])
+    expect(dimSetVisible).toHaveBeenCalledWith('insert-a', true)
+  })
+
+  it('does not hide fragments when freezing a content layer that is not the INSERT layer', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo('Wall'))
+    layout.addLayer(createLayerInfo('DIM'))
+
+    const onWall = createEntity('insert-a', 'Wall')
+    onWall.userData.insertLayerName = 'Wall'
+    const onDim = createEntity('insert-a', 'DIM')
+    onDim.userData.insertLayerName = 'Wall'
+    layout.addEntity(onWall)
+    layout.addEntity(onDim)
+
+    const wall = layout.getLayer('Wall')!
+    const dim = layout.getLayer('DIM')!
+    jest.spyOn(wall, 'hasEntity').mockReturnValue(true)
+    jest.spyOn(dim, 'hasEntity').mockReturnValue(true)
+    const wallSetVisible = jest
+      .spyOn(wall, 'setEntityVisible')
+      .mockReturnValue(true)
+
+    expect(layout.applyInsertLayerFreeze('DIM', true)).toEqual([])
+    expect(wallSetVisible).not.toHaveBeenCalled()
+  })
+
+  it('hides a sole other-layer INSERT fragment when the INSERT layer is frozen', () => {
+    // INSERT on Wall with nested content only on DIM (no Wall bucket).
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo('Wall'))
+    layout.addLayer(createLayerInfo('DIM'))
+
+    const onDim = createEntity('insert-a', 'DIM')
+    onDim.userData.insertLayerName = 'Wall'
+    layout.addEntity(onDim)
+
+    const dim = layout.getLayer('DIM')!
+    jest.spyOn(dim, 'hasEntity').mockReturnValue(true)
+    const dimSetVisible = jest
+      .spyOn(dim, 'setEntityVisible')
+      .mockReturnValue(true)
+
+    expect(layout.applyInsertLayerFreeze('Wall', true)).toEqual(['insert-a'])
+    expect(dimSetVisible).toHaveBeenCalledWith('insert-a', false)
+
+    dimSetVisible.mockClear()
+    expect(layout.applyInsertLayerFreeze('Wall', false)).toEqual(['insert-a'])
+    expect(dimSetVisible).toHaveBeenCalledWith('insert-a', true)
+  })
+
+  it('no-ops when the INSERT only has a fragment on its own layer', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo('Wall'))
+
+    const onWall = createEntity('insert-a', 'Wall')
+    onWall.userData.insertLayerName = 'Wall'
+    layout.addEntity(onWall)
+
+    const wall = layout.getLayer('Wall')!
+    jest.spyOn(wall, 'hasEntity').mockReturnValue(true)
+    const wallSetVisible = jest
+      .spyOn(wall, 'setEntityVisible')
+      .mockReturnValue(true)
+
+    expect(layout.applyInsertLayerFreeze('Wall', true)).toEqual([])
+    expect(wallSetVisible).not.toHaveBeenCalled()
+  })
+
+  it('replays compare-display options onto layers created after setCompareDisplay', () => {
+    mockSetCompareDisplay.mockClear()
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo('0'))
+    const options = {
+      enabled: true,
+      baseColor: 0x9ca3af,
+      overrides: [{ objectId: '926', role: 'added' as const }]
+    }
+    layout.setCompareDisplay(options)
+    expect(mockSetCompareDisplay).toHaveBeenCalledWith(options)
+
+    mockSetCompareDisplay.mockClear()
+    layout.addLayer(createLayerInfo('NEW'))
+    expect(mockSetCompareDisplay).toHaveBeenCalledWith(options)
+  })
+})
+
+describe('AcTrLayout depth range', () => {
+  function entityAtZ(objectId: string, minZ: number, maxZ: number) {
+    const entity = createEntity(objectId)
+    entity.wcsBbox.min.z = minZ
+    entity.wcsBbox.max.z = maxZ
+    return entity
+  }
+
+  /** Makes the mocked batch bounds report geometry in `[minZ, maxZ]`. */
+  function batchBoundsAtZ(minZ: number, maxZ: number) {
+    mockComputeBoundingBox.mockImplementation((target: THREE.Box3) => {
+      target.min.set(0, 0, minZ)
+      target.max.set(10, 10, maxZ)
+      return target
+    })
+  }
+
+  /**
+   * A real scene-graph INSERT stand-in: its `wcsBbox` is 2D (Z=0) like
+   * {@link AcTrGroup}, while a child polyline sits at `elevation`.
+   */
+  function insertWithElevatedChild(objectId: string, elevation: number) {
+    const group = new THREE.Group() as unknown as AcTrEntity & THREE.Group
+    Object.assign(group, {
+      objectId,
+      layerName: '0',
+      ownerId: 'layout-1',
+      wcsBbox: new THREE.Box3(
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(10, 10, 0)
+      )
+    })
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, 10, 10, 0], 3)
+    )
+    const line = new THREE.Line(geometry, new THREE.LineBasicMaterial())
+    line.position.z = elevation
+    group.add(line)
+    return group
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    // Isolate the entity paths: batch bounds report nothing by default.
+    mockComputeBoundingBox.mockImplementation((target: THREE.Box3) =>
+      target.makeEmpty()
+    )
+  })
+
+  it('takes Z from drawable geometry when an INSERT has a 2D wcsBbox', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    layout.addEntity(insertWithElevatedChild('insert', 1243))
+
+    expect(layout.depthRange.max).toBe(1243)
+    // Reading the range is O(1): it must not rescan batch buffers per frame.
+    expect(mockComputeBoundingBox).not.toHaveBeenCalled()
+  })
+
+  it('grows when an entity is updated to a new elevation', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    layout.addEntity(insertWithElevatedChild('insert', 0))
+    layout.updateEntity(insertWithElevatedChild('insert', 2000))
+
+    expect(layout.depthRange.max).toBe(2000)
+  })
+
+  it('reuses bounds computed by zoom extents', () => {
+    batchBoundsAtZ(-50, 900)
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    layout.addEntity(entityAtZ('insert', 0, 0))
+    layout.box
+
+    expect(layout.depthRange.min).toBe(-50)
+    expect(layout.depthRange.max).toBe(900)
+    expect(mockComputeBoundingBox).toHaveBeenCalledTimes(1)
+  })
+
+  it('is empty before any entity is added', () => {
+    const layout = new AcTrLayout()
+    expect(layout.depthRange.isEmpty).toBe(true)
+  })
+
+  it('grows with the Z extents of elevated entities', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    layout.addEntity(entityAtZ('ground', 0, 0))
+    layout.addEntity(entityAtZ('contour', 1105, 1243))
+
+    expect(layout.depthRange.min).toBe(0)
+    expect(layout.depthRange.max).toBe(1243)
+  })
+
+  it('includes entities excluded from zoom extents', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    layout.addEntity(entityAtZ('contour', -40, 2400), false)
+
+    expect(layout.depthRange.min).toBe(-40)
+    expect(layout.depthRange.max).toBe(2400)
+  })
+
+  it('tracks direct-batch entities', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, 10, 0, 0], 3)
+    )
+    layout.addDirectEntity({
+      objectId: 'direct-contour',
+      ownerId: 'layout-1',
+      layerName: '0',
+      visible: true,
+      kind: 'lineBasic',
+      geometry,
+      material: new THREE.LineBasicMaterial(),
+      worldOffset: new THREE.Vector3(5, 0, 1166),
+      wcsBbox: new THREE.Box3(
+        new THREE.Vector3(0, 0, 1166),
+        new THREE.Vector3(10, 0, 1166)
+      )
+    })
+
+    expect(layout.depthRange.max).toBe(1166)
+  })
+
+  it('ignores non-finite boxes and resets on clear', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+    layout.addEntity(entityAtZ('xline', -Infinity, Infinity))
+    expect(layout.depthRange.isEmpty).toBe(true)
+
+    layout.addEntity(entityAtZ('contour', 1105, 1243))
+    layout.clear()
+    expect(layout.depthRange.isEmpty).toBe(true)
+  })
+})

@@ -1,0 +1,693 @@
+export default {
+  ACAD: {
+    '-hatch': {
+      description: '通过命令行选项创建填充，不显示 Ribbon 界面'
+    },
+    '-layer': {
+      description: '通过命令行选项管理图层'
+    },
+    about: {
+      description: '显示 mlightcad 产品信息'
+    },
+    acadver: {
+      description: '存储图形数据库版本标识符（只读）'
+    },
+    annoallvisible: {
+      description: '控制不支持当前注释比例的注释性对象是否显示'
+    },
+    angbase: {
+      description: '设置当前 UCS 中 0 度的基准角方向'
+    },
+    angdir: {
+      description: '设置正角度的方向为顺时针或逆时针'
+    },
+    arc: {
+      description: '创建圆弧'
+    },
+    aunits: {
+      description: '设置角度显示格式'
+    },
+    auprec: {
+      description: '设置角度显示精度（小数位数），与 AUNITS 配合使用'
+    },
+    bmpout: {
+      description: '导出为 BMP 图片'
+    },
+    cannoscale: {
+      description: '设置当前注释比例名称'
+    },
+    cdxf: {
+      description: '导出当前图纸为DXF格式'
+    },
+    cpdf: {
+      description: '导出当前图纸为PDF格式'
+    },
+    '-cpdf': {
+      description: '使用命令行选项将当前图纸导出为PDF'
+    },
+    cecolor: {
+      description: '设置新创建对象的当前默认颜色'
+    },
+    celtscale: {
+      description: '控制新创建对象的线型比例系数'
+    },
+    celtype: {
+      description: '设置新创建对象的线型'
+    },
+    celweight: {
+      description: '设置新创建对象的默认线宽'
+    },
+    cetransparency: {
+      description: '设置新创建对象的透明度'
+    },
+    cachefont: {
+      description: '将本地字体文件缓存到 IndexedDB 以供文字渲染使用'
+    },
+    circle: {
+      description: '使用圆心和半径创建圆'
+    },
+    clayer: {
+      description: '设置新建对象和编辑操作所使用的当前图层'
+    },
+    cmleaderstyle: {
+      description: '设置当前多重引线样式名称'
+    },
+    cmlscale: {
+      description: '控制多线的整体宽度'
+    },
+    cmlstyle: {
+      description: '设置当前多线样式名称'
+    },
+    colortheme: {
+      description: '控制用户界面的颜色主题（深色或浅色）'
+    },
+    commandpreview: {
+      description: '控制是否显示某些命令的可能结果预览'
+    },
+    comparehatch: {
+      description: '控制图形比较时是否包含图案填充对象'
+    },
+    compareprops: {
+      description: '控制哪些非几何特性更改会被识别为图形差异'
+    },
+    comparercmargin: {
+      description: '设置比较图形中变更集边界与修订云线之间的偏移'
+    },
+    comparetext: {
+      description: '控制图形比较时是否包含文字对象'
+    },
+    comparetolerance: {
+      description: '设置比较两个图形时使用的小数位公差'
+    },
+    copy: {
+      description: '通过克隆将所选图元复制到新位置',
+      prompt: '选择对象'
+    },
+    copybase: {
+      description: '将选定对象与指定的基点一起复制到剪贴板',
+      prompt: '选择对象'
+    },
+    copyclip: {
+      description: '将选定对象复制到剪贴板',
+      prompt: '选择对象'
+    },
+    cutclip: {
+      description: '将选定对象复制到剪贴板并从图形中删除',
+      prompt: '选择对象'
+    },
+    pasteblock: {
+      description: '将剪贴板中的对象作为块粘贴'
+    },
+    pasteclip: {
+      description: '将剪贴板中的对象粘贴到当前图形'
+    },
+    pasteorig: {
+      description: '使用原图形的坐标粘贴剪贴板中的对象'
+    },
+    csvg: {
+      description: '转换当前图纸为SVG格式'
+    },
+    chtml: {
+      description: '将当前图纸导出为可离线打开的 HTML 文件'
+    },
+    '-chtml': {
+      description: '通过命令行选项将当前图纸导出为 HTML 文件'
+    },
+    dimlinear: {
+      description: '创建线性尺寸标注'
+    },
+    dimaligned: {
+      description: '创建对齐线性尺寸标注'
+    },
+    dimradius: {
+      description: '为圆和圆弧创建半径尺寸标注'
+    },
+    dimdiameter: {
+      description: '为圆和圆弧创建直径尺寸标注'
+    },
+    dimangular: {
+      description: '创建角度尺寸标注'
+    },
+    dimarc: {
+      description: '创建弧长标注'
+    },
+    dimordinate: {
+      description: '创建坐标标注'
+    },
+    dimcontinue: {
+      description: '创建连续标注'
+    },
+    dimbaseline: {
+      description: '创建基线标注'
+    },
+    dimstyle: {
+      description: '设置当前标注样式的名称'
+    },
+    dwgname: {
+      description: '存储当前图形文件的名称（只读）'
+    },
+    find: {
+      description: '打开文字查找面板'
+    },
+    layer: {
+      description: '打开或关闭图层管理器停靠面板'
+    },
+    loginname: {
+      description: '显示当前用户的登录名（只读）'
+    },
+    dynmode: {
+      description: '控制光标处的动态输入设置'
+    },
+    dynprompt: {
+      description: '控制动态输入工具提示中提示的显示'
+    },
+    ellipse: {
+      description: '通过轴端点或中心点创建椭圆或椭圆弧'
+    },
+    erase: {
+      description: '从图纸中删除所选对象',
+      prompt: '选择对象'
+    },
+    explode: {
+      description: '将复合对象分解为其部件对象',
+      prompt: '选择要分解的对象'
+    },
+    join: {
+      description: '将直线、圆弧和多段线的端点合并为单个对象',
+      prompt: '选择要合并的对象'
+    },
+    extend: {
+      description: '延伸对象以与其他对象的边相接'
+    },
+    trim: {
+      description: '修剪对象以与其他对象的边相接'
+    },
+    group: {
+      description: '创建和管理称为编组的对象集合'
+    },
+    groupdisplaymode: {
+      description: '控制编组选择打开且选定编组成员时夹点的显示方式'
+    },
+    '-bsearch': {
+      description: '查找相同的几何图形并将其转换为块（命令行）',
+      prompt: '选择要搜索的对象'
+    },
+    '-group': {
+      description: '通过命令行选项创建和管理编组'
+    },
+    groupedit: {
+      description: '向编组添加或从编组中删除对象，或重命名编组'
+    },
+    ungroup: {
+      description: '取消对象与编组的关联'
+    },
+    extmax: {
+      description: '存储模型空间图形范围的右上角（只读）'
+    },
+    extmin: {
+      description: '存储模型空间图形范围的左下角（只读）'
+    },
+    entout: {
+      description: '导出所选对象的合并预览图',
+      prompt: '选择对象'
+    },
+    hideobjects: {
+      description: '临时隐藏所选对象的显示',
+      prompt: '选择对象'
+    },
+    imageattach: {
+      description: '将光栅图像作为外部参照附着到当前图形'
+    },
+    '-insert': {
+      description: '将块定义插入到当前图形（命令行）'
+    },
+    xattach: {
+      description: '将 DWG 或 DXF 图形作为外部参照附着到当前图形'
+    },
+    gripcolor: {
+      description: '设置所选对象上未选中夹点的颜色'
+    },
+    griphot: {
+      description: '设置所选（热）夹点的颜色'
+    },
+    gripobjlimit: {
+      description: '当选择集中的对象数超过指定值时不显示夹点（0 表示无限制）'
+    },
+    grips: {
+      description: '控制是否在所选对象上显示夹点'
+    },
+    gripsize: {
+      description: '设置夹点框的大小（像素）'
+    },
+    hatch: {
+      description: '用填充图案填充封闭区域或所选对象'
+    },
+    pdfdim: {
+      description: '将 PDF 中被打散的标注恢复为标注对象',
+      prompt: '选择包含标注的区域'
+    },
+    pdfhatch: {
+      description: '将 PDF 中被打散成线段的图案填充恢复为图案填充对象',
+      prompt: '选择填充区域及其周围的边界线'
+    },
+    pdftext: {
+      description: '将 PDF 中被打散的文字笔画转换回文字对象',
+      prompt: '选择要转换的文字笔画'
+    },
+    pdfscale: {
+      description: '根据已知距离校准导入的 PDF 图形比例',
+      prompt: '选择要缩放的对象'
+    },
+    pdfimport: {
+      description: '通过“输入 PDF”对话框从 PDF 文件导入矢量几何'
+    },
+    '-pdfimport': {
+      description: '使用命令行选项从 PDF 文件导入矢量几何'
+    },
+    hpang: {
+      description: '设置新创建填充图案的默认角度（弧度）'
+    },
+    hpassoc: {
+      description: '控制新创建的填充是否具有关联性'
+    },
+    hpbackgroundcolor: {
+      description: '设置新创建填充图案的默认背景颜色'
+    },
+    hpcolor: {
+      description: '设置新创建填充的默认颜色'
+    },
+    hpdouble: {
+      description: '控制用户定义的填充图案是否加倍'
+    },
+    hpislanddetection: {
+      description: '控制新创建填充边界内孤岛的处理方式'
+    },
+    hplayer: {
+      description: '设置新创建填充和填充区域的默认图层'
+    },
+    hpname: {
+      description: '设置当前会话中新创建填充的默认图案名称'
+    },
+    hpscale: {
+      description: '设置新创建填充图案的默认比例系数'
+    },
+    hpseparate: {
+      description: '控制为多个边界创建单个还是独立的填充对象'
+    },
+    hptransparency: {
+      description: '设置新创建填充和填充区域的默认透明度'
+    },
+    insunits: {
+      description: '指定插入块、图像或外部参照时用于自动缩放的图形单位'
+    },
+    jpgout: {
+      description: '导出为 JPEG 图片'
+    },
+    laycur: {
+      description: '将所选对象的图层属性更改为当前图层',
+      prompt: '选择要更改到当前图层的对象'
+    },
+    laydel: {
+      description: '删除图层及该图层上的所有对象'
+    },
+    layerclose: {
+      description: '关闭图层属性管理器'
+    },
+    layerp: {
+      description: '撤销对图层设置的最后一次更改或一组更改'
+    },
+    layfrz: {
+      description: '冻结所选对象所在的图层',
+      prompt: '选择要冻结其图层的对象'
+    },
+    layiso: {
+      description: '隔离所选对象所在的图层',
+      prompt: '选择要隔离其图层的对象'
+    },
+    laylck: {
+      description: '锁定所选对象所在的图层',
+      prompt: '选择要锁定其图层的对象'
+    },
+    layoff: {
+      description: '关闭所选对象所在的图层',
+      prompt: '选择要关闭其图层的对象'
+    },
+    layon: {
+      description: '打开图纸中的所有图层'
+    },
+    laythw: {
+      description: '解冻图纸中的所有冻结图层'
+    },
+    layulk: {
+      description: '解锁所选对象所在的图层',
+      prompt: '选择要解锁其图层的对象'
+    },
+    layuniso: {
+      description: '恢复由 LAYISO 隐藏或锁定的图层'
+    },
+    line: {
+      description: '在指定点之间绘制直线段'
+    },
+    log: {
+      description: '在控制台输出调试信息'
+    },
+    ltscale: {
+      description: '设置图形的全局线型比例系数'
+    },
+    lunits: {
+      description: '设置坐标和距离的显示格式'
+    },
+    luprec: {
+      description: '设置线性单位的显示精度（小数位数），与 LUNITS 配合使用'
+    },
+    lwdisplay: {
+      description: '用于控制是否在图纸中显示线宽效果'
+    },
+    clearmeasurements: {
+      description: '清除当前布局上的所有测量标注'
+    },
+    measurementvis: {
+      description: '显示或隐藏当前布局上的测量标注'
+    },
+    measurementpanel: {
+      description: '打开测量面板'
+    },
+    measurementexport: {
+      description: '将测量标注导出为 sidecar JSON 文件'
+    },
+    measurementimport: {
+      description: '从 sidecar JSON 文件导入测量标注'
+    },
+    measurearea: {
+      description: '计算所选对象或点定义区域的面积和周长'
+    },
+    measureangle: {
+      description: '测量两条线或三个点之间的夹角'
+    },
+    measurearc: {
+      description: '测量圆弧段的弧长'
+    },
+    measuredistance: {
+      description: '测量两点之间的距离及坐标增量'
+    },
+    measurecontinuous: {
+      description: '连续拾取多个点测量各段距离，直到按 Enter 或取消'
+    },
+    measurepoint: {
+      description: '测量拾取点的 X/Y 坐标'
+    },
+    measurement: {
+      description: '设置图形使用英制或公制单位'
+    },
+    measurementcolor: {
+      description: '设置测量标注覆盖图形使用的颜色'
+    },
+    mirrtext: {
+      description: '控制 MIRROR 是否真正镜像文字：0 保持可读，1 镜像文字'
+    },
+    mirror: {
+      description: '创建选定对象的镜像副本',
+      prompt: '选择对象'
+    },
+    modelbkcolor: {
+      description: '设置模型空间绘图区域的背景颜色'
+    },
+    leader: {
+      description: '创建将注释连接到特征的引线'
+    },
+    mleader: {
+      description: '创建多重引线对象'
+    },
+    mleaderedit: {
+      description: '向多重引线添加或删除引线'
+    },
+    mleadereditremove: {
+      description: '从多重引线删除引线'
+    },
+    mline: {
+      description: '创建由多条平行线组成的多线对象'
+    },
+    move: {
+      description: '通过位移向量移动所选图元',
+      prompt: '选择对象'
+    },
+    objectscale: {
+      description: '为选定的注释性对象添加或删除支持的注释比例',
+      prompt: '选择注释性对象'
+    },
+    fillet: {
+      description: '给对象的边倒圆角'
+    },
+    filletpolyarc: {
+      description: '控制 FILLET 的“多段线”选项是否对圆弧段倒圆角'
+    },
+    filletrad: {
+      description: '存储当前二维对象的圆角半径'
+    },
+    chamfer: {
+      description: '给对象的边倒角'
+    },
+    chamfera: {
+      description: '设置第一个倒角距离（CHAMMODE 为 0 时）'
+    },
+    chamferb: {
+      description: '设置第二个倒角距离（CHAMMODE 为 0 时）'
+    },
+    chamferc: {
+      description: '设置倒角长度（CHAMMODE 为 1 时）'
+    },
+    chamferd: {
+      description: '设置倒角角度（CHAMMODE 为 1 时）'
+    },
+    chammode: {
+      description: '设置 CHAMFER 的输入方式：0 = 两个距离，1 = 长度和角度'
+    },
+    offset: {
+      description: '按指定距离创建平行曲线、多段线或圆'
+    },
+    mtext: {
+      description: '创建多行文本'
+    },
+    txt2mtxt: {
+      description: '将选定的单行文字和多行文字合并为一个多行文字',
+      prompt: '选择单行文字或多行文字'
+    },
+    open: {
+      description: '打开图纸'
+    },
+    openprof: {
+      description: '控制是否在控制台记录文件打开阶段的耗时分析'
+    },
+    openperf: {
+      description: '打开“打开性能”面板，显示最近一次打开图纸的关键耗时'
+    },
+    orthomode: {
+      description: '将光标移动限制为水平或垂直方向'
+    },
+    osmode: {
+      description: '使用位码设置运行中的对象捕捉模式'
+    },
+    pan: {
+      description: '平移视图'
+    },
+    paperbkcolor: {
+      description: '设置图纸空间（布局）绘图区域的背景颜色'
+    },
+    pdmode: {
+      description: '控制点对象的显示样式'
+    },
+    pdsize: {
+      description: '设置点对象的显示大小'
+    },
+    pickbox: {
+      description: '控制用于选择对象的拾取框大小（像素）'
+    },
+    pickstyle: {
+      description: '控制编组选择和关联填充选择'
+    },
+    pline: {
+      description: '通过指定多个点创建多段线'
+    },
+    pngout: {
+      description: '导出为 PNG 图片'
+    },
+    point: {
+      description: '连续创建点'
+    },
+    polaraddang: {
+      description: '以分号分隔的列表存储附加极轴追踪角度'
+    },
+    polarang: {
+      description: '设置极轴追踪的极轴角增量'
+    },
+    polarmode: {
+      description: '控制极轴追踪和对象捕捉追踪设置'
+    },
+    projmode: {
+      description: '设置修剪或延伸的当前投影模式'
+    },
+    edgemode: {
+      description: '控制修剪和延伸时剪切边和边界边是否延伸到其自然几何图形'
+    },
+    trimedges: {
+      description: '控制在 TRIM 和 EXTEND 的快速模式下填充图案线是否用作剪切边'
+    },
+    trimextendmode: {
+      description: '控制 TRIM 和 EXTEND 使用快速模式还是标准模式'
+    },
+    polygon: {
+      description: '通过中心和半径或指定一条边创建正多边形'
+    },
+    qnew: {
+      description: '创建新图纸'
+    },
+    close: {
+      description: '关闭当前图纸'
+    },
+    ray: {
+      description: '创建从起点向单一方向无限延伸的射线'
+    },
+    rectang: {
+      description: '通过指定两个对角点创建矩形'
+    },
+    regen: {
+      description: '重绘图纸'
+    },
+    revcloud: {
+      description: '创建或修改修订云线'
+    },
+    markuptext: {
+      description: '放置文字批注'
+    },
+    markupline: {
+      description: '创建直线批注'
+    },
+    markuparrow: {
+      description: '创建箭头批注'
+    },
+    markupcloud: {
+      description: '创建修订云线批注'
+    },
+    markuprect: {
+      description: '创建矩形批注'
+    },
+    markupcircle: {
+      description: '创建圆形批注'
+    },
+    markuphighlight: {
+      description: '创建高亮矩形批注'
+    },
+    markupcallout: {
+      description: '创建标注：先指定引线尖端，再放置文字框，最后输入文字'
+    },
+    markupstamp: {
+      description: '放置图章或自定义符号'
+    },
+    markupvis: {
+      description: '显示或隐藏批注'
+    },
+    clearmarkups: {
+      description: '清除当前布局上的所有批注'
+    },
+    markupexport: {
+      description: '将批注导出为 sidecar JSON 文件'
+    },
+    markupimport: {
+      description: '从 sidecar JSON 文件导入批注'
+    },
+    markuppanel: {
+      description: '打开批注面板'
+    },
+    rotate: {
+      description: '绕基点旋转所选图元',
+      prompt: '选择对象'
+    },
+    scale: {
+      description: '按比例放大或缩小选定对象，缩放后对象的比例保持不变',
+      prompt: '选择对象'
+    },
+    select: {
+      description: '选择图元'
+    },
+    shortcutmenu: {
+      description: '控制图形区域中快捷菜单的可用性'
+    },
+    sketch: {
+      description: '创建一系列徒手线段'
+    },
+    spline: {
+      description: '通过指定控制点创建平滑的样条曲线'
+    },
+    textstyle: {
+      description: '设置当前文字样式的名称'
+    },
+    tilemode: {
+      description: '控制是激活模型选项卡还是图纸空间布局'
+    },
+    trimmode: {
+      description: '控制倒角和圆角时是否修剪选定的边'
+    },
+    unitmode: {
+      description: '当 LUNITS 为建筑或分数格式时，控制坐标的分数显示格式'
+    },
+    switchbg: {
+      description: '切换绘图区域背景颜色，在白色和黑色背景之间切换'
+    },
+    readingmode: {
+      description: '切换阅读模式：白底黑线，便于阅读复杂图纸'
+    },
+    unisolateobjects: {
+      description: '重新显示 HIDEOBJECTS 隐藏的所有对象'
+    },
+    undo: {
+      description: '撤销上一次数据库编辑操作',
+      nothingToUndo: '没有可撤销的操作。'
+    },
+    redo: {
+      description: '重做上一次撤销的操作',
+      nothingToRedo: '没有可重做的操作。'
+    },
+    xline: {
+      description: '创建在两个方向上无限延伸的构造线'
+    },
+    zoom: {
+      description: '缩放以显示所有对象'
+    },
+    view: {
+      description: '打开视图管理器以创建、恢复和删除命名视图'
+    },
+    newview: {
+      description: '根据当前显示或窗口创建命名视图'
+    },
+    viewrestore: {
+      description: '按名称恢复命名视图'
+    },
+    ucs: {
+      description: '设置当前用户坐标系的原点和方向'
+    },
+    ucsman: {
+      description: '管理命名 UCS 定义和 UCS 图标设置'
+    }
+  },
+  USER: {}
+}

@@ -1,0 +1,385 @@
+import {
+  accmYieldForPaint,
+  type AcDbBlockTableRecord,
+  AcDbDatabase,
+  AcDbRenderingCache,
+  AcDbViewport,
+  acgiIsLightBackground
+} from '@mlightcad/data-model'
+import { PDFDocument, PDFImage } from 'pdf-lib'
+
+import type { AcPdfExportOptions } from './AcPdfExportOptions.js'
+import { createPdfFormRegistry } from './pdf/AcPdfContentWriter.js'
+import { AcPdfFontManager } from './pdf/AcPdfFontManager.js'
+import { AcPdfOcgManager } from './pdf/AcPdfOcgManager.js'
+import { AcPdfEntity } from './renderer/AcPdfEntity.js'
+import { AcPdfRenderer } from './renderer/AcPdfRenderer.js'
+import {
+  acPdfApplyLayerVisibility,
+  acPdfCollectDatabaseLayerVisibility
+} from './viewport/AcPdfLayerVisibility.js'
+import {
+  buildViewportModelContent,
+  collectBlockRoots,
+  collectModelSpaceRoots,
+  isPaperSpaceBlock
+} from './viewport/AcPdfPaperSpaceExport.js'
+import { isDefaultPaperSpaceViewport } from './viewport/AcPdfPaperViewport.js'
+
+/**
+ * Renders a drawing database to a vector PDF.
+ *
+ * Walks the requested block (model space by default) through
+ * {@link AcPdfRenderer} and serializes the recorded drawables with pdf-lib.
+ */
+export async function exportDatabaseToPdf(
+  db: AcDbDatabase,
+  options: AcPdfExportOptions = {}
+): Promise<Uint8Array> {
+  const layouts =
+    options.layouts === 'all' && !options.blockName && !options.blockId
+      ? collectExportLayouts(db, options.exportEmptyLayouts === true)
+      : undefined
+
+  AcPdfRenderer.prepareExport()
+  const renderer = createConfiguredRenderer(db, options)
+  try {
+    if (layouts) {
+      return await exportLayoutsToPdf(db, options, renderer, layouts)
+    }
+    const block = resolveTargetBlock(db, options)
+    if (!block) {
+      throw new Error(
+        `Block '${options.blockName}' was not found in the drawing database`
+      )
+    }
+    const roots = await collectLayoutRoots(db, renderer, block, {})
+    const layerVisibility = acPdfCollectDatabaseLayerVisibility(db)
+    const doc = await PDFDocument.create()
+    doc.setProducer('MLightCAD pdf-renderer')
+    doc.setCreator('MLightCAD')
+    if (options.title) {
+      doc.setTitle(options.title)
+    }
+    const ocg = new AcPdfOcgManager(doc, {
+      initiallyOffLayers: layerVisibility.frozenLayers
+    })
+    await renderer.renderToDocument(doc, roots, {
+      ocg,
+      revealFrozenLayersForOcg: layerVisibility.frozenLayers,
+      fitBox: options.fitBox
+    })
+    await renderer.textFontManager?.finalize()
+    return doc.save({ useObjectStreams: true })
+  } finally {
+    AcDbRenderingCache.instance.clear()
+  }
+}
+
+interface ExportLayoutEntry {
+  layoutName?: string
+  blockTableRecordId: string
+  tabOrder?: number
+}
+
+/**
+ * Lists layouts ordered by tab, or `null` when the database does not expose a
+ * layout table (single-layout export then runs as before).
+ *
+ * When `exportEmptyLayouts` is `false`, empty paper-space tabs are omitted.
+ * Model space is always kept. After filtering, a single remaining layout is
+ * still returned so an empty current paper tab cannot replace model space.
+ */
+function collectExportLayouts(
+  db: AcDbDatabase,
+  exportEmptyLayouts: boolean
+): ExportLayoutEntry[] | null {
+  const layoutTable = (
+    db as {
+      objects?: {
+        layout?: {
+          newIterator?: () => Iterable<ExportLayoutEntry>
+        }
+      }
+    }
+  ).objects?.layout
+  if (!layoutTable?.newIterator) {
+    return null
+  }
+  const entries = [...layoutTable.newIterator()]
+  const layouts = entries
+    .filter(layout => !!layout.blockTableRecordId)
+    .sort((a, b) => (a.tabOrder ?? 0) - (b.tabOrder ?? 0))
+  // Several layout records can share one block (a second "Model" tab, or a
+  // paper record whose handle resolves to model space). Painting each one
+  // writes the same content stream again and doubles the file.
+  const seen = new Set<string>()
+  const unique: ExportLayoutEntry[] = []
+  for (const layout of layouts) {
+    if (seen.has(layout.blockTableRecordId)) {
+      continue
+    }
+    seen.add(layout.blockTableRecordId)
+    if (
+      !exportEmptyLayouts &&
+      isEmptyPaperSpaceLayout(db, layout.blockTableRecordId)
+    ) {
+      continue
+    }
+    unique.push(layout)
+  }
+  // Some drawings omit the Model row from the layout table. After empty
+  // paper tabs are filtered out the list can be empty — or contain only
+  // paper — and falling back to `currentSpaceId` would paint a blank tab
+  // instead of model space. Always keep model when exporting all layouts.
+  const modelSpaceId = db.tables.blockTable.modelSpace.objectId
+  if (!unique.some(layout => layout.blockTableRecordId === modelSpaceId)) {
+    const modelLayout = layouts.find(
+      layout => layout.blockTableRecordId === modelSpaceId
+    )
+    unique.unshift(
+      modelLayout ?? {
+        layoutName: 'Model',
+        blockTableRecordId: modelSpaceId,
+        tabOrder: -1
+      }
+    )
+  }
+  return unique.length > 0 ? unique : null
+}
+
+/**
+ * True when a paper-space block has no content other than AutoCAD's default
+ * `*Paper_Space` viewport. Model space is never treated as empty here.
+ */
+function isEmptyPaperSpaceLayout(
+  db: AcDbDatabase,
+  blockTableRecordId: string
+): boolean {
+  const modelSpaceId = db.tables.blockTable.modelSpace.objectId
+  if (blockTableRecordId === modelSpaceId) {
+    return false
+  }
+  const block = db.tables.blockTable.getIdAt(blockTableRecordId)
+  if (!block?.newIterator) {
+    return true
+  }
+  for (const entity of block.newIterator()) {
+    if (entity instanceof AcDbViewport) {
+      if (isDefaultPaperSpaceViewport(entity)) {
+        continue
+      }
+      return false
+    }
+    return false
+  }
+  return true
+}
+
+function createConfiguredRenderer(
+  db: AcDbDatabase,
+  options: AcPdfExportOptions
+): AcPdfRenderer {
+  const renderer = new AcPdfRenderer()
+  renderer.insunits = db.insunits ?? 4
+  renderer.ltscale = options.ltscale ?? db.ltscale
+  renderer.celtscale = options.celtscale ?? db.celtscale
+  renderer.showLineWeight = options.showLineWeight ?? !!db.lwdisplay
+  renderer.configureExport(options)
+  if (options.textMode === 'text' && options.textFontResolver) {
+    renderer.textFontManager = new AcPdfFontManager(options.textFontResolver)
+  }
+
+  // Monochrome output is defined as black ink on white paper, so a custom
+  // page background would contradict it.
+  const background =
+    options.colorMode === 'monochrome' ||
+    options.background === 'none' ||
+    options.background == null
+      ? 0xffffff
+      : options.background
+  renderer.currentBackgroundColor = background
+  renderer.changeForeground(acgiIsLightBackground(background) ? 0x000000 : 0xffffff)
+  renderer.context.database = db
+  return renderer
+}
+
+function resolveTargetBlock(
+  db: AcDbDatabase,
+  options: AcPdfExportOptions
+): AcDbBlockTableRecord | undefined {
+  if (options.blockId) {
+    return db.tables.blockTable.getIdAt(options.blockId)
+  }
+  if (options.blockName) {
+    return db.tables.blockTable.getAt(options.blockName)
+  }
+  return (
+    db.tables.blockTable.getIdAt(db.currentSpaceId) ??
+    db.tables.blockTable.modelSpace
+  )
+}
+
+/**
+ * Resolves a layout entry's block table record.
+ *
+ * Some DWG databases never register the model-space block record handle in
+ * the database handle registry, so `getIdAt` fails for the Model layout even
+ * though the record itself is reachable via `blockTable.modelSpace`. Match on
+ * the model-space object id first, then fall back to the registry lookup.
+ */
+function resolveLayoutBlock(
+  db: AcDbDatabase,
+  layout: ExportLayoutEntry
+): AcDbBlockTableRecord | undefined {
+  if (layout.blockTableRecordId === db.tables.blockTable.modelSpace.objectId) {
+    return db.tables.blockTable.modelSpace
+  }
+  return db.tables.blockTable.getIdAt(layout.blockTableRecordId)
+}
+
+/** Lazily populated, export-scoped model-space drawable tree. */
+interface ModelRootCache {
+  roots?: AcPdfEntity[]
+}
+
+async function getModelRoots(
+  db: AcDbDatabase,
+  renderer: AcPdfRenderer,
+  cache: ModelRootCache
+): Promise<AcPdfEntity[]> {
+  if (!cache.roots) {
+    cache.roots = await collectModelSpaceRoots(db, renderer)
+  }
+  return cache.roots
+}
+
+/**
+ * Walks one layout block and returns its page roots.
+ *
+ * Model space is traversed at most once per export: the same drawable tree
+ * backs the model page and every paper-space viewport (see
+ * {@link AcPdfViewportContent}), avoiding both repeated tessellation and
+ * per-viewport geometry clones.
+ */
+async function collectLayoutRoots(
+  db: AcDbDatabase,
+  renderer: AcPdfRenderer,
+  block: AcDbBlockTableRecord,
+  modelCache: ModelRootCache
+): Promise<AcPdfEntity[]> {
+  if (!isPaperSpaceBlock(db, block)) {
+    return getModelRoots(db, renderer, modelCache)
+  }
+
+  const viewportEntities: AcDbViewport[] = []
+  for (const entity of block.newIterator()) {
+    if (entity instanceof AcDbViewport) {
+      viewportEntities.push(entity)
+    }
+  }
+
+  // Paper-space INSERTs hit the same async-clone race as model space; use
+  // the two-pass collector so block text is filled before INSERT clones.
+  const paperRoots = await collectBlockRoots(block, renderer)
+  const layerVisibility = acPdfCollectDatabaseLayerVisibility(db)
+  // Model roots already apply Off/Frozen in collectModelSpaceRoots; paper
+  // annotations need the same pass so closed layers stay closed.
+  acPdfApplyLayerVisibility(paperRoots, layerVisibility)
+
+  const viewportContents: AcPdfEntity[] = []
+  if (viewportEntities.length > 0) {
+    const modelRoots = await getModelRoots(db, renderer, modelCache)
+    for (const viewport of viewportEntities) {
+      // AutoCAD puts viewport borders on a frozen / off layer to hide the
+      // frame while still showing and plotting model content through it
+      // (see Autodesk “Prevent viewport borders from being displayed or
+      // plotted”). Never skip the viewport content for a closed layer —
+      // only the border respects Off/Frozen via applyLayerVisibility below.
+      // Matches the interactive viewer (`ensureViewportViews`) and HTML
+      // export, which also attach viewports regardless of layer freeze.
+      const built = buildViewportModelContent(
+        viewport,
+        () => modelRoots,
+        renderer
+      )
+      if (built) {
+        viewportContents.push(built.content)
+        if (built.border) {
+          // Borders are created after the paperRoots visibility pass.
+          acPdfApplyLayerVisibility([built.border], layerVisibility)
+          paperRoots.push(built.border)
+        }
+      }
+    }
+  }
+
+  // Viewport model content sits under paper-space annotations / borders.
+  return [...viewportContents, ...paperRoots]
+}
+
+/**
+ * Paints every layout into one PDF document.
+ *
+ * Pages share the pdf-lib document, the OCG manager (one OCG per CAD layer
+ * across pages) and the embedded-image cache. Compared with rendering one
+ * PDF per layout and merging via `load`/`copyPages`, this keeps neither
+ * finished page bytes nor parsed source documents in memory while later
+ * pages are still being built.
+ */
+async function exportLayoutsToPdf(
+  db: AcDbDatabase,
+  options: AcPdfExportOptions,
+  renderer: AcPdfRenderer,
+  layouts: ExportLayoutEntry[]
+): Promise<Uint8Array> {
+  const doc = await PDFDocument.create()
+  doc.setProducer('MLightCAD pdf-renderer')
+  doc.setCreator('MLightCAD')
+  if (options.title) {
+    doc.setTitle(options.title)
+  }
+  const layerVisibility = acPdfCollectDatabaseLayerVisibility(db)
+  const ocg = new AcPdfOcgManager(doc, {
+    initiallyOffLayers: layerVisibility.frozenLayers
+  })
+  const imageCache = new Map<Uint8Array, PDFImage>()
+  // One document-scoped Form XObject registry: identical glyph/geometry
+  // forms are embedded once per document instead of once per page.
+  const formRegistry = createPdfFormRegistry()
+  const modelCache: ModelRootCache = {}
+  const modelSpaceId = db.tables.blockTable.modelSpace.objectId
+  // `resolveLayoutBlock` can map distinct layout handles onto one block
+  // (model space, when the paper handle is missing from the registry).
+  // Paint that block once.
+  const seenBlocks = new Set<string>()
+
+  for (const layout of layouts) {
+    const block = resolveLayoutBlock(db, layout)
+    if (!block || seenBlocks.has(block.objectId)) {
+      continue
+    }
+    seenBlocks.add(block.objectId)
+    const isModel = layout.blockTableRecordId === modelSpaceId
+    const roots = await collectLayoutRoots(db, renderer, block, modelCache)
+    await renderer.renderToDocument(doc, roots, {
+      ocg,
+      imageCache,
+      formRegistry,
+      revealFrozenLayersForOcg: layerVisibility.frozenLayers,
+      // Model-space “Display” framing must not clip paper-space pages.
+      fitBox: isModel ? options.fitBox : undefined
+    })
+    // Explicit roots were handed to the page; release renderer-side
+    // drawables so only the page's pdf-lib objects stay resident.
+    renderer.resetCollected()
+    // Keep the host busy spinner animating between layout pages.
+    await accmYieldForPaint()
+  }
+
+  // Flush deferred font embeds and repair their font programs (see
+  // AcPdfFontManager.finalize) before serialization.
+  await renderer.textFontManager?.finalize()
+  const bytes = await doc.save({ useObjectStreams: true })
+  return bytes
+}

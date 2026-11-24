@@ -1,0 +1,789 @@
+import { acexHtmlBytesToText } from '@mlightcad/cad-html-core'
+import {
+  acexHtmlDecodeSnapshot,
+  acexHtmlDecodeSnapshotFromCompressedBytes,
+  acexHtmlEncodeSnapshot,
+  acexHtmlSnapshotPayloadToCompressedBytes
+} from '@mlightcad/cad-html-core'
+import {
+  acexHtmlDecodeSnapshotBinary,
+  acexHtmlEncodeSnapshotBinary
+} from '@mlightcad/cad-html-core'
+import { AcExHtmlBinaryWriter } from '@mlightcad/cad-html-core'
+import { ACEO_OSNAP_MAGIC } from '@mlightcad/cad-html-core'
+import { ACEX_SNAPSHOT_VERSION } from '@mlightcad/cad-html-core'
+
+function f32(values: number[]): Float32Array {
+  return Float32Array.from(values)
+}
+
+function indexOfBytes(haystack: Uint8Array, needle: Uint8Array): number {
+  outer: for (let i = 0; i <= haystack.length - needle.length; i++) {
+    for (let j = 0; j < needle.length; j++) {
+      if (haystack[i + j] !== needle[j]) continue outer
+    }
+    return i
+  }
+  return -1
+}
+
+/** Builds ACEX bytes with the pre-ACEO JSON osnap field for decode compat. */
+function encodeLegacyJsonOsnapSnapshot(osnap: unknown): Uint8Array {
+  const writer = new AcExHtmlBinaryWriter()
+  writer.writeU32(0x58454341) // ACEX
+  writer.writeU8(ACEX_SNAPSHOT_VERSION)
+  writer.writeU8(0)
+  writer.writeU8(0)
+  writer.writeU8(0)
+  writer.writeJson({
+    createdAt: '2026-01-01T00:00:00.000Z',
+    extents: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+    units: {
+      insunits: 4,
+      lunits: 2,
+      luprec: 4,
+      aunits: 0,
+      auprec: 0,
+      measurement: 1,
+      ltscale: 1,
+      angbase: 0,
+      angdir: 0
+    },
+    background: 0
+  })
+  writer.writeJson([{ name: '0', color: 0xffffff, visible: true }])
+  writer.writeString('ms')
+  writer.writeU32(1)
+  writer.writeString('ms')
+  writer.writeString('*Model_Space')
+  writer.writeU8(1)
+  writer.writeJson(osnap)
+  writer.writeJson(null)
+  writer.writeU32(0)
+  writer.writeU32(0)
+  return writer.toUint8Array()
+}
+
+describe('AcExSnapshotCodec', () => {
+  it('round-trips a minimal snapshot', () => {
+    const snapshot = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        extents: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+        units: {
+          insunits: 4,
+          lunits: 2,
+          luprec: 4,
+          aunits: 0,
+          auprec: 0,
+          measurement: 1,
+          ltscale: 1,
+          angbase: 0,
+          angdir: 0
+        },
+        background: 0
+      },
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: '*Model_Space',
+          isModelSpace: true,
+          lineBatches: [],
+          meshBatches: []
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+    const encoded = acexHtmlEncodeSnapshot(snapshot)
+    expect(encoded.compression).toBe('gzip')
+    const decoded = acexHtmlDecodeSnapshot(encoded.payload)
+    expect(decoded.meta.extents.maxX).toBe(10)
+    expect(decoded.layers[0]?.name).toBe('0')
+
+    const compressed = acexHtmlSnapshotPayloadToCompressedBytes(encoded.payload)
+    const fromBytes = acexHtmlDecodeSnapshotFromCompressedBytes(compressed)
+    expect(fromBytes.meta.extents.maxX).toBe(10)
+  })
+
+  it('decodes legacy base64 payloads and MIME-tagged script bodies', () => {
+    const snapshot = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        extents: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+        units: {
+          insunits: 4,
+          lunits: 2,
+          luprec: 4,
+          aunits: 0,
+          auprec: 0,
+          measurement: 1,
+          ltscale: 1,
+          angbase: 0,
+          angdir: 0
+        },
+        background: 0x000000,
+        layerCount: 0,
+        entityCount: 0
+      },
+      layers: [],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: '*Model_Space',
+          isModelSpace: true,
+          lineBatches: [],
+          meshBatches: []
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+    const encoded = acexHtmlEncodeSnapshot(snapshot)
+    const gzipBytes = acexHtmlSnapshotPayloadToCompressedBytes(encoded.payload, 'base85')
+    const legacyPayload = acexHtmlBytesToText(gzipBytes, 'base64')
+
+    const fromExplicit = acexHtmlDecodeSnapshot(legacyPayload, 'base64')
+    expect(fromExplicit.meta.extents.maxX).toBe(10)
+
+    const fromMime = acexHtmlSnapshotPayloadToCompressedBytes(
+      legacyPayload,
+      'application/vnd.mlightcad.acex-snapshot+binary+gzip;base64'
+    )
+    expect(
+      acexHtmlDecodeSnapshotFromCompressedBytes(fromMime).meta.extents.maxX
+    ).toBe(10)
+  })
+
+  it('round-trips binary geometry buffers', () => {
+    const snapshot = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        extents: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+        units: {
+          insunits: 4,
+          lunits: 2,
+          luprec: 4,
+          aunits: 0,
+          auprec: 0,
+          measurement: 1,
+          ltscale: 1,
+          angbase: 0,
+          angdir: 0
+        },
+        background: 0
+      },
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: '*Model_Space',
+          isModelSpace: true,
+          lineBatches: [
+            {
+              layer: '0',
+              color: 0xff0000,
+              offset: [1, 2, 0] as [number, number, number],
+              positions: f32([0, 0, 0, 10, 0, 0]),
+              indices: Uint32Array.from([0, 1]),
+              lineDistances: f32([0, 10])
+            }
+          ],
+          meshBatches: [
+            {
+              layer: '0',
+              color: 0x00ff00,
+              offset: [0, 0, 0] as [number, number, number],
+              positions: f32([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+              indices: Uint32Array.from([0, 1, 2]),
+              gradientPositions: f32([0, 0, 1, 0, 0, 1])
+            }
+          ]
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+
+    const encoded = acexHtmlEncodeSnapshot(snapshot)
+    const decoded = acexHtmlDecodeSnapshot(encoded.payload)
+    const line = decoded.layouts[0]!.lineBatches[0]!
+    expect(Array.from(line.positions)).toEqual([0, 0, 0, 10, 0, 0])
+    expect(Array.from(line.indices!)).toEqual([0, 1])
+    expect(Array.from(line.lineDistances!)).toEqual([0, 10])
+
+    const mesh = decoded.layouts[0]!.meshBatches[0]!
+    expect(Array.from(mesh.positions)).toEqual([0, 0, 0, 1, 0, 0, 0, 1, 0])
+    expect(Array.from(mesh.indices!)).toEqual([0, 1, 2])
+    expect(Array.from(mesh.gradientPositions!)).toEqual([0, 0, 1, 0, 0, 1])
+  })
+
+  it('preserves large rebase origins as float64', () => {
+    const largeOrigin = 1_234_567_890.125
+    const snapshot = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        extents: {
+          minX: largeOrigin,
+          minY: largeOrigin,
+          maxX: largeOrigin + 10,
+          maxY: largeOrigin + 10
+        },
+        units: {
+          insunits: 4,
+          lunits: 2,
+          luprec: 4,
+          aunits: 0,
+          auprec: 0,
+          measurement: 1,
+          ltscale: 1,
+          angbase: 0,
+          angdir: 0
+        },
+        background: 0
+      },
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: '*Model_Space',
+          isModelSpace: true,
+          lineBatches: [
+            {
+              layer: '0',
+              color: 0xff0000,
+              offset: [largeOrigin, largeOrigin + 100, 0] as [
+                number,
+                number,
+                number
+              ],
+              positions: f32([0.5, 1.25, 0, 10.5, 2.75, 0])
+            }
+          ],
+          meshBatches: []
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+
+    const encoded = acexHtmlEncodeSnapshot(snapshot)
+    const line = acexHtmlDecodeSnapshot(encoded.payload).layouts[0]!.lineBatches[0]!
+    expect(line.offset[0]).toBe(largeOrigin)
+    expect(line.offset[1]).toBe(largeOrigin + 100)
+    expect(Array.from(line.positions)).toEqual([0.5, 1.25, 0, 10.5, 2.75, 0])
+  })
+
+  it('round-trips wide-line lineWidth through binary codec', () => {
+    const snapshot = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        extents: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+        units: {
+          insunits: 4,
+          lunits: 2,
+          luprec: 4,
+          aunits: 0,
+          auprec: 0,
+          measurement: 1,
+          ltscale: 1,
+          angbase: 0,
+          angdir: 0
+        },
+        background: 0
+      },
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: '*Model_Space',
+          isModelSpace: true,
+          lineBatches: [
+            {
+              layer: '0',
+              color: 0x00ff00,
+              offset: [100_000, 2_000_000, 0] as [number, number, number],
+              positions: f32([0, 0, 0, 100, 50, 0]),
+              lineWidth: 2.5
+            }
+          ],
+          meshBatches: []
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+
+    const encoded = acexHtmlEncodeSnapshot(snapshot)
+    const line = acexHtmlDecodeSnapshot(encoded.payload).layouts[0]!.lineBatches[0]!
+    expect(line.lineWidth).toBe(2.5)
+    expect(line.color).toBe(0x00ff00)
+    expect(Array.from(line.positions)).toEqual([0, 0, 0, 100, 50, 0])
+    expect(line.offset).toEqual([100_000, 2_000_000, 0])
+  })
+
+  it('round-trips paper-space viewport descriptors', () => {
+    const snapshot = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        extents: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+        units: {
+          insunits: 4,
+          lunits: 2,
+          luprec: 4,
+          aunits: 0,
+          auprec: 0,
+          measurement: 1,
+          ltscale: 1,
+          angbase: 0,
+          angdir: 0
+        },
+        background: 0
+      },
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ps',
+          name: 'Layout1',
+          isModelSpace: false,
+          lineBatches: [],
+          meshBatches: [],
+          viewports: [
+            {
+              paper: { minX: 0, minY: 0, maxX: 12, maxY: 9 },
+              model: { minX: 100, minY: 200, maxX: 400, maxY: 500 },
+              twist: Math.PI / 4
+            }
+          ]
+        }
+      ],
+      activeLayoutBtrId: 'ps'
+    }
+
+    const decoded = acexHtmlDecodeSnapshot(acexHtmlEncodeSnapshot(snapshot).payload)
+    expect(decoded.layouts[0]!.viewports?.[0]?.paper).toEqual({
+      minX: 0,
+      minY: 0,
+      maxX: 12,
+      maxY: 9
+    })
+    expect(decoded.layouts[0]!.viewports?.[0]?.model).toEqual({
+      minX: 100,
+      minY: 200,
+      maxX: 400,
+      maxY: 500
+    })
+    expect(decoded.layouts[0]!.viewports?.[0]?.twist).toBeCloseTo(Math.PI / 4)
+  })
+
+  it('round-trips layout savedView via meta.savedViews without changing viewport wire shape', () => {
+    const snapshot = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        extents: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+        units: {
+          insunits: 4,
+          lunits: 2,
+          luprec: 4,
+          aunits: 0,
+          auprec: 0,
+          measurement: 1,
+          ltscale: 1,
+          angbase: 0,
+          angdir: 0
+        },
+        background: 0
+      },
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: 'Model',
+          isModelSpace: true,
+          lineBatches: [],
+          meshBatches: [],
+          savedView: { minX: 100, minY: 200, maxX: 300, maxY: 400 }
+        },
+        {
+          btrId: 'ps',
+          name: 'Layout1',
+          isModelSpace: false,
+          lineBatches: [],
+          meshBatches: [],
+          viewports: [
+            {
+              paper: { minX: 0, minY: 0, maxX: 12, maxY: 9 },
+              model: { minX: 100, minY: 200, maxX: 400, maxY: 500 },
+              twist: 0
+            }
+          ],
+          savedView: { minX: 0, minY: 0, maxX: 12, maxY: 9 }
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+
+    const binary = acexHtmlEncodeSnapshotBinary(snapshot)
+    const asText = new TextDecoder().decode(binary)
+    // savedView travels in meta; layout viewport slot stays a bare array value.
+    expect(asText).toContain('"savedViews"')
+    expect(asText).not.toContain('"savedView"')
+    const decoded = acexHtmlDecodeSnapshotBinary(binary)
+    expect(decoded.meta.savedViews?.ms).toEqual({
+      minX: 100,
+      minY: 200,
+      maxX: 300,
+      maxY: 400
+    })
+    expect(decoded.layouts[0]!.savedView).toEqual({
+      minX: 100,
+      minY: 200,
+      maxX: 300,
+      maxY: 400
+    })
+    expect(decoded.layouts[1]!.savedView).toEqual({
+      minX: 0,
+      minY: 0,
+      maxX: 12,
+      maxY: 9
+    })
+    expect(decoded.layouts[1]!.viewports?.[0]?.paper).toEqual({
+      minX: 0,
+      minY: 0,
+      maxX: 12,
+      maxY: 9
+    })
+  })
+
+  it('round-trips per-layout fitExtents via meta without changing the layout wire shape', () => {
+    const snapshot = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        extents: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+        viewExtents: { minX: 0, minY: 0, maxX: 12, maxY: 9 },
+        units: {
+          insunits: 4,
+          lunits: 2,
+          luprec: 4,
+          aunits: 0,
+          auprec: 0,
+          measurement: 1,
+          ltscale: 1,
+          angbase: 0,
+          angdir: 0
+        },
+        background: 0
+      },
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: 'Model',
+          isModelSpace: true,
+          lineBatches: [],
+          meshBatches: [],
+          fitExtents: { minX: -50, minY: -25, maxX: 250, maxY: 175 }
+        },
+        {
+          btrId: 'ps',
+          name: 'Layout1',
+          isModelSpace: false,
+          lineBatches: [],
+          meshBatches: [],
+          viewports: [
+            {
+              paper: { minX: 0, minY: 0, maxX: 12, maxY: 9 },
+              model: { minX: 100, minY: 200, maxX: 400, maxY: 500 },
+              twist: 0
+            }
+          ],
+          fitExtents: { minX: 0, minY: 0, maxX: 12, maxY: 9 }
+        }
+      ],
+      activeLayoutBtrId: 'ps'
+    }
+
+    const binary = acexHtmlEncodeSnapshotBinary(snapshot)
+    const asText = new TextDecoder().decode(binary)
+    expect(asText).toContain('"fitExtents"')
+    const decoded = acexHtmlDecodeSnapshotBinary(binary)
+    expect(decoded.meta.fitExtents?.ms).toEqual({
+      minX: -50,
+      minY: -25,
+      maxX: 250,
+      maxY: 175
+    })
+    expect(decoded.layouts[0]!.fitExtents).toEqual({
+      minX: -50,
+      minY: -25,
+      maxX: 250,
+      maxY: 175
+    })
+    expect(decoded.layouts[1]!.fitExtents).toEqual({
+      minX: 0,
+      minY: 0,
+      maxX: 12,
+      maxY: 9
+    })
+    // The active layout's meta.viewExtents still describes paper space only.
+    expect(decoded.meta.viewExtents).toEqual({
+      minX: 0,
+      minY: 0,
+      maxX: 12,
+      maxY: 9
+    })
+  })
+
+  it('omits meta.fitExtents when no layout carries one', () => {
+    const snapshot = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        extents: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+        units: {
+          insunits: 4,
+          lunits: 2,
+          luprec: 4,
+          aunits: 0,
+          auprec: 0,
+          measurement: 1,
+          ltscale: 1,
+          angbase: 0,
+          angdir: 0
+        },
+        background: 0
+      },
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: 'Model',
+          isModelSpace: true,
+          lineBatches: [],
+          meshBatches: []
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+
+    const decoded = acexHtmlDecodeSnapshotBinary(acexHtmlEncodeSnapshotBinary(snapshot))
+    expect(decoded.meta.fitExtents).toBeUndefined()
+    expect(decoded.layouts[0]!.fitExtents).toBeUndefined()
+  })
+
+  it('self-contained HTML payloads shrink when osnap omits duplicated line primitives', () => {
+    const meta = {
+      createdAt: '2026-01-01T00:00:00.000Z',
+      extents: { minX: 0, minY: 0, maxX: 100, maxY: 100 },
+      units: {
+        insunits: 4,
+        lunits: 2,
+        luprec: 4,
+        aunits: 0,
+        auprec: 0,
+        measurement: 1,
+        ltscale: 1,
+        angbase: 0,
+        angdir: 0
+      },
+      background: 0
+    }
+    const lineBatch = {
+      layer: '0',
+      color: 0xff0000,
+      offset: [0, 0, 0] as [number, number, number],
+      positions: f32([0, 0, 0, 10, 0, 0, 10, 10, 0, 0, 10, 0]),
+      indices: Uint32Array.from([0, 1, 1, 2, 2, 3, 3, 0])
+    }
+    const linePrimitives = Array.from({ length: 2000 }, (_, i) => ({
+      kind: 'line' as const,
+      layer: '0',
+      x0: i,
+      y0: 0,
+      x1: i + 1,
+      y1: 1
+    }))
+    const withDuplicatedLines = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta,
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: '*Model_Space',
+          isModelSpace: true,
+          lineBatches: [lineBatch],
+          meshBatches: [],
+          osnap: { primitives: linePrimitives }
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+    const curvesOnly = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta,
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: '*Model_Space',
+          isModelSpace: true,
+          lineBatches: [lineBatch],
+          meshBatches: [],
+          osnap: {
+            primitives: [
+              {
+                kind: 'circle' as const,
+                layer: '0',
+                cx: 5,
+                cy: 5,
+                r: 2,
+                normalSign: 1 as const
+              }
+            ]
+          }
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+
+    const legacyPayload = acexHtmlEncodeSnapshot(withDuplicatedLines).payload
+    const compactPayload = acexHtmlEncodeSnapshot(curvesOnly).payload
+    expect(compactPayload.length).toBeLessThan(legacyPayload.length * 0.25)
+
+    const decoded = acexHtmlDecodeSnapshot(compactPayload)
+    expect(decoded.layouts[0]!.osnap?.primitives.every(p => p.kind !== 'line')).toBe(
+      true
+    )
+    expect(decoded.layouts[0]!.lineBatches[0]!.positions.length).toBeGreaterThan(0)
+  })
+
+  it('stores layout osnap as ACEO in monolithic ACEX binary', () => {
+    const snapshot = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        extents: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+        units: {
+          insunits: 4,
+          lunits: 2,
+          luprec: 4,
+          aunits: 0,
+          auprec: 0,
+          measurement: 1,
+          ltscale: 1,
+          angbase: 0,
+          angdir: 0
+        },
+        background: 0
+      },
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: '*Model_Space',
+          isModelSpace: true,
+          lineBatches: [],
+          meshBatches: [],
+          osnap: {
+            primitives: [
+              {
+                kind: 'circle' as const,
+                layer: '0',
+                cx: 1,
+                cy: 2,
+                r: 3,
+                normalSign: 1 as const
+              }
+            ]
+          }
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+
+    const binary = acexHtmlEncodeSnapshotBinary(snapshot)
+    const magicBytes = new Uint8Array(4)
+    new DataView(magicBytes.buffer).setUint32(0, ACEO_OSNAP_MAGIC, true)
+    const aceoIndex = indexOfBytes(binary, magicBytes)
+    expect(aceoIndex).toBeGreaterThanOrEqual(0)
+
+    const decoded = acexHtmlDecodeSnapshotBinary(binary)
+    expect(decoded.layouts[0]!.osnap?.primitives).toEqual(
+      snapshot.layouts[0]!.osnap!.primitives
+    )
+  })
+
+  it('still decodes legacy JSON layout osnap payloads', () => {
+    const osnap = {
+      primitives: [
+        {
+          kind: 'point' as const,
+          layer: '0',
+          x: 4,
+          y: 5
+        }
+      ]
+    }
+    const binary = encodeLegacyJsonOsnapSnapshot(osnap)
+    const decoded = acexHtmlDecodeSnapshotBinary(binary)
+    expect(decoded.layouts[0]!.osnap).toEqual(osnap)
+  })
+
+  it('round-trips signed renderOrder so hatch fills stay below linework', () => {
+    const snapshot = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        extents: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+        units: {
+          insunits: 4,
+          lunits: 2,
+          luprec: 4,
+          aunits: 0,
+          auprec: 0,
+          measurement: 1,
+          ltscale: 1,
+          angbase: 0,
+          angdir: 0
+        },
+        background: 0
+      },
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: '*Model_Space',
+          isModelSpace: true,
+          lineBatches: [
+            {
+              layer: '0',
+              color: 0xff0000,
+              offset: [0, 0, 0] as [number, number, number],
+              positions: f32([0, 0, 0, 10, 0, 0])
+            }
+          ],
+          meshBatches: [
+            {
+              layer: '0',
+              color: 0x00ff00,
+              offset: [0, 0, 0] as [number, number, number],
+              positions: f32([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+              indices: Uint32Array.from([0, 1, 2]),
+              renderOrder: -1
+            }
+          ]
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+
+    const decoded = acexHtmlDecodeSnapshot(acexHtmlEncodeSnapshot(snapshot).payload)
+    expect(decoded.layouts[0]!.lineBatches[0]!.renderOrder).toBeUndefined()
+    expect(decoded.layouts[0]!.meshBatches[0]!.renderOrder).toBe(-1)
+  })
+})

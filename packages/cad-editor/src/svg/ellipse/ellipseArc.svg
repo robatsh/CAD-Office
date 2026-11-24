@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+<rect x="9" y="9" width="2" height="2" fill="var(--el-color-primary)"></rect>
+<rect x="9" y="15" width="2" height="2" fill="var(--el-color-primary)"></rect>
+<rect x="1" y="9" width="2" height="2" fill="var(--el-color-primary)"></rect>
+<path d="M3.07,7c1.38-1.79,3.97-3,6.93-3,4.42,0,8,2.69,8,6,0,2.52-2.07,4.67-5,5.56" fill="none" stroke="currentColor" stroke-width="1.25"></path>
+</svg>

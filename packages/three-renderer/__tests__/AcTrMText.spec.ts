@@ -1,0 +1,547 @@
+import type { MTextObject } from '@mlightcad/mtext-renderer'
+import * as THREE from 'three'
+
+jest.mock('../src/renderer', () => ({
+  AcTrMTextRenderer: {
+    getInstance: jest.fn()
+  }
+}))
+
+import type { AcTrBatchDrawPolicy } from '../src/draw/AcTrBatchDrawPolicy'
+import { RTE_REBASE_THRESHOLD } from '../src/draw/AcTrBatchDrawPolicy'
+import { AcTrGlyphEntity } from '../src/object/AcTrGlyphEntity'
+import { AcTrMText } from '../src/object/AcTrMText'
+import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
+import { AcTrStyleManager } from '../src/style/AcTrStyleManager'
+import {
+  getSceneDrawableUserData,
+  resolveMTextRenderRoot
+} from '../src/util/AcTrObjectUserData'
+
+type GeometryHost = THREE.Object3D & {
+  wcsBbox: THREE.Box3
+  _wcsBbox: THREE.Box3
+  computeGeometryBox: () => THREE.Box3
+  hasGeometry: (object: THREE.Object3D) => boolean
+  hasInkForSelection: () => boolean
+}
+
+type RaycastHost = THREE.Object3D & {
+  _rendered?: Pick<MTextObject, 'raycast'>
+  wcsBbox: THREE.Box3
+}
+
+const privateMethods = AcTrGlyphEntity.prototype as unknown as {
+  attachRendered(this: AcTrMText, rendered: MTextObject): void
+  computeGeometryBox(this: GeometryHost): THREE.Box3
+  updateSelectionBox(this: GeometryHost, rendered: MTextObject): void
+  hasGeometry(object: THREE.Object3D): boolean
+  raycast(
+    this: RaycastHost,
+    raycaster: THREE.Raycaster,
+    intersects: THREE.Intersection[]
+  ): void
+}
+
+const unbatchPolicy: AcTrBatchDrawPolicy = {
+  resolveDrawMode: () => 'unbatch'
+}
+
+const batchPolicy: AcTrBatchDrawPolicy = {
+  resolveDrawMode: () => 'batch'
+}
+
+describe('AcTrMText wcsBbox', () => {
+  it('computes the selection box from transformed rendered child geometry', () => {
+    const host = createGeometryHost()
+    host.add(createBoxMesh({ x: 10, y: 20, z: 0 }))
+
+    const box = host.computeGeometryBox()
+
+    expect(box.min.toArray()).toEqual([10, 20, 0])
+    expect(box.max.toArray()).toEqual([14, 22, 0])
+  })
+
+  it('keeps selection boxes in parent-local space when the glyph is parented', () => {
+    const parent = new THREE.Object3D()
+    parent.position.set(1000, 2000, 0)
+    parent.updateMatrixWorld(true)
+
+    const host = createGeometryHost()
+    parent.add(host)
+    host.add(createBoxMesh({ x: 10, y: 20, z: 0 }))
+    host.updateMatrixWorld(true)
+
+    const box = host.computeGeometryBox()
+
+    // Geometry is at local (10,20); parent translation must not be baked into
+    // wcsBbox or INSERT spatial refresh would apply that transform twice.
+    expect(box.min.x).toBeCloseTo(10)
+    expect(box.min.y).toBeCloseTo(20)
+    expect(box.max.x).toBeCloseTo(14)
+    expect(box.max.y).toBeCloseTo(22)
+  })
+
+  it('keeps renderer logical space when it overlaps rendered geometry', () => {
+    const host = createGeometryHost()
+    host.add(createBoxMesh({ x: 10, y: 20, z: 0 }))
+    const logicalMTextBox = new THREE.Box3(
+      new THREE.Vector3(10, 18, 0),
+      new THREE.Vector3(14, 24, 0)
+    )
+
+    privateMethods.updateSelectionBox.call(
+      host,
+      createMTextObject(logicalMTextBox)
+    )
+
+    expect(host.wcsBbox.min.toArray()).toEqual([10, 18, 0])
+    expect(host.wcsBbox.max.toArray()).toEqual([14, 24, 0])
+  })
+
+  it('ignores a disjoint renderer-provided mtext box', () => {
+    const host = createGeometryHost()
+    host.add(createBoxMesh({ x: 10, y: 20, z: 0 }))
+    const offsetMTextBox = new THREE.Box3(
+      new THREE.Vector3(100, 100, 0),
+      new THREE.Vector3(101, 101, 0)
+    )
+
+    privateMethods.updateSelectionBox.call(
+      host,
+      createMTextObject(offsetMTextBox)
+    )
+
+    expect(host.wcsBbox.min.toArray()).toEqual([10, 20, 0])
+    expect(host.wcsBbox.max.toArray()).toEqual([14, 22, 0])
+  })
+
+  it('falls back to the renderer-provided mtext box when there is no child geometry', () => {
+    const host = createGeometryHost()
+    const fallbackBox = new THREE.Box3(
+      new THREE.Vector3(100, 100, 0),
+      new THREE.Vector3(101, 101, 0)
+    )
+
+    privateMethods.updateSelectionBox.call(host, createMTextObject(fallbackBox))
+
+    expect(host.wcsBbox.min.toArray()).toEqual([100, 100, 0])
+    expect(host.wcsBbox.max.toArray()).toEqual([101, 101, 0])
+  })
+
+  it('leaves an empty selection box for empty-string text with no ink', () => {
+    // Empty ATTRIB/TEXT still gets a logical layout box (height × 0 width) at
+    // the insertion point. Indexing that as an INSERT child breaks window
+    // selection when the ATTRIB sits far from its AttDef.
+    const context = new AcTrRenderContext(new AcTrStyleManager(), batchPolicy)
+    const entity = new AcTrMText(
+      { text: '', position: { x: -4560, y: 865, z: 0 } } as never,
+      { layer: '0', color: 7 } as never,
+      {} as never,
+      context,
+      true
+    )
+    const logicalBox = new THREE.Box3(
+      new THREE.Vector3(-4560, 865, 0),
+      new THREE.Vector3(-4560, 868, 0)
+    )
+
+    privateMethods.attachRendered.call(entity, createMTextObject(logicalBox))
+
+    expect(entity.wcsBbox.isEmpty()).toBe(true)
+  })
+
+  it('keeps block-definition renderer boxes block-local under an INSERT', () => {
+    // Block MTEXT is drawn at block-local coordinates under the INSERT group
+    // (entity matrix identity). With mesh-glyph instancing there is no child
+    // geometry, so the renderer box is the only bound. Treating it as world
+    // space and applying the INSERT inverse made AcTrGroup map it back to
+    // block-local coordinates, so window selection of the INSERT failed.
+    const insert = createInsert({ x: 488.8, y: 7916.2 }, 40)
+    const entity = createBlockMText(insert)
+    const blockLocalBox = new THREE.Box3(
+      new THREE.Vector3(1.7, 14.3, 0),
+      new THREE.Vector3(13.7, 16.5, 0)
+    )
+
+    privateMethods.attachRendered.call(entity, createMTextObject(blockLocalBox))
+
+    expectBoxClose(entity.wcsBbox, blockLocalBox)
+  })
+
+  it('maps WCS attribute renderer boxes into block-local space', () => {
+    const insert = createInsert({ x: 488.8, y: 7916.2 }, 40)
+    const entity = createBlockMText(insert)
+    // Attributes carry WCS positions; the rendering cache parents them with
+    // the inverse INSERT matrix so they render in place.
+    entity.matrixAutoUpdate = false
+    entity.matrix.copy(insert.matrixWorld).invert()
+    entity.matrixWorldNeedsUpdate = true
+    entity.updateMatrixWorld(true)
+    const blockLocalBox = new THREE.Box3(
+      new THREE.Vector3(1.7, 14.3, 0),
+      new THREE.Vector3(13.7, 16.5, 0)
+    )
+    const wcsBox = blockLocalBox.clone().applyMatrix4(insert.matrixWorld)
+
+    privateMethods.attachRendered.call(entity, createMTextObject(wcsBox))
+
+    expectBoxClose(entity.wcsBbox, blockLocalBox)
+  })
+})
+
+function createInsert(position: { x: number; y: number }, scale: number) {
+  const insert = new THREE.Object3D()
+  insert.position.set(position.x, position.y, 0)
+  insert.scale.set(scale, scale, 1)
+  insert.updateMatrixWorld(true)
+  return insert
+}
+
+function createBlockMText(insert: THREE.Object3D) {
+  const context = new AcTrRenderContext(new AcTrStyleManager(), batchPolicy)
+  const entity = new AcTrMText(
+    { text: 'AB' } as never,
+    { layer: '0', color: 7 } as never,
+    {} as never,
+    context,
+    true
+  )
+  insert.add(entity)
+  entity.updateMatrixWorld(true)
+  return entity
+}
+
+function expectBoxClose(actual: THREE.Box3, expected: THREE.Box3) {
+  expect(actual.min.x).toBeCloseTo(expected.min.x, 6)
+  expect(actual.min.y).toBeCloseTo(expected.min.y, 6)
+  expect(actual.max.x).toBeCloseTo(expected.max.x, 6)
+  expect(actual.max.y).toBeCloseTo(expected.max.y, 6)
+}
+
+describe('AcTrMText', () => {
+  it('keeps precise mtext raycast hits when the renderer reports an intersection', () => {
+    const raycaster = createRaycaster()
+    const hitPoint = new THREE.Vector3(0, 0, 0)
+    const rendererHit: THREE.Intersection = {
+      distance: 10,
+      point: hitPoint,
+      object: new THREE.Object3D()
+    }
+    const host = createRaycastHost({
+      wcsBbox: createSelectableBox(),
+      mtextRaycast: (_raycaster, intersects) => {
+        intersects.push(rendererHit)
+      }
+    })
+    const intersects: THREE.Intersection[] = []
+
+    privateMethods.raycast.call(host, raycaster, intersects)
+
+    expect(intersects).toEqual([rendererHit])
+  })
+
+  it('uses the entity selection box as a raycast fallback when mtext layout misses', () => {
+    const raycaster = createRaycaster()
+    const host = createRaycastHost({
+      wcsBbox: createSelectableBox(),
+      mtextRaycast: jest.fn()
+    })
+    const intersects: THREE.Intersection[] = []
+
+    privateMethods.raycast.call(host, raycaster, intersects)
+
+    expect(intersects).toHaveLength(1)
+    expect(intersects[0].object).toBe(host)
+    expect(intersects[0].point.x).toBeCloseTo(0)
+    expect(intersects[0].point.y).toBeCloseTo(0)
+    expect(intersects[0].point.z).toBeCloseTo(0.1)
+  })
+
+  it('does not report a fallback raycast hit when the selection box is empty', () => {
+    const raycaster = createRaycaster()
+    const host = createRaycastHost({
+      wcsBbox: new THREE.Box3(),
+      mtextRaycast: jest.fn()
+    })
+    const intersects: THREE.Intersection[] = []
+
+    privateMethods.raycast.call(host, raycaster, intersects)
+
+    expect(intersects).toHaveLength(0)
+  })
+
+  it('returns the placement group for sync renderer output', () => {
+    const placementRoot = createPlacementRoot({ x: 0, y: 0, z: 0 }, [0, 8])
+    const wrapper = createSyncMTextObject(placementRoot)
+
+    expect(resolveMTextRenderRoot(wrapper)).toBe(placementRoot)
+  })
+
+  it('keeps the wrapper when it already contains render leaves', () => {
+    const wrapper = new THREE.Object3D()
+    wrapper.add(createGlyphMesh(0))
+
+    expect(resolveMTextRenderRoot(wrapper)).toBe(wrapper)
+  })
+
+  it('keeps renderer hierarchy when resolveDrawMode returns unbatch', () => {
+    const context = new AcTrRenderContext(new AcTrStyleManager(), unbatchPolicy)
+    const entity = new AcTrMText(
+      { text: 'AB' } as never,
+      { layer: '0', color: 7 } as never,
+      {} as never,
+      context,
+      true
+    )
+    const placementRoot = createPlacementRoot(
+      { x: RTE_REBASE_THRESHOLD + 500, y: 2_000_000, z: 0 },
+      [0, 8]
+    )
+    const mtext = createSyncMTextObject(placementRoot)
+
+    privateMethods.attachRendered.call(entity, mtext)
+
+    expect(getSceneDrawableUserData(placementRoot).noBatch).toBe(true)
+    expect(entity.children).toHaveLength(1)
+    expect(placementRoot.children).toHaveLength(2)
+  })
+
+  it('folds inverse INSERT matrix into WCS placement so mirrored scales stay local', () => {
+    const context = new AcTrRenderContext(new AcTrStyleManager(), unbatchPolicy)
+    const insert = new THREE.Object3D()
+    // Thin mirrored Y — THREE.Matrix4.decompose cannot represent this inverse.
+    insert.position.set(592909.8248335773, 3124651.1516687754, 0)
+    insert.rotation.z = 1.8245795716825401
+    insert.scale.set(5.353306447087925, -0.2001236053492903, 0.2001236055046306)
+    insert.updateMatrixWorld(true)
+
+    const entity = new AcTrMText(
+      {
+        text: 'FJM5428',
+        position: { x: 592909.8651438681, y: 3124651.724989663, z: 0 }
+      } as never,
+      { layer: 'DOOR_FIRE_TEXT', color: 7 } as never,
+      {} as never,
+      context,
+      true
+    )
+    insert.add(entity)
+    // Apply inverse without TRS decompose (matches AcTrEntity.applyMatrix).
+    const inverse = insert.matrixWorld.clone().invert()
+    entity.matrixAutoUpdate = false
+    entity.matrix.copy(inverse)
+    entity.matrixWorldNeedsUpdate = true
+    entity.updateMatrixWorld(true)
+
+    const wcs = { x: 592909.8651438681, y: 3124651.724989663, z: 0 }
+    const placementRoot = createPlacementRoot(wcs, [0, 8])
+    const mtext = createSyncMTextObject(placementRoot)
+    privateMethods.attachRendered.call(entity, mtext)
+
+    expect(entity.matrix.equals(new THREE.Matrix4())).toBe(true)
+    expect(Math.abs(placementRoot.matrix.elements[12])).toBeLessThan(10)
+    expect(Math.abs(placementRoot.matrix.elements[13])).toBeLessThan(10)
+
+    insert.updateMatrixWorld(true)
+    const world = new THREE.Vector3()
+    placementRoot.getWorldPosition(world)
+    expect(world.x).toBeCloseTo(wcs.x, 1)
+    expect(world.y).toBeCloseTo(wcs.y, 1)
+  })
+
+  it('flattens render leaves when resolveDrawMode returns batch', () => {
+    const context = new AcTrRenderContext(new AcTrStyleManager(), batchPolicy)
+    const entity = new AcTrMText(
+      { text: 'AB' } as never,
+      { layer: '0', color: 7 } as never,
+      {} as never,
+      context,
+      true
+    )
+    const placementRoot = createPlacementRoot({ x: 10, y: 20, z: 0 }, [0, 8])
+    const mtext = createSyncMTextObject(placementRoot)
+
+    privateMethods.attachRendered.call(entity, mtext)
+
+    expect(getSceneDrawableUserData(placementRoot).noBatch).toBeUndefined()
+    expect(entity.children).toHaveLength(2)
+    expect(entity.children.every(child => child instanceof THREE.Mesh)).toBe(
+      true
+    )
+  })
+
+  it('keeps mirrored INSERT glyph world positions after batch flatten', () => {
+    const context = new AcTrRenderContext(new AcTrStyleManager(), batchPolicy)
+    const insert = new THREE.Object3D()
+    insert.position.set(592909.8248335773, 3124651.1516687754, 0)
+    insert.rotation.z = 1.8245795716825401
+    insert.scale.set(5.353306447087925, -0.2001236053492903, 0.2001236055046306)
+    insert.updateMatrixWorld(true)
+
+    const entity = new AcTrMText(
+      {
+        text: 'FJM5428',
+        position: { x: 592909.8651438681, y: 3124651.724989663, z: 0 }
+      } as never,
+      { layer: 'DOOR_FIRE_TEXT', color: 7 } as never,
+      {} as never,
+      context,
+      true
+    )
+    insert.add(entity)
+    const inverse = insert.matrixWorld.clone().invert()
+    entity.matrixAutoUpdate = false
+    entity.matrix.copy(inverse)
+    entity.matrixWorldNeedsUpdate = true
+    entity.updateMatrixWorld(true)
+
+    const wcs = { x: 592909.8651438681, y: 3124651.724989663, z: 0 }
+    const placementRoot = createPlacementRoot(wcs, [0, 8])
+    const expectedGlyphWorld: THREE.Vector3[] = []
+    placementRoot.updateMatrixWorld(true)
+    for (const child of placementRoot.children) {
+      const world = new THREE.Vector3()
+      child.getWorldPosition(world)
+      expectedGlyphWorld.push(world)
+    }
+
+    privateMethods.attachRendered.call(
+      entity,
+      createSyncMTextObject(placementRoot)
+    )
+
+    expect(entity.children).toHaveLength(2)
+    insert.updateMatrixWorld(true)
+    for (let i = 0; i < entity.children.length; i++) {
+      const world = new THREE.Vector3()
+      entity.children[i].getWorldPosition(world)
+      expect(world.x).toBeCloseTo(expectedGlyphWorld[i].x, 1)
+      expect(world.y).toBeCloseTo(expectedGlyphWorld[i].y, 1)
+    }
+  })
+
+  it('fastDeepClone keeps AcTrMText so INSERT clones can still asyncDraw', () => {
+    const context = new AcTrRenderContext(new AcTrStyleManager(), batchPolicy)
+    const entity = new AcTrMText(
+      { text: 'Hello', position: { x: 1, y: 2, z: 3 } } as never,
+      { layer: '0', color: 7 } as never,
+      { font: 'simsun' } as never,
+      context
+    )
+    entity.objectId = 'mtext-1'
+
+    const cloned = entity.fastDeepClone()
+
+    expect(cloned).toBeInstanceOf(AcTrMText)
+    expect(cloned.objectId).toBe('mtext-1')
+    expect(cloned.hasDrawableGeometry()).toBe(false)
+  })
+})
+
+function createGeometryHost(): GeometryHost {
+  const host = new THREE.Object3D() as GeometryHost
+  host.wcsBbox = new THREE.Box3()
+  host._wcsBbox = host.wcsBbox
+  host.computeGeometryBox = privateMethods.computeGeometryBox
+  host.hasGeometry = privateMethods.hasGeometry
+  host.hasInkForSelection = () => true
+  return host
+}
+
+function createRaycastHost(options: {
+  wcsBbox: THREE.Box3
+  mtextRaycast: Pick<MTextObject, 'raycast'>['raycast']
+}): RaycastHost {
+  const host = new THREE.Object3D() as RaycastHost
+  host.wcsBbox = options.wcsBbox
+  host._rendered = {
+    raycast: options.mtextRaycast
+  }
+  host.updateMatrixWorld(true)
+  return host
+}
+
+function createMTextObject(
+  box: THREE.Box3,
+  lines: Array<{ y: number; height: number }> = []
+): MTextObject {
+  const mtext = new THREE.Object3D() as MTextObject
+  mtext.box = box
+  mtext.createLayoutData = () => ({ lines, chars: [] })
+  return mtext
+}
+
+function createBoxMesh(position: THREE.Vector3Like) {
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute(
+    'position',
+    new THREE.Float32BufferAttribute([0, 0, 0, 4, 0, 0, 4, 2, 0, 0, 2, 0], 3)
+  )
+  geometry.setIndex([0, 1, 2, 0, 2, 3])
+
+  const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial())
+  mesh.position.copy(position)
+  return mesh
+}
+
+function createRaycaster() {
+  return new THREE.Raycaster(
+    new THREE.Vector3(0, 0, 10),
+    new THREE.Vector3(0, 0, -1)
+  )
+}
+
+function createSelectableBox() {
+  return new THREE.Box3(
+    new THREE.Vector3(-1, -1, -0.1),
+    new THREE.Vector3(1, 1, 0.1)
+  )
+}
+
+function createGlyphMesh(localMinX: number, width = 4, height = 2) {
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute(
+    'position',
+    new THREE.Float32BufferAttribute(
+      [
+        localMinX,
+        0,
+        0,
+        localMinX + width,
+        0,
+        0,
+        localMinX + width,
+        height,
+        0,
+        localMinX,
+        height,
+        0
+      ],
+      3
+    )
+  )
+  geometry.setIndex([0, 1, 2, 0, 2, 3])
+  return new THREE.Mesh(geometry, new THREE.MeshBasicMaterial())
+}
+
+function createPlacementRoot(
+  insertion: THREE.Vector3Like,
+  glyphOffsets: number[]
+) {
+  const placementRoot = new THREE.Group()
+  placementRoot.position.set(insertion.x, insertion.y, insertion.z ?? 0)
+  for (const offset of glyphOffsets) {
+    placementRoot.add(createGlyphMesh(offset))
+  }
+  placementRoot.updateMatrixWorld(true)
+  return placementRoot
+}
+
+function createSyncMTextObject(placementRoot: THREE.Object3D): MTextObject {
+  const wrapper = new THREE.Object3D() as MTextObject
+  wrapper.box = new THREE.Box3()
+  wrapper.createLayoutData = () => ({ lines: [], chars: [] })
+  wrapper.add(placementRoot)
+  return wrapper
+}

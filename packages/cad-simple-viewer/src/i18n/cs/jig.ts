@@ -1,0 +1,2679 @@
+export default {
+  arc: {
+    startPointOrCenter: 'Zadejte počáteční bod oblouku nebo',
+    secondPointOrOptions: 'Zadejte druhý bod oblouku nebo',
+    secondPoint: 'Zadejte druhý bod oblouku',
+    startPoint: 'Zadejte počáteční bod oblouku',
+    centerPoint: 'Zadejte středový bod oblouku',
+    endPoint: 'Zadejte koncový bod oblouku',
+    endPointOrOptions: 'Zadejte koncový bod oblouku nebo',
+    centerPointOrOptions: 'Zadejte středový bod oblouku',
+    includedAngle: 'Zadejte středový úhel',
+    chordLength: 'Zadejte délku tětivy',
+    tangentDirection: 'Zadejte směr tečny v počátečním bodě oblouku',
+    radius: 'Zadejte poloměr oblouku',
+    keywords: {
+      center: {
+        display: 'Střed(C)',
+        local: 'Střed',
+        global: 'Center'
+      },
+      end: {
+        display: 'Konec(E)',
+        local: 'Konec',
+        global: 'End'
+      },
+      angle: {
+        display: 'Úhel(A)',
+        local: 'Úhel',
+        global: 'Angle'
+      },
+      chordLength: {
+        display: 'délka Tětivy(L)',
+        local: 'Délka tětivy',
+        global: 'ChordLength'
+      },
+      direction: {
+        display: 'Směr(D)',
+        local: 'Směr',
+        global: 'Direction'
+      },
+      radius: {
+        display: 'Poloměr(R)',
+        local: 'Poloměr',
+        global: 'Radius'
+      }
+    },
+    invalid: {
+      threePoint:
+        'Neplatný 3bodový oblouk: body jsou kolineární nebo nelze definovat oblouk.',
+      center:
+        'Neplatný vstup středu: počáteční a koncový bod musí ležet na stejné kružnici.',
+      angle:
+        'Neplatný vstup úhlu: středový úhel musí být větší než 0 a menší než 360 stupňů.',
+      chordLength:
+        'Neplatná délka tětivy: hodnota je mimo rozsah pro aktuální poloměr.',
+      direction: 'Neplatný směr: z tohoto směru tečny nelze sestrojit oblouk.',
+      radius:
+        'Neplatný poloměr: zadaný poloměr nemůže spojit počáteční a koncový bod.'
+    }
+  },
+  circle: {
+    center: 'Zadejte střed kružnice',
+    centerOrOptions: 'Zadejte středový bod kružnice nebo',
+    radius: 'Zadejte poloměr kružnice',
+    radiusOrDiameter: 'Zadejte poloměr kružnice nebo',
+    diameter: 'Zadejte průměr kružnice',
+    twoPointFirst: 'Zadejte první koncový bod průměru kružnice',
+    twoPointSecond: 'Zadejte druhý koncový bod průměru kružnice',
+    threePointFirst: 'Zadejte první bod na kružnici',
+    threePointSecond: 'Zadejte druhý bod na kružnici',
+    threePointThird: 'Zadejte třetí bod na kružnici',
+    keywords: {
+      threeP: {
+        display: '3B(3P)',
+        local: '3B',
+        global: '3P'
+      },
+      twoP: {
+        display: '2B(2P)',
+        local: '2B',
+        global: '2P'
+      },
+      diameter: {
+        display: 'Průměr(D)',
+        local: 'Průměr',
+        global: 'Diameter'
+      }
+    }
+  },
+  copy: {
+    basePointOrOptions: 'Zadejte základní bod nebo',
+    displacementOrArray: 'Zadejte přemístění nebo',
+    secondPointOrArray: 'Zadejte druhý bod nebo',
+    modePrompt: 'Zadejte volbu režimu kopírování',
+    arrayItemCount: 'Zadejte počet položek v poli včetně originálu',
+    arraySecondPointOrFit: 'Zadejte druhý bod nebo',
+    arrayFitSecondPoint: 'Zadejte druhý bod',
+    keywords: {
+      displacement: {
+        display: 'Přemístění(D)',
+        local: 'Přemístění',
+        global: 'Displacement'
+      },
+      mode: {
+        display: 'Režim(O)',
+        local: 'Režim',
+        global: 'Mode'
+      },
+      multiple: {
+        display: 'Vícenásobné(M)',
+        local: 'Vícenásobné',
+        global: 'Multiple'
+      },
+      single: {
+        display: 'Jednoduché(S)',
+        local: 'Jednoduché',
+        global: 'Single'
+      },
+      array: {
+        display: 'Pole(A)',
+        local: 'Pole',
+        global: 'Array'
+      },
+      fit: {
+        display: 'Přizpůsobit(F)',
+        local: 'Přizpůsobit',
+        global: 'Fit'
+      }
+    }
+  },
+  copybase: {
+    basePoint: 'Určete základní bod'
+  },
+  pasteclip: {
+    insertionPoint: 'Určete bod vložení',
+    empty: 'Schránka neobsahuje žádné objekty výkresu'
+  },
+  pasteorig: {
+    sameDrawing:
+      'PASTEORIG nemůže vložit objekty do výkresu, ze kterého byly zkopírovány'
+  },
+  pasteblock: {
+    insertionPoint: 'Určete bod vložení'
+  },
+  dimlinear: {
+    xLine1Point: 'Zadejte počátek první pomocné čáry',
+    xLine2Point: 'Zadejte počátek druhé pomocné čáry',
+    dimLinePoint: 'Zadejte umístění kótovací čáry',
+    selectObject: 'Vyberte objekt ke kótování',
+    rejectObject: 'Objekt nelze okótovat příkazem DIMLINEAR.',
+    dimensionText: 'Zadejte text kóty',
+    textAngle: 'Zadejte úhel textu kóty',
+    rotationAngle: 'Zadejte úhel kótovací čáry',
+    keywords: {
+      mtext: {
+        display: 'Víceřádkový text(M)',
+        local: 'Víceřádkový text',
+        global: 'Mtext'
+      },
+      text: { display: 'Text(T)', local: 'Text', global: 'Text' },
+      angle: { display: 'Úhel(A)', local: 'Úhel', global: 'Angle' },
+      horizontal: {
+        display: 'Vodorovně(H)',
+        local: 'Vodorovně',
+        global: 'Horizontal'
+      },
+      vertical: {
+        display: 'Svisle(V)',
+        local: 'Svisle',
+        global: 'Vertical'
+      },
+      rotated: {
+        display: 'Otočeně(R)',
+        local: 'Otočeně',
+        global: 'Rotated'
+      }
+    }
+  },
+  dimaligned: {
+    xLine1Point: 'Zadejte počátek první pomocné čáry nebo <vybrat objekt>',
+    xLine2Point: 'Zadejte počátek druhé pomocné čáry',
+    dimLinePoint: 'Zadejte umístění kótovací čáry',
+    selectObject: 'Vyberte objekt ke kótování',
+    rejectObject: 'Objekt nelze okótovat příkazem DIMALIGNED.',
+    dimensionText: 'Zadejte text kóty',
+    textAngle: 'Zadejte úhel textu kóty',
+    keywords: {
+      mtext: {
+        display: 'Víceřádkový text(M)',
+        local: 'Víceřádkový text',
+        global: 'Mtext'
+      },
+      text: { display: 'Text(T)', local: 'Text', global: 'Text' },
+      angle: { display: 'Úhel(A)', local: 'Úhel', global: 'Angle' }
+    }
+  },
+  dimradius: {
+    selectObject: 'Vyberte oblouk nebo kružnici',
+    rejectObject: 'Je nutné vybrat oblouk nebo kružnici.',
+    dimLinePoint: 'Zadejte umístění kótovací čáry',
+    dimensionText: 'Zadejte text kóty',
+    textAngle: 'Zadejte úhel textu kóty',
+    keywords: {
+      mtext: {
+        display: 'Víceřádkový text(M)',
+        local: 'Víceřádkový text',
+        global: 'Mtext'
+      },
+      text: { display: 'Text(T)', local: 'Text', global: 'Text' },
+      angle: { display: 'Úhel(A)', local: 'Úhel', global: 'Angle' }
+    }
+  },
+  dimdiameter: {
+    selectObject: 'Vyberte oblouk nebo kružnici',
+    rejectObject: 'Je nutné vybrat oblouk nebo kružnici.',
+    dimLinePoint: 'Zadejte umístění kótovací čáry',
+    dimensionText: 'Zadejte text kóty',
+    textAngle: 'Zadejte úhel textu kóty',
+    keywords: {
+      mtext: {
+        display: 'Víceřádkový text(M)',
+        local: 'Víceřádkový text',
+        global: 'Mtext'
+      },
+      text: { display: 'Text(T)', local: 'Text', global: 'Text' },
+      angle: { display: 'Úhel(A)', local: 'Úhel', global: 'Angle' }
+    }
+  },
+  dimangular: {
+    vertexOrSelect: 'Zadejte vrchol úhlu nebo <vybrat úsečku>',
+    xLine1Point: 'Zadejte první koncový bod úhlu',
+    xLine2Point: 'Zadejte druhý koncový bod úhlu',
+    arcPoint: 'Zadejte umístění oblouku kóty',
+    selectFirstLine: 'Vyberte první úsečku',
+    selectSecondLine: 'Vyberte druhou úsečku',
+    rejectObject: 'Je nutné vybrat úsečku.',
+    linesParallel: 'Úsečky jsou rovnoběžné — nemají průsečík pro úhel.',
+    dimensionText: 'Zadejte text kóty',
+    textAngle: 'Zadejte úhel textu kóty',
+    keywords: {
+      mtext: {
+        display: 'Víceřádkový text(M)',
+        local: 'Víceřádkový text',
+        global: 'Mtext'
+      },
+      text: { display: 'Text(T)', local: 'Text', global: 'Text' },
+      angle: { display: 'Úhel(A)', local: 'Úhel', global: 'Angle' }
+    }
+  },
+  dimarc: {
+    selectArc: 'Vyberte oblouk',
+    rejectObject: 'Je nutné vybrat oblouk.',
+    arcPoint: 'Zadejte umístění kóty délky oblouku',
+    dimensionText: 'Zadejte text kóty',
+    textAngle: 'Zadejte úhel textu kóty',
+    keywords: {
+      mtext: {
+        display: 'Víceřádkový text(M)',
+        local: 'Víceřádkový text',
+        global: 'Mtext'
+      },
+      text: { display: 'Text(T)', local: 'Text', global: 'Text' },
+      angle: { display: 'Úhel(A)', local: 'Úhel', global: 'Angle' }
+    }
+  },
+  dimordinate: {
+    featurePoint: 'Zadejte umístění prvku',
+    leaderEndpoint: 'Zadejte koncový bod odkazu',
+    dimensionText: 'Zadejte text kóty',
+    textAngle: 'Zadejte úhel textu kóty',
+    keywords: {
+      mtext: {
+        display: 'Víceřádkový text(M)',
+        local: 'Víceřádkový text',
+        global: 'Mtext'
+      },
+      text: { display: 'Text(T)', local: 'Text', global: 'Text' },
+      angle: { display: 'Úhel(A)', local: 'Úhel', global: 'Angle' },
+      xdatum: { display: 'Xzákladna(X)', local: 'Xzákladna', global: 'Xdatum' },
+      ydatum: { display: 'Yzákladna(Y)', local: 'Yzákladna', global: 'Ydatum' }
+    }
+  },
+  dimcontinue: {
+    nextPoint: 'Zadejte počátek druhé pomocné čáry nebo',
+    selectDimension: 'Vyberte navazovanou kótu',
+    rejectObject: 'Je nutné vybrat lineární nebo úhlovou kótu.',
+    keywords: {
+      select: { display: 'Vybrat(S)', local: 'Vybrat', global: 'Select' }
+    }
+  },
+  dimbaseline: {
+    nextPoint: 'Zadejte počátek druhé pomocné čáry nebo',
+    selectDimension: 'Vyberte základní kótu',
+    rejectObject: 'Je nutné vybrat lineární nebo úhlovou kótu.',
+    keywords: {
+      select: { display: 'Vybrat(S)', local: 'Vybrat', global: 'Select' }
+    }
+  },
+  ellipse: {
+    axisEndpointOrOptions: 'Zadejte koncový bod osy elipsy nebo',
+    arcAxisEndpointOrCenter: 'Zadejte koncový bod osy eliptického oblouku nebo',
+    center: 'Zadejte střed elipsy',
+    firstAxisEndpoint: 'Zadejte koncový bod osy',
+    secondAxisEndpoint: 'Zadejte druhý koncový bod osy',
+    otherAxisOrRotation: 'Zadejte vzdálenost k druhé ose nebo',
+    rotationAngle: 'Zadejte úhel otočení kolem hlavní osy',
+    arcStartAngle: 'Zadejte počáteční úhel eliptického oblouku',
+    arcEndAngle: 'Zadejte koncový úhel eliptického oblouku',
+    keywords: {
+      arc: {
+        display: 'Oblouk(A)',
+        local: 'Oblouk',
+        global: 'Arc'
+      },
+      center: {
+        display: 'Střed(C)',
+        local: 'Střed',
+        global: 'Center'
+      },
+      rotation: {
+        display: 'Otočení(R)',
+        local: 'Otočení',
+        global: 'Rotation'
+      }
+    },
+    invalid: {
+      axis: 'Neplatný vstup osy: délka osy musí být větší než 0.',
+      otherAxis: 'Neplatný vstup druhé osy: vzdálenost musí být větší než 0.',
+      rotation:
+        'Neplatný vstup otočení: výsledná vedlejší osa musí být větší než 0.'
+    }
+  },
+  explode: {
+    notExplodable: 'Počet objektů, které nelze rozložit: {count}',
+    minsert: 'Bloky vložené příkazem MINSERT nelze rozložit (počet: {count})'
+  },
+  trim: {
+    selectObject: 'Vyberte objekt k oříznutí nebo se Shift k prodloužení nebo',
+    selectEdges: 'Vyberte řezné hrany nebo <vybrat vše>',
+    modePrompt: 'Zadejte možnost režimu oříznutí'
+  },
+  extend: {
+    selectObject: 'Vyberte objekt k prodloužení nebo se Shift k oříznutí nebo',
+    selectEdges: 'Vyberte hraniční hrany nebo <vybrat vše>',
+    modePrompt: 'Zadejte možnost režimu prodloužení'
+  },
+  trimExtend: {
+    currentSettings:
+      'Aktuální nastavení: Promítání={projection}, Hrana={edge}, Režim={mode}',
+    settingValue: {
+      none: 'Žádné',
+      ucs: 'UCS',
+      view: 'Pohled',
+      extend: 'Prodloužit',
+      noExtend: 'Žádné',
+      quick: 'Rychlý',
+      standard: 'Standardní'
+    },
+    projectPrompt: 'Zadejte možnost promítání',
+    edgePrompt: 'Zadejte režim prodloužení implicitní hrany',
+    fenceFirst: 'Určete první bod plotu',
+    fenceNext: 'Určete další bod plotu',
+    crossingFirst: 'Určete první roh',
+    crossingSecond: 'Určete protější roh',
+    erasePrompt: 'Vyberte objekty k vymazání nebo <konec>',
+    noObject: 'Nebyl nalezen žádný objekt.',
+    noIntersection: 'Objekt neprotíná žádnou hranu.',
+    noEdgeInDirection: 'V tomto směru není žádná hrana.',
+    cannotTrim: 'Tento objekt nelze oříznout.',
+    cannotExtend: 'Tento objekt nelze prodloužit.',
+    lockedLayer: 'Objekt je v uzamčené hladině.',
+    nothingToUndo: 'Všechny operace byly vráceny zpět.',
+    keywords: {
+      cuttingEdges: {
+        display: 'Řezné hrany(T)',
+        local: 'Řezné hrany',
+        global: 'cuTting'
+      },
+      boundaryEdges: {
+        display: 'Hraniční hrany(B)',
+        local: 'Hraniční hrany',
+        global: 'Boundary'
+      },
+      fence: {
+        display: 'Plot(F)',
+        local: 'Plot',
+        global: 'Fence'
+      },
+      crossing: {
+        display: 'Křížení(C)',
+        local: 'Křížení',
+        global: 'Crossing'
+      },
+      mode: {
+        display: 'Režim(O)',
+        local: 'Režim',
+        global: 'mOde'
+      },
+      project: {
+        display: 'Promítání(P)',
+        local: 'Promítání',
+        global: 'Project'
+      },
+      edge: {
+        display: 'Hrana(E)',
+        local: 'Hrana',
+        global: 'Edge'
+      },
+      erase: {
+        display: 'Vymazat(R)',
+        local: 'Vymazat',
+        global: 'eRase'
+      },
+      undo: {
+        display: 'Zpět(U)',
+        local: 'Zpět',
+        global: 'Undo'
+      },
+      quick: {
+        display: 'Rychlý(Q)',
+        local: 'Rychlý',
+        global: 'Quick'
+      },
+      standard: {
+        display: 'Standardní(S)',
+        local: 'Standardní',
+        global: 'Standard'
+      },
+      projectNone: {
+        display: 'Žádné(N)',
+        local: 'Žádné',
+        global: 'None'
+      },
+      projectUcs: {
+        display: 'UCS(U)',
+        local: 'UCS',
+        global: 'Ucs'
+      },
+      projectView: {
+        display: 'Pohled(V)',
+        local: 'Pohled',
+        global: 'View'
+      },
+      edgeExtend: {
+        display: 'Prodloužit(E)',
+        local: 'Prodloužit',
+        global: 'Extend'
+      },
+      edgeNoExtend: {
+        display: 'Neprodlužovat(N)',
+        local: 'Neprodlužovat',
+        global: 'No'
+      }
+    }
+  },
+  join: {
+    needTwo: 'Vyberte alespoň dvě úsečky, oblouky nebo křivky ke spojení.',
+    noneJoined: 'Žádné objekty nelze spojit.',
+    eraseFailed:
+      'Nepodařilo se smazat všechny zdrojové objekty. Spojení bylo zrušeno.',
+    joined: 'Spojeno objektů: {count}.'
+  },
+  hatch: {
+    prompt: 'Vyberte objekt hranice nebo',
+    pickPoint: 'Zadejte vnitřní bod (nebo stiskněte Enter pro dokončení)',
+    select: 'Vyberte objekty k šrafování',
+    patternName: 'Zadejte název vzoru šrafování',
+    scale: 'Zadejte měřítko vzoru šrafování',
+    angle: 'Zadejte úhel vzoru šrafování',
+    style: 'Zadejte styl šrafování',
+    associative: 'Zadejte asociativitu',
+    invalidBoundary: 'Vybrané objekty netvoří uzavřenou hranici.',
+    keywords: {
+      pick: {
+        display: 'Vybrat body(P)',
+        local: 'Vybrat body',
+        global: 'PickPoints'
+      },
+      select: {
+        display: 'Vybrat objekty(S)',
+        local: 'Vybrat objekty',
+        global: 'SelectObjects'
+      },
+      cancel: {
+        display: 'Zrušit(C)',
+        local: 'Zrušit',
+        global: 'Cancel'
+      },
+      pattern: {
+        display: 'Vzor(P)',
+        local: 'Vzor',
+        global: 'Pattern'
+      },
+      scale: {
+        display: 'Měřítko(S)',
+        local: 'Měřítko',
+        global: 'Scale'
+      },
+      angle: {
+        display: 'Úhel(A)',
+        local: 'Úhel',
+        global: 'Angle'
+      },
+      style: {
+        display: 'Styl(T)',
+        local: 'Styl',
+        global: 'HatchStyle'
+      },
+      associative: {
+        display: 'Asociativní(AS)',
+        local: 'Asociativní',
+        global: 'AssociativeMode'
+      },
+      normal: {
+        display: 'Normální(N)',
+        local: 'Normální',
+        global: 'Normal'
+      },
+      outer: {
+        display: 'Vnější(O)',
+        local: 'Vnější',
+        global: 'Outer'
+      },
+      ignore: {
+        display: 'Ignorovat(I)',
+        local: 'Ignorovat',
+        global: 'Ignore'
+      },
+      yes: {
+        display: 'Ano(Y)',
+        local: 'Ano',
+        global: 'Yes'
+      },
+      no: {
+        display: 'Ne(N)',
+        local: 'Ne',
+        global: 'No'
+      }
+    }
+  },
+  hideobjects: {
+    hidden: 'objekt(ů) skryto',
+    restored: 'objekt(ů) obnoveno',
+    nothingToRestore: 'Žádné skryté objekty k obnovení'
+  },
+  entout: {
+    longSidePrompt: 'Zadejte velikost delší strany náhledu v pixelech',
+    exported: 'náhled(ů) objektů exportováno',
+    skipped: 'objekt(ů) přeskočeno',
+    failed: {
+      'no-preview-root': 'Nelze sestavit geometrii náhledu pro výběr',
+      'no-bounds': 'Nelze vypočítat rozsah náhledu pro výběr',
+      'capture-failed': 'Nelze vykreslit náhledový obrázek entity',
+      'download-failed': 'Náhled byl vykreslen, ale stažení PNG selhalo'
+    }
+  },
+  layer: {
+    main: 'Zadejte volbu',
+    listSummary: 'Seznam hladin byl vypsán do konzole prohlížeče',
+    emptyInput: 'Nebyl zadán žádný název hladiny.',
+    newPrompt: 'Zadejte název nové hladiny (nebo hladin)',
+    makePrompt: 'Zadejte název hladiny, která se má stát aktuální',
+    setPrompt: 'Zadejte název hladiny, která se má nastavit jako aktuální',
+    onPrompt: 'Zadejte název (názvy) hladiny k zapnutí',
+    offPrompt: 'Zadejte název (názvy) hladiny k vypnutí',
+    freezePrompt: 'Zadejte název (názvy) hladiny ke zmrazení',
+    thawPrompt: 'Zadejte název (názvy) hladiny k rozmrazení',
+    lockPrompt: 'Zadejte název (názvy) hladiny k uzamčení',
+    unlockPrompt: 'Zadejte název (názvy) hladiny k odemčení',
+    colorLayerPrompt: 'Zadejte název (názvy) hladiny ke změně barvy',
+    colorValuePrompt:
+      'Zadejte barvu (ACI 1-255, RGB např. 255,0,0, nebo CSS název barvy)',
+    invalidColor: 'Neplatný vstup barvy.',
+    descriptionLayerPrompt: 'Zadejte název hladiny k úpravě popisu',
+    descriptionValuePrompt: 'Zadejte nový popis hladiny',
+    created: 'Počet vytvořených hladin',
+    alreadyExists: 'Hladina již existuje',
+    notFound: 'Hladina nenalezena',
+    cannotChangeCurrent: 'Nelze vypnout ani zmrazit aktuální hladinu.',
+    keywords: {
+      list: {
+        display: '?(?)',
+        local: '?',
+        global: '?'
+      },
+      make: {
+        display: 'Vytvořit(M)',
+        local: 'Vytvořit',
+        global: 'Make'
+      },
+      set: {
+        display: 'Nastavit(S)',
+        local: 'Nastavit',
+        global: 'Set'
+      },
+      new: {
+        display: 'Nová(N)',
+        local: 'Nová',
+        global: 'New'
+      },
+      on: {
+        display: 'Zapnout(ON)',
+        local: 'Zapnout',
+        global: 'On'
+      },
+      off: {
+        display: 'Vypnout(OF)',
+        local: 'Vypnout',
+        global: 'Off'
+      },
+      color: {
+        display: 'Barva(C)',
+        local: 'Barva',
+        global: 'Color'
+      },
+      freeze: {
+        display: 'Zmrazit(F)',
+        local: 'Zmrazit',
+        global: 'Freeze'
+      },
+      thaw: {
+        display: 'Rozmrazit(T)',
+        local: 'Rozmrazit',
+        global: 'Thaw'
+      },
+      lock: {
+        display: 'Uzamknout(L)',
+        local: 'Uzamknout',
+        global: 'Lock'
+      },
+      unlock: {
+        display: 'Odemknout(U)',
+        local: 'Odemknout',
+        global: 'Unlock'
+      },
+      description: {
+        display: 'Popis(D)',
+        local: 'Popis',
+        global: 'Description'
+      }
+    }
+  },
+  layon: {
+    alreadyOn: 'Všechny hladiny jsou již zapnuté.',
+    turnedOn: 'Zapnuté hladiny'
+  },
+  laycur: {
+    prompt: 'Vyberte objekty ke změně na aktuální hladinu',
+    currentLayerNotFound: 'Aktuální hladina nenalezena.',
+    noObjects: 'Nebyly vybrány žádné platné objekty.',
+    alreadyCurrent: 'Vybrané objekty jsou již na aktuální hladině.',
+    changed: 'Objekty změněny na aktuální hladinu'
+  },
+  layfrz: {
+    prompt: 'Vyberte objekt na hladině ke zmrazení nebo',
+    invalidSelection: 'Vybrán neplatný objekt.',
+    settingsPrompt: 'Zadejte nastavení LAYFRZ ke změně',
+    viewportPrompt: 'Zadejte chování zmrazení ve výřezu',
+    blockSelectionPrompt: 'Zadejte chování výběru vnořeného bloku',
+    vpfreezeFallback:
+      'Aktuální prohlížeč nepodporuje zmrazení hladiny podle výřezu; místo toho se použije chování Zmrazit.',
+    nestedSelectionLimited:
+      'Nastavení výběru vnořeného bloku se uloží, ale aktuální výběr stále vyhodnocuje hladinu entity nejvyšší úrovně.',
+    layerNotFound: 'Hladina nenalezena',
+    cannotFreezeCurrent: 'Nelze zmrazit aktuální hladinu.',
+    alreadyFrozen: 'Hladina je již zmrazená',
+    frozen: 'Zmrazená hladina',
+    restored: 'Obnovená hladina',
+    nothingToUndo: 'Neexistuje žádná akce LAYFRZ k vrácení zpět.',
+    keywords: {
+      settings: {
+        display: 'Nastavení(S)',
+        local: 'Nastavení',
+        global: 'Settings'
+      },
+      undo: {
+        display: 'Zpět(U)',
+        local: 'Zpět',
+        global: 'Undo'
+      },
+      viewports: {
+        display: 'Výřezy(V)',
+        local: 'Výřezy',
+        global: 'Viewports'
+      },
+      blockSelection: {
+        display: 'Výběr bloku(B)',
+        local: 'Výběr bloku',
+        global: 'BlockSelection'
+      },
+      freeze: {
+        display: 'Zmrazit(F)',
+        local: 'Zmrazit',
+        global: 'Freeze'
+      },
+      vpfreeze: {
+        display: 'Zmrazit ve výřezu(V)',
+        local: 'Zmrazit ve výřezu',
+        global: 'Vpfreeze'
+      },
+      block: {
+        display: 'Blok(B)',
+        local: 'Blok',
+        global: 'Block'
+      },
+      entity: {
+        display: 'Entita(E)',
+        local: 'Entita',
+        global: 'Entity'
+      },
+      none: {
+        display: 'Žádný(N)',
+        local: 'Žádný',
+        global: 'None'
+      }
+    }
+  },
+  layiso: {
+    prompt: 'Vyberte objekty na hladině (hladinách) k izolaci nebo',
+    settingsPrompt: 'Zadejte nastavení pro neizolované hladiny',
+    offModePrompt: 'Zadejte chování vypnutí pro neizolované hladiny',
+    noLayers: 'Nebyly vybrány žádné platné hladiny.',
+    layerNotFound: 'Hladina nenalezena',
+    isolated: 'Izolovaná hladina (hladiny)',
+    affectedLayers: 'ovlivněné hladiny',
+    vpfreezeFallback:
+      'Aktuální prohlížeč nepodporuje zmrazení hladiny podle výřezu; místo toho se použije chování Vypnout.',
+    lockFadeFallback:
+      'Aktuální prohlížeč nepodporuje ztlumení zobrazení hladiny; neizolované hladiny budou uzamčeny bez ztlumení.',
+    keywords: {
+      settings: {
+        display: 'Nastavení(S)',
+        local: 'Nastavení',
+        global: 'Settings'
+      },
+      off: {
+        display: 'Vypnout(O)',
+        local: 'Vypnout',
+        global: 'Off'
+      },
+      lockAndFade: {
+        display: 'Uzamknout a ztlumit(L)',
+        local: 'Uzamknout a ztlumit',
+        global: 'LockAndFade'
+      },
+      vpfreeze: {
+        display: 'Zmrazit ve výřezu(V)',
+        local: 'Zmrazit ve výřezu',
+        global: 'Vpfreeze'
+      }
+    }
+  },
+  layuniso: {
+    noPrevious: 'Neexistuje žádný předchozí stav hladin LAYISO k obnovení.',
+    layerNotFound: 'Hladina nenalezena',
+    nothingRestored: 'Nebyly obnoveny žádné změny hladin LAYISO.',
+    restored: 'Obnovené hladiny'
+  },
+  laythw: {
+    alreadyThawed: 'Všechny hladiny jsou již rozmrazené.',
+    thawed: 'Rozmrazené hladiny'
+  },
+  laylck: {
+    prompt: 'Vyberte objekt na hladině k uzamčení',
+    invalidSelection: 'Vybrán neplatný objekt.',
+    layerNotFound: 'Hladina nenalezena',
+    alreadyLocked: 'Hladina je již uzamčená',
+    locked: 'Uzamčená hladina'
+  },
+  layulk: {
+    prompt: 'Vyberte objekt na hladině k odemčení',
+    invalidSelection: 'Vybrán neplatný objekt.',
+    layerNotFound: 'Hladina nenalezena',
+    alreadyUnlocked: 'Hladina je již odemčená',
+    unlocked: 'Odemčená hladina'
+  },
+  layoff: {
+    prompt: 'Vyberte objekt na hladině k vypnutí nebo',
+    invalidSelection: 'Vybrán neplatný objekt.',
+    settingsPrompt: 'Zadejte nastavení LAYOFF ke změně',
+    viewportPrompt: 'Zadejte chování výřezu',
+    blockSelectionPrompt: 'Zadejte chování výběru vnořeného bloku',
+    vpfreezeFallback:
+      'Aktuální prohlížeč nepodporuje vypnutí hladiny podle výřezu; místo toho se použije chování Vypnout.',
+    nestedSelectionLimited:
+      'Nastavení výběru vnořeného bloku se uloží, ale aktuální výběr stále vyhodnocuje hladinu entity nejvyšší úrovně.',
+    layerNotFound: 'Hladina nenalezena',
+    cannotTurnOffCurrent: 'Nelze vypnout aktuální hladinu.',
+    alreadyOff: 'Hladina je již vypnutá',
+    turnedOff: 'Vypnutá hladina',
+    restored: 'Obnovená hladina',
+    nothingToUndo: 'Neexistuje žádná akce LAYOFF k vrácení zpět.',
+    keywords: {
+      settings: {
+        display: 'Nastavení(S)',
+        local: 'Nastavení',
+        global: 'Settings'
+      },
+      undo: {
+        display: 'Zpět(U)',
+        local: 'Zpět',
+        global: 'Undo'
+      },
+      viewports: {
+        display: 'Výřezy(V)',
+        local: 'Výřezy',
+        global: 'Viewports'
+      },
+      blockSelection: {
+        display: 'Výběr bloku(B)',
+        local: 'Výběr bloku',
+        global: 'BlockSelection'
+      },
+      off: {
+        display: 'Vypnout(O)',
+        local: 'Vypnout',
+        global: 'Off'
+      },
+      vpfreeze: {
+        display: 'Zmrazit ve výřezu(V)',
+        local: 'Zmrazit ve výřezu',
+        global: 'Vpfreeze'
+      },
+      block: {
+        display: 'Blok(B)',
+        local: 'Blok',
+        global: 'Block'
+      },
+      entity: {
+        display: 'Entita(E)',
+        local: 'Entita',
+        global: 'Entity'
+      },
+      none: {
+        display: 'Žádný(N)',
+        local: 'Žádný',
+        global: 'None'
+      }
+    }
+  },
+  layerp: {
+    restored: 'Obnoven předchozí stav hladin.',
+    noPreviousState: 'Neexistuje žádný předchozí stav hladin k obnovení.'
+  },
+  line: {
+    firstPoint: 'Zadejte první bod',
+    firstPointOrContinue: 'Zadejte první bod nebo',
+    nextPoint: 'Zadejte další bod',
+    nextPointWithOptions: 'Zadejte další bod nebo',
+    keywords: {
+      continue: {
+        display: 'Pokračovat(C)',
+        local: 'Pokračovat',
+        global: 'Continue'
+      },
+      undo: {
+        display: 'Zpět(U)',
+        local: 'Zpět',
+        global: 'Undo'
+      },
+      close: {
+        display: 'Uzavřít(C)',
+        local: 'Uzavřít',
+        global: 'Close'
+      }
+    }
+  },
+  xline: {
+    firstPointOrOptions: 'Zadejte bod nebo',
+    secondPoint: 'Zadejte druhý bod',
+    throughPoint: 'Zadejte bod, kterým má přímka procházet',
+    angle: 'Zadejte úhel konstrukční přímky',
+    invalidDirection: 'Neplatný směr pro XLINE.',
+    keywords: {
+      hor: {
+        display: 'Vodorovně(H)',
+        local: 'Vodorovně',
+        global: 'Hor'
+      },
+      ver: {
+        display: 'Svisle(V)',
+        local: 'Svisle',
+        global: 'Ver'
+      },
+      ang: {
+        display: 'Úhel(A)',
+        local: 'Úhel',
+        global: 'Ang'
+      }
+    }
+  },
+  ray: {
+    startPoint: 'Zadejte počáteční bod',
+    throughPoint: 'Zadejte bod, kterým má polopřímka procházet'
+  },
+  mline: {
+    startPointWithOptions: 'Zadejte počáteční bod nebo',
+    nextPointWithOptions: 'Zadejte další bod nebo',
+    justificationPrompt: 'Zadejte typ zarovnání',
+    scalePrompt: 'Zadejte měřítko multičáry',
+    stylePrompt: 'Zadejte název stylu multičáry nebo [?] pro seznam',
+    styleNotFound: 'Styl multičáry nenalezen',
+    styleListHeader: 'Načtené styly multičáry',
+    styleListEmpty: 'V aktuálním výkresu není načten žádný styl multičáry.',
+    keywords: {
+      justification: {
+        display: 'Zarovnání(J)',
+        local: 'Zarovnání',
+        global: 'Justification'
+      },
+      scale: {
+        display: 'Měřítko(S)',
+        local: 'Měřítko',
+        global: 'Scale'
+      },
+      style: {
+        display: 'Styl(ST)',
+        local: 'Styl',
+        global: 'Style'
+      },
+      undo: {
+        display: 'Zpět(U)',
+        local: 'Zpět',
+        global: 'Undo'
+      },
+      close: {
+        display: 'Uzavřít(C)',
+        local: 'Uzavřít',
+        global: 'Close'
+      },
+      top: {
+        display: 'Nahoře(T)',
+        local: 'Nahoře',
+        global: 'Top'
+      },
+      zero: {
+        display: 'Nula(Z)',
+        local: 'Nula',
+        global: 'Zero'
+      },
+      bottom: {
+        display: 'Dole(B)',
+        local: 'Dole',
+        global: 'Bottom'
+      }
+    }
+  },
+  measureAngle: {
+    vertex: 'Zadejte vrchol',
+    arm1: 'Zadejte bod na prvním rameni',
+    arm2: 'Zadejte bod na druhém rameni'
+  },
+  measureArc: {
+    startPoint: 'Zadejte počáteční bod oblouku',
+    throughPoint: 'Zadejte bod na oblouku',
+    endPoint: 'Zadejte koncový bod oblouku',
+    lockedEndPoint:
+      'Zadejte koncový bod oblouku (Ctrl přepne velký/malý oblouk)',
+    invalidPoints: 'Tři body jsou kolineární a nedefinují oblouk.',
+    pickArc: 'Vyberte kružnici, oblouk nebo oblouk křivky',
+    noArc:
+      'Zde není kružnice ani oblouk. Klikněte na křivku nebo zvolte Tři body.',
+    keywords: {
+      threePoint: {
+        display: 'TřiBody(T)',
+        local: 'TřiBody',
+        global: 'ThreePoint'
+      }
+    }
+  },
+  measureArea: {
+    firstPoint: 'Zadejte první bod',
+    nextPoint: 'Zadejte další bod (nebo stiskněte Enter pro dokončení)'
+  },
+  measureDistance: {
+    firstPoint: 'Zadejte první bod',
+    secondPoint: 'Zadejte druhý bod'
+  },
+  measureContinuous: {
+    firstPoint: 'Zadejte první bod',
+    nextPoint: 'Zadejte další bod (nebo stiskněte Enter pro dokončení)'
+  },
+  measurePoint: {
+    point: 'Zadejte bod'
+  },
+  measurement: {
+    import: {
+      chooseFile: 'Vyberte sidecar JSON soubor měření'
+    }
+  },
+  markup: {
+    author: 'Zadejte autora kontroly (uloží se pro pozdější použití)',
+    text: {
+      point: 'Zadejte bod textové poznámky',
+      content: 'Zadejte text poznámky'
+    },
+    line: {
+      firstPoint: 'Zadejte první bod úsečkové poznámky',
+      secondPoint: 'Zadejte druhý bod úsečkové poznámky'
+    },
+    arrow: {
+      firstPoint: 'Zadejte počáteční bod šipky',
+      secondPoint: 'Zadejte hrot šipky'
+    },
+    cloud: {
+      firstCorner: 'Zadejte první roh obláčku',
+      secondCorner: 'Zadejte protilehlý roh obláčku'
+    },
+    rect: {
+      firstCorner: 'Zadejte první roh obdélníku',
+      secondCorner: 'Zadejte protilehlý roh obdélníku'
+    },
+    circle: {
+      center: 'Zadejte střed kružnice',
+      radius: 'Zadejte poloměr kružnice'
+    },
+    shape: {
+      calloutOn: '[Odkaz zapnut]',
+      calloutOff: '[Odkaz vypnut]',
+      calloutAnchor: 'Zadejte umístění textu odkazu',
+      keywords: {
+        callout: {
+          display: 'Odkaz(C)',
+          local: 'Odkaz',
+          global: 'Callout'
+        },
+        noCallout: {
+          display: 'BezOdkazu(N)',
+          local: 'BezOdkazu',
+          global: 'NoCallout'
+        }
+      }
+    },
+    highlight: {
+      firstCorner: 'Zadejte první roh zvýraznění',
+      secondCorner: 'Zadejte protilehlý roh zvýraznění'
+    },
+    callout: {
+      tip: 'Zadejte hrot vodítka, nebo obrys obláčku/obdélníku/kružnice bez odkazu',
+      anchor: 'Zadejte umístění textu odkazu',
+      content: 'Zadejte text odkazu'
+    },
+    stamp: {
+      kind: 'Zadejte identifikátor razítka [approved/rejected/revised/for-review/custom]',
+      imageUrl: 'Zadejte URL vlastního obrázku razítka (volitelné)',
+      caption: 'Zadejte popisek razítka (volitelné)',
+      point: 'Zadejte bod vložení razítka'
+    },
+    import: {
+      chooseFile: 'Vyberte sidecar JSON soubor poznámek'
+    }
+  },
+  move: {
+    basePointOrDisplacement: 'Zadejte základní bod nebo',
+    secondPointOrDisplacement: 'Zadejte druhý bod nebo',
+    displacement: 'Zadejte přemístění',
+    keywords: {
+      displacement: {
+        display: 'Přemístění(D)',
+        local: 'Přemístění',
+        global: 'Displacement'
+      }
+    }
+  },
+  offset: {
+    distance: 'Zadejte vzdálenost offsetu',
+    selectObject: 'Vyberte objekt k offsetu nebo stiskněte Enter pro dokončení',
+    sidePoint: 'Zadejte bod na straně pro offset',
+    invalidDistance: 'Vzdálenost offsetu musí být větší než 0.',
+    invalidSelection: 'Vybraný objekt nelze offsetovat.',
+    offsetFailed: 'Nelze vytvořit offsetovou křivku na zadané straně.'
+  },
+  fillet: {
+    currentSettings: 'Aktuální nastavení: Režim = {mode}, Poloměr = {radius}',
+    modeTrim: 'OŘÍZNOUT',
+    modeNoTrim: 'NEOŘÍZNOUT',
+    selectFirst:
+      'Vyberte první objekt nebo [Zpět(U)/Křivka(P)/Poloměr(R)/Oříznout(T)/Více(M)]',
+    selectSecond:
+      'Vyberte druhý objekt nebo se Shiftem použijte roh, nebo [Poloměr(R)]',
+    selectPolyline: 'Vyberte 2D křivku',
+    specifyRadius: 'Zadejte poloměr zaoblení',
+    trimPrompt: 'Zadejte režim oříznutí [Oříznout(T)/Neoříznout(N)]',
+    rejectObject: 'Objekt nelze zaoblit.',
+    rejectPolyline: 'Vybraný objekt není 2D křivka.',
+    invalidRadius: 'Poloměr zaoblení musí být nula nebo větší.',
+    eraseFailed:
+      'Nepodařilo se smazat všechny převedené objekty. Zaoblení bylo zrušeno.',
+    nothingToUndo: 'Příkaz byl zcela vrácen.',
+    polylineResult: 'Zaobleno {filleted} vrcholů; přeskočeno {skipped}.',
+    keywords: {
+      undo: {
+        display: 'Zpět(U)',
+        local: 'Zpět',
+        global: 'Undo'
+      },
+      polyline: {
+        display: 'Křivka(P)',
+        local: 'Křivka',
+        global: 'Polyline'
+      },
+      radius: {
+        display: 'Poloměr(R)',
+        local: 'Poloměr',
+        global: 'Radius'
+      },
+      trim: {
+        display: 'Oříznout(T)',
+        local: 'Oříznout',
+        global: 'Trim'
+      },
+      multiple: {
+        display: 'Více(M)',
+        local: 'Více',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: 'Oříznout(T)',
+        local: 'Oříznout',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: 'Neoříznout(N)',
+        local: 'Neoříznout',
+        global: 'NoTrim'
+      }
+    },
+    error: {
+      invalidRadius: 'Neplatný poloměr zaoblení.',
+      parallel: 'Úsečky jsou rovnoběžné a nelze vytvořit rohové zaoblení.',
+      noIntersection: 'Objekty se neprotínají.',
+      radiusTooLarge: 'Poloměr zaoblení je pro vybrané objekty příliš velký.',
+      noSolution: 'Nelze vytvořit zaoblení pro vybrané objekty.',
+      unsupported: 'Vybraný typ objektu nepodporuje zaoblení.'
+    }
+  },
+  chamfer: {
+    currentSettings:
+      '(režim {mode}) Aktuální zkosení Dist1 = {dist1}, Dist2 = {dist2}',
+    currentSettingsAngle:
+      '(režim {mode}) Aktuální zkosení Délka = {length}, Úhel = {angle}',
+    modeTrim: 'OŘÍZNOUT',
+    modeNoTrim: 'NEOŘÍZNOUT',
+    selectFirst:
+      'Vyberte první úsečku nebo [Zpět(U)/Křivka(P)/Vzdálenost(D)/Úhel(A)/Oříznout(T)/Metoda(E)/Více(M)]',
+    selectSecond:
+      'Vyberte druhou úsečku nebo se Shiftem použijte roh, nebo [Vzdálenost(D)/Úhel(A)/Metoda(E)]',
+    selectPolyline: 'Vyberte 2D křivku',
+    specifyDist1: 'Zadejte první vzdálenost zkosení',
+    specifyDist2: 'Zadejte druhou vzdálenost zkosení',
+    specifyLength: 'Zadejte délku zkosení na první úsečce',
+    specifyAngle: 'Zadejte úhel zkosení od první úsečky',
+    trimPrompt: 'Zadejte režim oříznutí [Oříznout(T)/Neoříznout(N)]',
+    methodPrompt: 'Zadejte metodu zkosení [Vzdálenost(D)/Úhel(A)]',
+    rejectObject: 'Objekt nelze zkosit.',
+    rejectPolyline: 'Vybraný objekt není 2D křivka.',
+    eraseFailed:
+      'Nepodařilo se smazat všechny převedené objekty. Zkosení bylo zrušeno.',
+    nothingToUndo: 'Příkaz byl zcela vrácen.',
+    polylineResult: 'Zkoseno {chamfered} vrcholů; přeskočeno {skipped}.',
+    keywords: {
+      undo: {
+        display: 'Zpět(U)',
+        local: 'Zpět',
+        global: 'Undo'
+      },
+      polyline: {
+        display: 'Křivka(P)',
+        local: 'Křivka',
+        global: 'Polyline'
+      },
+      distance: {
+        display: 'Vzdálenost(D)',
+        local: 'Vzdálenost',
+        global: 'Distance'
+      },
+      angle: {
+        display: 'Úhel(A)',
+        local: 'Úhel',
+        global: 'Angle'
+      },
+      trim: {
+        display: 'Oříznout(T)',
+        local: 'Oříznout',
+        global: 'Trim'
+      },
+      method: {
+        display: 'Metoda(E)',
+        local: 'Metoda',
+        global: 'Method'
+      },
+      multiple: {
+        display: 'Více(M)',
+        local: 'Více',
+        global: 'Multiple'
+      },
+      trimMode: {
+        display: 'Oříznout(T)',
+        local: 'Oříznout',
+        global: 'Trim'
+      },
+      noTrim: {
+        display: 'Neoříznout(N)',
+        local: 'Neoříznout',
+        global: 'NoTrim'
+      },
+      distanceMethod: {
+        display: 'Vzdálenost(D)',
+        local: 'Vzdálenost',
+        global: 'Distance'
+      },
+      angleMethod: {
+        display: 'Úhel(A)',
+        local: 'Úhel',
+        global: 'Angle'
+      }
+    },
+    error: {
+      invalidDistance: 'Neplatná vzdálenost nebo úhel zkosení.',
+      parallel: 'Úsečky jsou rovnoběžné a nelze je zkosit.',
+      noIntersection: 'Objekty se neprotínají.',
+      distanceTooLarge:
+        'Vzdálenost zkosení je pro vybrané objekty příliš velká.',
+      noSolution: 'Nelze vytvořit zkosení pro vybrané objekty.',
+      unsupported: 'Vybraný typ objektu nepodporuje zkosení.'
+    }
+  },
+  leader: {
+    startPoint: 'Zadejte počáteční bod odkazu',
+    nextPoint: 'Zadejte další bod',
+    nextPointOrOptions: 'Zadejte další bod nebo [Poznámka/Formát/Zpět]',
+    formatPrompt: 'Zadejte možnost formátu odkazu [Splajn/Přímý/Šipka/Žádný]',
+    annotationText: 'Zadejte první řádek textu poznámky nebo <možnosti>',
+    nextAnnotationLine: 'Zadejte další řádek textu poznámky',
+    annotationOptions:
+      'Zadejte možnost poznámky [Tolerance/Kopírovat/Blok/Žádná/Víceřádkový text]',
+    selectAnnotation: 'Vyberte objekt poznámky ke zkopírování',
+    rejectAnnotation: 'Objekt nelze použít jako poznámku odkazu.',
+    toleranceUnavailable:
+      'Dialog Geometrická tolerance není v tomto sestavení k dispozici.',
+    keywords: {
+      annotation: {
+        display: 'Poznámka(A)',
+        local: 'Poznámka',
+        global: 'Annotation'
+      },
+      format: {
+        display: 'Formát(F)',
+        local: 'Formát',
+        global: 'Format'
+      },
+      undo: { display: 'Zpět(U)', local: 'Zpět', global: 'Undo' },
+      spline: {
+        display: 'Splajn(S)',
+        local: 'Splajn',
+        global: 'Spline'
+      },
+      straight: {
+        display: 'Přímý(T)',
+        local: 'Přímý',
+        global: 'STraight'
+      },
+      arrow: { display: 'Šipka(A)', local: 'Šipka', global: 'Arrow' },
+      none: { display: 'Žádný(N)', local: 'Žádný', global: 'None' },
+      tolerance: {
+        display: 'Tolerance',
+        local: 'Tolerance',
+        global: 'Tolerance'
+      },
+      copy: { display: 'Kopírovat(C)', local: 'Kopírovat', global: 'Copy' },
+      block: { display: 'Blok(B)', local: 'Blok', global: 'Block' },
+      mtext: {
+        display: 'Víceřádkový text(M)',
+        local: 'Víceřádkový text',
+        global: 'Mtext'
+      }
+    }
+  },
+  mleader: {
+    arrowheadOrOptions:
+      'Zadejte umístění šipky odkazu nebo [nejprve Rameno odkazu/nejprve Obsah/Možnosti]',
+    landingLocation: 'Zadejte umístění ramene odkazu',
+    landingFirstPoint: 'Zadejte umístění ramene odkazu',
+    arrowheadLocation: 'Zadejte umístění šipky odkazu',
+    contentLocation: 'Zadejte umístění obsahu',
+    nextPoint: 'Zadejte další bod',
+    optionsPrompt:
+      'Zadejte možnost [Typ odkazu/Rameno/Typ obsahu/Max. bodů/První úhel/Druhý úhel/Ukončit možnosti]',
+    leaderTypePrompt: 'Vyberte typ odkazu [Přímý/Splajn/Žádný]',
+    landingPrompt: 'Použít rameno [Ano/Ne]',
+    landingLength: 'Zadejte délku ramene',
+    contentTypePrompt: 'Vyberte typ obsahu [Blok/Víceřádkový text/Žádný]',
+    maxPoints: 'Zadejte maximální počet bodů odkazové čáry',
+    firstAngle: 'Zadejte omezení prvního úhlu',
+    secondAngle: 'Zadejte omezení druhého úhlu',
+    keywords: {
+      landingFirst: {
+        display: 'Nejprve rameno(L)',
+        local: 'Nejprve rameno',
+        global: 'Landing first'
+      },
+      contentFirst: {
+        display: 'Nejprve obsah(C)',
+        local: 'Nejprve obsah',
+        global: 'Content first'
+      },
+      options: {
+        display: 'Možnosti(O)',
+        local: 'Možnosti',
+        global: 'Options'
+      },
+      leaderType: {
+        display: 'Typ odkazu(T)',
+        local: 'Typ odkazu',
+        global: 'Leader type'
+      },
+      landing: {
+        display: 'Rameno(A)',
+        local: 'Rameno',
+        global: 'lAnding'
+      },
+      contentType: {
+        display: 'Typ obsahu(C)',
+        local: 'Typ obsahu',
+        global: 'Content type'
+      },
+      maxpoints: {
+        display: 'Max. bodů(M)',
+        local: 'Max. bodů',
+        global: 'Maxpoints'
+      },
+      firstAngle: {
+        display: 'První úhel(F)',
+        local: 'První úhel',
+        global: 'First angle'
+      },
+      secondAngle: {
+        display: 'Druhý úhel(S)',
+        local: 'Druhý úhel',
+        global: 'Second angle'
+      },
+      exitOptions: {
+        display: 'Ukončit možnosti(X)',
+        local: 'Ukončit možnosti',
+        global: 'eXit options'
+      },
+      straight: {
+        display: 'Přímý(S)',
+        local: 'Přímý',
+        global: 'Straight'
+      },
+      spline: {
+        display: 'Splajn(P)',
+        local: 'Splajn',
+        global: 'sPline'
+      },
+      noneLeader: {
+        display: 'Žádný(N)',
+        local: 'Žádný',
+        global: 'None'
+      },
+      yes: { display: 'Ano(Y)', local: 'Ano', global: 'Yes' },
+      no: { display: 'Ne(N)', local: 'Ne', global: 'No' },
+      block: { display: 'Blok(B)', local: 'Blok', global: 'Block' },
+      mtext: {
+        display: 'Víceřádkový text(M)',
+        local: 'Víceřádkový text',
+        global: 'Mtext'
+      },
+      none: { display: 'Žádný(N)', local: 'Žádný', global: 'None' }
+    }
+  },
+  mleaderedit: {
+    selectMLeader: 'Vyberte multiodkaz',
+    rejectMLeader: 'Je nutné vybrat multiodkaz.',
+    arrowheadOrRemove: 'Zadejte umístění šipky odkazu nebo [Odebrat odkazy]',
+    selectLeaderToRemove:
+      'Zadejte odkaz k odebrání nebo stiskněte Enter pro dokončení',
+    cannotRemoveLast: 'Z tohoto multiodkazu nelze odebrat poslední odkaz.',
+    noLeaderAtPoint: 'V tomto bodě nebyl nalezen žádný odkaz.',
+    keywords: {
+      remove: {
+        display: 'Odebrat odkazy(R)',
+        local: 'Odebrat',
+        global: 'Remove'
+      }
+    }
+  },
+  mtext: {
+    point: 'Zadejte bod vložení víceřádkového textu'
+  },
+  bmpout: {
+    boundsFirstCorner: 'Zadejte první roh rozsahu',
+    boundsSecondCorner: 'Zadejte protilehlý roh',
+    longSidePrompt: 'Zadejte velikost delší strany v pixelech'
+  },
+  jpgout: {
+    boundsFirstCorner: 'Zadejte první roh rozsahu',
+    boundsSecondCorner: 'Zadejte protilehlý roh',
+    longSidePrompt: 'Zadejte velikost delší strany v pixelech'
+  },
+  pngout: {
+    boundsFirstCorner: 'Zadejte první roh rozsahu',
+    boundsSecondCorner: 'Zadejte protilehlý roh',
+    longSidePrompt: 'Zadejte velikost delší strany v pixelech'
+  },
+  imageattach: {
+    insertionPoint: 'Zadejte bod vložení:',
+    scale: 'Zadejte faktor měřítka:',
+    rotation: 'Zadejte úhel otočení:',
+    invalidScale: 'Faktor měřítka musí být větší než 0.',
+    decodeFailed: 'Nepodařilo se načíst vybraný soubor obrázku.'
+  },
+  insert: {
+    blockName: 'Zadejte název bloku:',
+    insertionPoint: 'Zadejte bod vložení:',
+    scale: 'Zadejte faktor měřítka:',
+    rotation: 'Zadejte úhel otočení:',
+    invalidScale: 'Faktor měřítka musí být větší než 0.',
+    invalidBlockName: 'Neplatný název bloku.',
+    blockNotFound: 'Blok nenalezen',
+    xrefNotAllowed: 'Nelze vložit externí referenci pomocí -INSERT.'
+  },
+  xattach: {
+    insertionPoint: 'Zadejte bod vložení:',
+    scale: 'Zadejte faktor měřítka:',
+    rotation: 'Zadejte úhel otočení:',
+    invalidScale: 'Faktor měřítka musí být větší než 0.',
+    unsupportedFile: 'Vyberte soubor DWG nebo DXF.',
+    loading: 'Načítám externí referenci...',
+    loadFailed: 'Nepodařilo se načíst vybraný soubor výkresu.'
+  },
+  point: {
+    point: 'Zadejte bod'
+  },
+  polygon: {
+    numberOfSides: 'Zadejte počet stran',
+    centerOrEdge: 'Zadejte střed mnohoúhelníku nebo',
+    radiusOrType: 'Zadejte volby',
+    edgeStart: 'Zadejte první koncový bod hrany',
+    edgeEnd: 'Zadejte druhý koncový bod hrany',
+    keywords: {
+      edge: {
+        display: 'Hrana(E)',
+        local: 'Hrana',
+        global: 'Edge'
+      },
+      inscribed: {
+        display: 'Vepsaný do kružnice(I)',
+        local: 'Vepsaný do kružnice',
+        global: 'Inscribed'
+      },
+      circumscribed: {
+        display: 'Opsaný kolem kružnice(C)',
+        local: 'Opsaný kolem kružnice',
+        global: 'Circumscribed'
+      }
+    },
+    invalid: {
+      sides: 'Neplatný počet stran. Zadejte celé číslo mezi 3 a 1024.',
+      radius: 'Neplatný poloměr. Poloměr musí být větší než 0.',
+      edge: 'Neplatná hrana. Délka hrany musí být větší než 0.'
+    }
+  },
+  polyline: {
+    firstPoint: 'Zadejte první bod',
+    nextPoint: 'Zadejte další bod (nebo stiskněte Enter pro dokončení)',
+    nextPointWithOptions: 'Zadejte další bod nebo',
+    nextPointWithArcOptions: 'Zadejte další bod nebo',
+    keywords: {
+      arc: {
+        display: 'Oblouk(A)',
+        local: 'Oblouk',
+        global: 'Arc'
+      },
+      undo: {
+        display: 'Zpět(U)',
+        local: 'Zpět',
+        global: 'Undo'
+      },
+      close: {
+        display: 'Uzavřít(C)',
+        local: 'Uzavřít',
+        global: 'Close'
+      },
+      line: {
+        display: 'Úsečka(L)',
+        local: 'Úsečka',
+        global: 'Line'
+      },
+      angle: {
+        display: 'Úhel(A)',
+        local: 'Úhel',
+        global: 'Angle'
+      },
+      center: {
+        display: 'Střed(C)',
+        local: 'Střed',
+        global: 'Center'
+      },
+      secondPoint: {
+        display: 'Druhý bod(P)',
+        local: 'Druhý bod',
+        global: 'SecondPoint'
+      },
+      radius: {
+        display: 'Poloměr(R)',
+        local: 'Poloměr',
+        global: 'Radius'
+      }
+    },
+    arcAngle: 'Zadejte úhel oblouku',
+    arcCenter: 'Zadejte středový bod',
+    arcSecondPoint: 'Zadejte druhý bod na oblouku',
+    arcEndPoint: 'Zadejte koncový bod oblouku',
+    arcRadius: 'Zadejte poloměr oblouku'
+  },
+  rect: {
+    firstPoint: 'Zadejte první roh',
+    nextPoint: 'Zadejte druhý roh',
+    firstPointWithOptions: 'Zadejte první roh nebo',
+    otherCornerWithOptions: 'Zadejte druhý roh nebo',
+    chamferFirst: 'Zadejte první vzdálenost zkosení',
+    chamferSecond: 'Zadejte druhou vzdálenost zkosení',
+    filletRadius: 'Zadejte poloměr zaoblení',
+    segmentWidth: 'Zadejte šířku čáry obdélníku',
+    elevationValue: 'Zadejte výšku',
+    thicknessValue: 'Zadejte tloušťku',
+    rotationAngle: 'Zadejte úhel otočení obdélníku',
+    dimensionLength: 'Zadejte délku obdélníku',
+    dimensionWidth: 'Zadejte šířku obdélníku',
+    areaValue: 'Zadejte plochu obdélníku',
+    areaLengthOrWidth: 'Zadejte délku obdélníku',
+    areaSpecifyWidth: 'Zadejte šířku obdélníku',
+    invalidPositive: 'Neplatný vstup. Zadejte hodnotu větší než 0.',
+    invalidRect: 'Nelze vytvořit obdélník. Zadejte platné rohy nebo rozměry.',
+    thicknessNotSupported:
+      'Tloušťka obdélníku se aktuálně nezapisuje do dat entity. Nastavení tloušťky se ignoruje.',
+    keywords: {
+      chamfer: {
+        display: 'Zkosení(C)',
+        local: 'Zkosení',
+        global: 'Chamfer'
+      },
+      elevation: {
+        display: 'Výška(E)',
+        local: 'Výška',
+        global: 'Elevation'
+      },
+      fillet: {
+        display: 'Zaoblení(F)',
+        local: 'Zaoblení',
+        global: 'Fillet'
+      },
+      thickness: {
+        display: 'Tloušťka(T)',
+        local: 'Tloušťka',
+        global: 'Thickness'
+      },
+      width: {
+        display: 'Šířka(W)',
+        local: 'Šířka',
+        global: 'Width'
+      },
+      area: {
+        display: 'Plocha(A)',
+        local: 'Plocha',
+        global: 'Area'
+      },
+      dimensions: {
+        display: 'Rozměry(D)',
+        local: 'Rozměry',
+        global: 'Dimensions'
+      },
+      rotation: {
+        display: 'Otočení(R)',
+        local: 'Otočení',
+        global: 'Rotation'
+      },
+      length: {
+        display: 'Délka(L)',
+        local: 'Délka',
+        global: 'Length'
+      },
+      rectWidth: {
+        display: 'Šířka(W)',
+        local: 'Šířka',
+        global: 'Width'
+      }
+    }
+  },
+  mirror: {
+    firstPoint: 'Zadejte první bod osy zrcadlení',
+    secondPoint: 'Zadejte druhý bod osy zrcadlení',
+    eraseSource: 'Odstranit zdrojové objekty?',
+    keywords: {
+      yes: {
+        display: 'Ano(Y)',
+        local: 'Ano',
+        global: 'Yes'
+      },
+      no: {
+        display: 'Ne(N)',
+        local: 'Ne',
+        global: 'No'
+      }
+    },
+    invalid: {
+      mirrorLine: 'Neplatná osa zrcadlení: body musí být různé.'
+    }
+  },
+  rotate: {
+    basePoint: 'Zadejte základní bod',
+    rotationAngleOrOptions: 'Zadejte úhel otočení nebo',
+    referenceAngleOrPoints: 'Zadejte referenční úhel nebo',
+    firstReferencePoint: 'Zadejte první bod referenčního úhlu',
+    secondReferencePoint: 'Zadejte druhý bod',
+    newAngle: 'Zadejte nový úhel',
+    keywords: {
+      copy: {
+        display: 'Kopírovat(C)',
+        local: 'Kopírovat',
+        global: 'Copy'
+      },
+      reference: {
+        display: 'Reference(R)',
+        local: 'Reference',
+        global: 'Reference'
+      },
+      points: {
+        display: 'Body(P)',
+        local: 'Body',
+        global: 'Points'
+      }
+    },
+    invalid: {
+      referencePoints: 'Neplatné referenční body: body musí být různé.'
+    }
+  },
+  scale: {
+    basePoint: 'Zadejte základní bod',
+    scaleFactorOrOptions: 'Zadejte měřítko nebo',
+    referenceLength: 'Zadejte referenční délku',
+    newLengthOrPoints: 'Zadejte novou délku nebo',
+    newLengthFirstPoint: 'Zadejte první bod',
+    copyMessage: 'Mění se měřítko kopie vybraných objektů.',
+    keywords: {
+      copy: {
+        display: 'Kopírovat(C)',
+        local: 'Kopírovat',
+        global: 'Copy'
+      },
+      reference: {
+        display: 'Reference(R)',
+        local: 'Reference',
+        global: 'Reference'
+      },
+      points: {
+        display: 'Body(P)',
+        local: 'Body',
+        global: 'Points'
+      }
+    },
+    invalid: {
+      factor: 'Hodnota musí být kladná a nenulová.',
+      length: 'Hodnota musí být kladná a nenulová.'
+    }
+  },
+  revcloud: {
+    firstCornerOrOptions: 'Zadejte první rohový bod nebo',
+    firstCorner: 'Zadejte první rohový bod',
+    oppositeCorner: 'Zadejte protilehlý roh',
+    startPoint: 'Zadejte počáteční bod',
+    nextPoint: 'Zadejte další bod',
+    nextPointOrUndo: 'Zadejte další bod nebo',
+    firstPoint: 'Zadejte první bod',
+    guideCursor: 'Veďte kurzor podél obláčku (Enter dokončí)',
+    arcLength: 'Zadejte délku oblouku',
+    selectObject: 'Vyberte objekt',
+    style: 'Zadejte styl oblouků revizního obláčku',
+    reverseDirection: 'Obrátit směr',
+    invalidArcLength: 'Délka oblouku musí být větší než 0.',
+    invalidObject: 'Vybraný objekt nelze převést na revizní obláček.',
+    keywords: {
+      arcLength: {
+        display: 'Délka oblouku(A)',
+        local: 'Délka oblouku',
+        global: 'ArcLength'
+      },
+      object: {
+        display: 'Objekt(O)',
+        local: 'Objekt',
+        global: 'Object'
+      },
+      rectangular: {
+        display: 'Obdélníkový(R)',
+        local: 'Obdélníkový',
+        global: 'Rectangular'
+      },
+      polygonal: {
+        display: 'Mnohoúhelníkový(P)',
+        local: 'Mnohoúhelníkový',
+        global: 'Polygonal'
+      },
+      freehand: {
+        display: 'Od ruky(F)',
+        local: 'Od ruky',
+        global: 'Freehand'
+      },
+      style: {
+        display: 'Styl(S)',
+        local: 'Styl',
+        global: 'Style'
+      },
+      normal: {
+        display: 'Normální(N)',
+        local: 'Normální',
+        global: 'Normal'
+      },
+      calligraphy: {
+        display: 'Kaligrafie(C)',
+        local: 'Kaligrafie',
+        global: 'Calligraphy'
+      },
+      undo: {
+        display: 'Zpět(U)',
+        local: 'Zpět',
+        global: 'Undo'
+      },
+      yes: {
+        display: 'Ano(Y)',
+        local: 'Ano',
+        global: 'Yes'
+      },
+      no: {
+        display: 'Ne(N)',
+        local: 'Ne',
+        global: 'No'
+      }
+    }
+  },
+  sketch: {
+    specifySketch: 'Zadejte skicu nebo',
+    sketching: 'Pohybem ukazatele kreslete (kliknutím nebo Enter zastavíte)',
+    type: 'Zadejte typ skici',
+    increment: 'Zadejte přírůstek skici',
+    tolerance: 'Zadejte toleranci splajnu',
+    firstPoint: 'Zadejte první bod',
+    nextPoint: 'Zadejte koncový bod',
+    keywords: {
+      type: {
+        display: 'Typ(T)',
+        local: 'Typ',
+        global: 'Type'
+      },
+      increment: {
+        display: 'Přírůstek(I)',
+        local: 'Přírůstek',
+        global: 'Increment'
+      },
+      tolerance: {
+        display: 'Tolerance(L)',
+        local: 'Tolerance',
+        global: 'Tolerance'
+      },
+      line: {
+        display: 'Úsečky(L)',
+        local: 'Úsečky',
+        global: 'Lines'
+      },
+      polyline: {
+        display: 'Křivka(P)',
+        local: 'Křivka',
+        global: 'Polyline'
+      },
+      spline: {
+        display: 'Splajn(S)',
+        local: 'Splajn',
+        global: 'Spline'
+      }
+    }
+  },
+  spline: {
+    firstPoint: 'Zadejte první bod',
+    nextPoint: 'Zadejte další bod (nebo stiskněte Enter pro dokončení)',
+    firstPointWithOptions: 'Zadejte první bod nebo',
+    nextPointWithFitOptions: 'Zadejte další bod nebo',
+    nextPointWithCvOptions: 'Zadejte další řídicí bod nebo',
+    methodPrompt: 'Zadejte metodu vytvoření splajnu',
+    knotsPrompt: 'Zadejte parametrizaci uzlů',
+    degreePrompt: 'Zadejte stupeň splajnu',
+    keywords: {
+      method: {
+        display: 'Metoda(M)',
+        local: 'Metoda',
+        global: 'Method'
+      },
+      fit: {
+        display: 'Přizpůsobit(F)',
+        local: 'Přizpůsobit',
+        global: 'Fit'
+      },
+      cv: {
+        display: 'ŘB(C)',
+        local: 'ŘB',
+        global: 'CV'
+      },
+      knots: {
+        display: 'Uzly(K)',
+        local: 'Uzly',
+        global: 'Knots'
+      },
+      degree: {
+        display: 'Stupeň(D)',
+        local: 'Stupeň',
+        global: 'Degree'
+      },
+      undo: {
+        display: 'Zpět(U)',
+        local: 'Zpět',
+        global: 'Undo'
+      },
+      close: {
+        display: 'Uzavřít(C)',
+        local: 'Uzavřít',
+        global: 'Close'
+      },
+      chord: {
+        display: 'Tětiva(C)',
+        local: 'Tětiva',
+        global: 'Chord'
+      },
+      sqrtChord: {
+        display: 'Odmocnina tětivy(S)',
+        local: 'Odmocnina tětivy',
+        global: 'SqrtChord'
+      },
+      uniform: {
+        display: 'Rovnoměrné(U)',
+        local: 'Rovnoměrné',
+        global: 'Uniform'
+      }
+    }
+  },
+  objectscale: {
+    action: 'Zadejte možnost',
+    scaleName: 'Zadejte název měřítka poznámek',
+    done: 'Aktualizované objekty',
+    none: '(žádné)',
+    keywords: {
+      add: {
+        display: 'Přidat(A)',
+        local: 'Přidat',
+        global: 'Add'
+      },
+      delete: {
+        display: 'Odstranit(D)',
+        local: 'Odstranit',
+        global: 'Delete'
+      },
+      list: {
+        display: 'Seznam(L)',
+        local: 'Seznam',
+        global: 'List'
+      }
+    }
+  },
+  sysvar: {
+    prompt: 'Zadejte novou hodnotu'
+  },
+  view: {
+    enterName: 'Zadejte název pohledu k obnovení',
+    notFound: 'Pohled "{name}" nebyl nalezen.'
+  },
+  zoom: {
+    mainPrompt: 'Zadejte roh okna nebo',
+    firstCorner: 'Zadejte první roh',
+    secondCorner: 'Zadejte protilehlý roh',
+    centerPoint: 'Zadejte středový bod',
+    heightOrScale: 'Zadejte výšku nebo faktor měřítka (nX nebo nXP)',
+    scaleFactor: 'Zadejte faktor měřítka (nX nebo nXP)',
+    keywords: {
+      all: {
+        display: 'Vše(A)',
+        local: 'Vše',
+        global: 'All'
+      },
+      center: {
+        display: 'Střed(C)',
+        local: 'Střed',
+        global: 'Center'
+      },
+      extents: {
+        display: 'Rozsah(E)',
+        local: 'Rozsah',
+        global: 'Extents'
+      },
+      previous: {
+        display: 'Předchozí(P)',
+        local: 'Předchozí',
+        global: 'Previous'
+      },
+      original: {
+        display: 'Původní(O)',
+        local: 'Původní',
+        global: 'Original'
+      },
+      saved: {
+        display: 'Uložený(V)',
+        local: 'Uložený',
+        global: 'Saved'
+      },
+      smart: {
+        display: 'Chytrý(I)',
+        local: 'Chytrý',
+        global: 'Smart'
+      },
+      scale: {
+        display: 'Měřítko(S)',
+        local: 'Měřítko',
+        global: 'Scale'
+      },
+      window: {
+        display: 'Okno(W)',
+        local: 'Okno',
+        global: 'Window'
+      }
+    }
+  },
+  chtml: {
+    exportFormat: 'Formát exportu',
+    exportInvisibleLayers: 'Exportovat neviditelné hladiny',
+    exportLayouts: 'Exportovat rozvržení',
+    exportEmptyLayouts: 'Exportovat prázdná rozvržení',
+    background: 'Barva pozadí',
+    initialView: 'Počáteční pohled při otevření HTML',
+    viewerMode: 'Režim offline prohlížeče',
+    chunkSizeMiB: 'Velikost části v MiB (vícesouborový balíček)',
+    compressChunks: 'Komprimovat části (vícesouborový balíček)',
+    keywords: {
+      single: {
+        display: 'Jeden soubor(S)',
+        local: 'Jeden soubor',
+        global: 'Single'
+      },
+      multi: {
+        display: 'Vícesouborový balíček(M)',
+        local: 'Vícesouborový balíček',
+        global: 'Multi'
+      },
+      yes: {
+        display: 'Ano(Y)',
+        local: 'Ano',
+        global: 'Yes'
+      },
+      no: {
+        display: 'Ne(N)',
+        local: 'Ne',
+        global: 'No'
+      },
+      extents: {
+        display: 'Rozsah(E)',
+        local: 'Rozsah',
+        global: 'Extents'
+      },
+      current: {
+        display: 'Aktuální(C)',
+        local: 'Aktuální',
+        global: 'Current'
+      },
+      view: {
+        display: 'Pohled(V)',
+        local: 'Pohled',
+        global: 'View'
+      },
+      measure: {
+        display: 'Měření a kontrola(M)',
+        local: 'Měření a kontrola',
+        global: 'Measure'
+      },
+      black: {
+        display: 'Černá(B)',
+        local: 'Černá',
+        global: 'Black'
+      },
+      white: {
+        display: 'Bílá(W)',
+        local: 'Bílá',
+        global: 'White'
+      },
+      space: {
+        display: 'Prostor(S)',
+        local: 'Prostor',
+        global: 'Space'
+      }
+    }
+  },
+  cpdf: {
+    modelSpaceFit: 'Rám modelového prostoru',
+    exportLayouts: 'Exportovat rozvržení',
+    exportEmptyLayouts: 'Exportovat prázdná rozvržení',
+    textMode: 'Vykreslení textu',
+    colorMode: 'Barevný režim',
+    keywords: {
+      extents: {
+        display: 'Rozsah(E)',
+        local: 'Rozsah',
+        global: 'Extents'
+      },
+      display: {
+        display: 'Zobrazení(D)',
+        local: 'Zobrazení',
+        global: 'Display'
+      },
+      text: {
+        display: 'Text(T)',
+        local: 'Text',
+        global: 'Text'
+      },
+      vector: {
+        display: 'Vektor(V)',
+        local: 'Vektor',
+        global: 'Vector'
+      },
+      yes: {
+        display: 'Ano(Y)',
+        local: 'Ano',
+        global: 'Yes'
+      },
+      no: {
+        display: 'Ne(N)',
+        local: 'Ne',
+        global: 'No'
+      },
+      color: {
+        display: 'Barevně(B)',
+        local: 'Barevně',
+        global: 'Color'
+      },
+      monochrome: {
+        display: 'Černobíle(C)',
+        local: 'Černobíle',
+        global: 'Monochrome'
+      }
+    }
+  },
+  ucs: {
+    originOrOptions: 'Zadejte počátek USS nebo',
+    pointOnXAxis: 'Zadejte bod na ose X nebo',
+    pointOnXyPlane: 'Zadejte bod v rovině XY nebo',
+    rotationAngle: 'Zadejte úhel otočení kolem osy {axis}',
+    zAxisOrigin: 'Zadejte nový počátek',
+    pointOnZAxis: 'Zadejte bod na kladné části osy Z',
+    selectObject: 'Vyberte objekt pro zarovnání USS',
+    namedOption: 'Zadejte možnost',
+    enterName: 'Zadejte název USS k obnovení nebo [?]',
+    saveName: 'Zadejte název pro uložení aktuálního USS',
+    deleteName: 'Zadejte název(y) USS k odstranění',
+    noPrevious: 'V této relaci neexistuje předchozí USS.',
+    noNamed: 'Neexistují žádné pojmenované definice USS.',
+    notFound: 'USS "{name}" nebyl nalezen.',
+    invalidName: 'Neplatný název USS.',
+    invalidObject: 'USS nelze zarovnat s vybraným objektem.',
+    keywords: {
+      named: {
+        display: 'Pojmenovaný(A)',
+        local: 'Pojmenovaný',
+        global: 'Named'
+      },
+      object: {
+        display: 'Objekt(B)',
+        local: 'Objekt',
+        global: 'Object'
+      },
+      previous: {
+        display: 'Předchozí(P)',
+        local: 'Předchozí',
+        global: 'Previous'
+      },
+      view: {
+        display: 'Pohled(V)',
+        local: 'Pohled',
+        global: 'View'
+      },
+      world: {
+        display: 'Globální(W)',
+        local: 'Globální',
+        global: 'World'
+      },
+      x: {
+        display: 'X',
+        local: 'X',
+        global: 'X'
+      },
+      y: {
+        display: 'Y',
+        local: 'Y',
+        global: 'Y'
+      },
+      z: {
+        display: 'Z',
+        local: 'Z',
+        global: 'Z'
+      },
+      zAxis: {
+        display: 'OsaZ(N)',
+        local: 'OsaZ',
+        global: 'ZAxis'
+      },
+      apply: {
+        display: 'Použít(L)',
+        local: 'Použít',
+        global: 'Apply'
+      },
+      restore: {
+        display: 'Obnovit(R)',
+        local: 'Obnovit',
+        global: 'Restore'
+      },
+      save: {
+        display: 'Uložit(S)',
+        local: 'Uložit',
+        global: 'Save'
+      },
+      delete: {
+        display: 'Odstranit(D)',
+        local: 'Odstranit',
+        global: 'Delete'
+      },
+      list: {
+        display: '?(?)',
+        local: '?',
+        global: '?'
+      }
+    }
+  },
+  group: {
+    selectOrOption: 'Vyberte objekty nebo',
+    createOrOption: 'Vytvořit skupinu nebo',
+    selectObjects: 'Vyberte objekty pro skupinu',
+    enterName: 'Zadejte název skupiny',
+    enterDescription: 'Zadejte popis skupiny',
+    invalidName: 'Neplatný název skupiny',
+    nameExists: 'Název skupiny již existuje',
+    created: 'Skupina {name} vytvořena',
+    keywords: {
+      name: {
+        display: 'Název(N)',
+        local: 'Název',
+        global: 'Name'
+      },
+      description: {
+        display: 'Popis(D)',
+        local: 'Popis',
+        global: 'Description'
+      }
+    }
+  },
+  ungroup: {
+    selectOrOption: 'Vyberte skupinu nebo',
+    selectGroup: 'Vyberte skupinu',
+    enterName: 'Zadejte název skupiny',
+    notFound: 'Skupina nenalezena',
+    notInGroup: 'Objekt není členem žádné skupiny',
+    multiGroup: 'Objekt je členem více skupin [{name}]',
+    exploded: 'Skupina {name} rozložena',
+    explodedCount: 'Rozloženo {count} skupin',
+    keywords: {
+      name: {
+        display: 'Název(N)',
+        local: 'Název',
+        global: 'Name'
+      },
+      all: {
+        display: 'Vše(A)',
+        local: 'Vše',
+        global: 'All'
+      },
+      accept: {
+        display: 'Přijmout(A)',
+        local: 'Přijmout',
+        global: 'Accept'
+      },
+      next: {
+        display: 'Další(N)',
+        local: 'Další',
+        global: 'Next'
+      }
+    }
+  },
+  groupedit: {
+    selectGroup: 'Vyberte skupinu',
+    enterName: 'Zadejte název skupiny',
+    notFound: 'Skupina nenalezena',
+    multiGroup: 'Objekt je členem více skupin [{name}]',
+    action: 'Zadejte volbu pro skupinu {name}',
+    selectToAdd: 'Vyberte objekty k přidání do skupiny',
+    selectToRemove: 'Vyberte objekty k odebrání ze skupiny',
+    newName: 'Zadejte nový název skupiny',
+    keywords: {
+      add: {
+        display: 'Přidat objekty(A)',
+        local: 'Přidat',
+        global: 'Add'
+      },
+      remove: {
+        display: 'Odebrat objekty(R)',
+        local: 'Odebrat',
+        global: 'Remove'
+      },
+      rename: {
+        display: 'Přejmenovat(N)',
+        local: 'Přejmenovat',
+        global: 'Rename'
+      },
+      accept: {
+        display: 'Přijmout(A)',
+        local: 'Přijmout',
+        global: 'Accept'
+      },
+      next: {
+        display: 'Další(N)',
+        local: 'Další',
+        global: 'Next'
+      }
+    }
+  },
+  dashgroup: {
+    option: 'Zadejte volbu',
+    empty: 'Nejsou definovány žádné skupiny',
+    listEntry: '{name}  {description}  [{selectable}]  ({count})',
+    yes: 'Ano',
+    no: 'Ne',
+    enterNameOrBlank:
+      'Zadejte název skupiny nebo stiskněte Enter pro bezejmennou',
+    enterGroupName: 'Zadejte název skupiny',
+    selectableSet: 'Skupina {name} výběrová = {value}',
+    orderOption: 'Zadejte volbu pořadí',
+    fromPosition: 'Zadejte číslo pozice objektu k přeuspořádání (od 0)',
+    toPosition: 'Zadejte nové číslo pozice objektu (od 0)',
+    keywords: {
+      list: {
+        display: '?(?)',
+        local: '?',
+        global: '?'
+      },
+      create: {
+        display: 'Vytvořit(C)',
+        local: 'Vytvořit',
+        global: 'Create'
+      },
+      add: {
+        display: 'Přidat(A)',
+        local: 'Přidat',
+        global: 'Add'
+      },
+      remove: {
+        display: 'Odebrat(R)',
+        local: 'Odebrat',
+        global: 'Remove'
+      },
+      explode: {
+        display: 'Rozložit(X)',
+        local: 'Rozložit',
+        global: 'Explode'
+      },
+      rename: {
+        display: 'Přejmenovat(N)',
+        local: 'Přejmenovat',
+        global: 'Rename'
+      },
+      selectable: {
+        display: 'Výběrová(S)',
+        local: 'Výběrová',
+        global: 'Selectable'
+      },
+      order: {
+        display: 'Pořadí(O)',
+        local: 'Pořadí',
+        global: 'Order'
+      },
+      reverse: {
+        display: 'Obrátit(R)',
+        local: 'Obrátit',
+        global: 'Reverse'
+      },
+      position: {
+        display: 'Pozice(P)',
+        local: 'Pozice',
+        global: 'Position'
+      }
+    }
+  },
+  pdfimport: {
+    pageNumber: 'Zadejte číslo stránky (1-{count})',
+    insertionPoint:
+      'Určete bod vložení (měřítko {scale}, režim {mode}, text {text}) nebo',
+    modePrompt: 'Vyberte způsob importu',
+    modeRecover: 'obnovit výkres',
+    modeVisual: 'zachovat vzhled PDF',
+    scaleFactor: 'Zadejte měřítko',
+    textPrompt: 'Vyberte rozpoznávání rozloženého textu',
+    textOff: 'vypnuto',
+    textLocal: 'místní slovník znaků',
+    textOcr: 'služba OCR',
+    keywords: {
+      scale: {
+        display: 'Měřítko(S)',
+        local: 'Měřítko',
+        global: 'Scale'
+      },
+      mode: {
+        display: 'Režim(M)',
+        local: 'Režim',
+        global: 'Mode'
+      },
+      text: {
+        display: 'Text(T)',
+        local: 'Text',
+        global: 'Text'
+      },
+      recover: {
+        display: 'Obnovit(R)',
+        local: 'Obnovit',
+        global: 'Recover'
+      },
+      visual: {
+        display: 'Vzhled(V)',
+        local: 'Vzhled',
+        global: 'Visual'
+      },
+      off: {
+        display: 'Vypnuto(O)',
+        local: 'Vypnuto',
+        global: 'Off'
+      },
+      local: {
+        display: 'Místní(L)',
+        local: 'Místní',
+        global: 'Local'
+      },
+      ocr: {
+        display: 'Ocr(C)',
+        local: 'Ocr',
+        global: 'Ocr'
+      }
+    },
+    pickInsertionPoint: 'Zadejte bod vložení',
+    dialog: {
+      title: 'Importovat PDF',
+      close: 'Zavřít',
+      fileName: 'Název souboru:',
+      browse: 'Procházet...',
+      pagesGroup: 'Stránka k importu',
+      page: 'Stránka:',
+      total: 'Celkem: {count}',
+      singleView: 'Zobrazit náhled stránky',
+      gridView: 'Zobrazit miniatury stránek',
+      pageLabel: 'Stránka {page}',
+      pageSize:
+        'Velikost stránky: {width} × {height} mm ({widthIn} × {heightIn} palce)',
+      previewError: 'Náhled není k dispozici',
+      positionGroup: 'Umístění',
+      onScreen: 'Zadat bod vložení na obrazovce',
+      x: 'X:',
+      y: 'Y:',
+      scale: 'Měřítko:',
+      modeGroup: 'Režim importu',
+      modeRecover: 'Obnovit výkres',
+      recoverHint:
+        'Znovu sestaví kružnice, oblouky, křivky, text, šrafy a bloky',
+      modeVisual: 'Zachovat vzhled PDF',
+      visualHint:
+        'Importuje cesty a text přesně tak, jak jsou nakresleny v PDF',
+      recognizeDimensions: 'Rozpoznat kóty',
+      recognizeDimensionsHint: 'Převede rozložené kóty zpět na objekty kót',
+      recognizeExplodedText: 'Rozpoznat rozložený text',
+      recognizeExplodedTextHint:
+        'Převede SHX / obrysový text ze tahů zpět na textové objekty (místní slovník nebo dostupný poskytovatel OCR)',
+      recognizeExplodedTextOff: 'Vypnuto',
+      recognizeExplodedTextLocal: 'Místní slovník znaků',
+      recognizeExplodedTextOcr: 'OCR',
+      ok: 'OK',
+      cancel: 'Storno'
+    }
+  },
+  pdfdim: {
+    cancelled: 'Obnovení kót bylo zrušeno; nic se nezměnilo.',
+    noDimensions:
+      'Ve výběru nebyly nalezeny žádné kóty (jsou potřeba šipky nebo značky, kótovací čáry a texty hodnot).',
+    summary:
+      'Převedeno {count} kót; styl {style} používá lineární měřítko {scale}.',
+    panel: {
+      title: 'Obnovit kóty',
+      style: 'Styl kót',
+      dimStyle: 'Styl',
+      newStyle: 'Nový styl kót…',
+      newStyleName: 'Název nového stylu kót',
+      createStyle: 'Vytvořit',
+      nameEmpty: 'Zadejte název.',
+      nameInvalid: 'Název obsahuje nepovolené znaky.',
+      nameExists: 'Styl kót s tímto názvem už existuje.',
+      scale: 'Měřítko výkresu',
+      stylePreview: 'Náhled vybraného stylu kót s rozpoznanými velikostmi',
+      dimensions: 'Kóty',
+      selectHint:
+        'Vyberte kótu pro přiblížení; před použitím můžete upravit hodnotu.',
+      empty: 'Ve výběru nebyly nalezeny žádné kóty.',
+      include: 'Převést tuto kótu',
+      kindLinear: 'Lineární',
+      kindRadius: 'Poloměr',
+      kindDiameter: 'Průměr',
+      kindAngular: 'Úhlová',
+      kindAligned: 'Zarovnaná',
+      kindArcLength: 'Délka oblouku',
+      kindOrdinate: 'Souřadnicová',
+      textTip: 'Text kóty (přepsání)',
+      measured: 'Naměřeno {value}',
+      hideStrokes: 'Skrýt původní čáry',
+      ready: '{ready} z {count} kót připraveno',
+      cancel: 'Zrušit',
+      apply: 'Použít'
+    }
+  },
+  pdfhatch: {
+    cancelled: 'Obnovení šraf bylo zrušeno; nic se nezměnilo.',
+    pickPoint: 'Určete bod uvnitř oblasti, kterou chcete šrafovat',
+    panel: {
+      title: 'Obnovit šrafy',
+      hatches: 'Šrafy',
+      addArea: 'Přidat oblast',
+      addAreaTip:
+        'Určete bod uvnitř oblasti, kterou rozpoznání vynechalo; na její čáry se použije nejlépe odpovídající vzor.',
+      picking: 'Určete ve výkresu bod uvnitř oblasti…',
+      noBoundary: 'Kolem tohoto bodu nebyla nalezena žádná uzavřená oblast.',
+      noStrokes: 'V této oblasti nebyl nalezen žádný pravidelný vzor.',
+      empty:
+        'Nebyla nalezena žádná šrafa. Oblast vyberte pomocí „Přidat oblast“.',
+      include: 'Převést tuto šrafu',
+      addedTag: 'přidáno',
+      entities: '{count} objektů',
+      selectHint: 'Vyberte šrafu a změňte její vzor, měřítko nebo úhel.',
+      ownGroup: 'Změřený / uživatelský',
+      libraryGroup: 'Předdefinované',
+      pattern: 'Vzor',
+      scale: 'Měřítko',
+      spacing: 'Rozteč',
+      angle: 'Úhel',
+      autoFit: 'Automaticky přizpůsobit',
+      autoFitTip: 'Znovu změřit měřítko, úhel a počátek tohoto vzoru z čar.',
+      match: 'Vzor na čarách: {precision} · překreslené čáry: {recall}',
+      noEntities:
+        'Tento vzor úplně nepřekreslí žádný objekt; nic se nenahradí.',
+      guessed:
+        'V čarách není žádná stopa tohoto vzoru; měřítko a úhel jsou odhadnuté.',
+      poorMatch: 'Slabá shoda: čáry, které šrafa nepřekreslí, zůstanou.',
+      userSingle: 'Uživatelský',
+      userDouble: 'Uživatelský, dvojitý',
+      measured: 'Změřený vzor',
+      hideStrokes: 'Skrýt původní čáry',
+      ready: 'Připraveno {ready} z {count} šraf',
+      cancel: 'Zrušit',
+      apply: 'Použít'
+    },
+    noHatches:
+      'Ve výběru nebyla nalezena žádná šrafa (jsou potřeba pravidelné rovnoběžné čáry a čáry, které je ohraničují).',
+    summary: 'Převedeno {count} šraf ({patterns}), nahrazeno {strokes} objektů.'
+  },
+  bsearch: {
+    unsupported:
+      'Žádný z vybraných objektů nelze porovnat (podporovány jsou úsečky, oblouky, kružnice, křivky, elipsy, spliny, text, odstavcový text a reference bloků).',
+    skipped: '{count} vybraných objektů nelze porovnat, budou ignorovány.',
+    found: 'Nalezeno {count} shodných instancí, převede se {included}. Zvolte',
+    noMatches: 'Žádné další instance nenalezeny.',
+    reviewOne: 'Instance {index}/{count} ({state})',
+    included: 'zahrnuta',
+    excluded: 'vyloučena',
+    options:
+      'Otočení {rotation}, zrcadlení {mirror}, měřítko {scale}, stejná hladina {layer}, existující bloky {blocks}, rozdílný text {text}. Přepnout',
+    on: 'zap',
+    off: 'vyp',
+    target: 'Převést na',
+    name: 'Zadejte název nového bloku',
+    nameExists: 'Blok s názvem "{name}" již existuje.',
+    nameInvalid: '"{name}" není platný název bloku.',
+    basePoint: 'Určete bod vložení',
+    attributeTag: 'Zadejte značku atributu pro text "{text}"',
+    existingName: 'Zadejte název existujícího bloku',
+    blockNotFound: 'Blok "{name}" nebyl nalezen.',
+    rotation: 'Určete úhel otočení bloku',
+    scale: 'Určete měřítko bloku',
+    scope:
+      'Převést také {count} nalezených instancí, nebo jen zdrojové objekty?',
+    summary: 'Převedeno na blok "{name}": {count} referencí.',
+    keywords: {
+      convert: {
+        display: 'Převést(C)',
+        local: 'Převést',
+        global: 'Convert'
+      },
+      review: {
+        display: 'Prohlédnout(R)',
+        local: 'Prohlédnout',
+        global: 'Review'
+      },
+      options: {
+        display: 'Možnosti(O)',
+        local: 'Možnosti',
+        global: 'Options'
+      },
+      exit: {
+        display: 'Konec(X)',
+        local: 'Konec',
+        global: 'eXit'
+      },
+      include: {
+        display: 'Zahrnout(I)',
+        local: 'Zahrnout',
+        global: 'Include'
+      },
+      exclude: {
+        display: 'Vyloučit(E)',
+        local: 'Vyloučit',
+        global: 'Exclude'
+      },
+      next: {
+        display: 'Další(N)',
+        local: 'Další',
+        global: 'Next'
+      },
+      previous: {
+        display: 'Předchozí(P)',
+        local: 'Předchozí',
+        global: 'Previous'
+      },
+      done: {
+        display: 'Hotovo(D)',
+        local: 'Hotovo',
+        global: 'Done'
+      },
+      rotation: {
+        display: 'Otočení(R)',
+        local: 'Otočení',
+        global: 'Rotation'
+      },
+      mirror: {
+        display: 'Zrcadlení(M)',
+        local: 'Zrcadlení',
+        global: 'Mirror'
+      },
+      scale: {
+        display: 'Měřítko(S)',
+        local: 'Měřítko',
+        global: 'Scale'
+      },
+      layer: {
+        display: 'Hladina(L)',
+        local: 'Hladina',
+        global: 'Layer'
+      },
+      blocks: {
+        display: 'Bloky(B)',
+        local: 'Bloky',
+        global: 'Blocks'
+      },
+      text: {
+        display: 'Text(T)',
+        local: 'Text',
+        global: 'Text'
+      },
+      new: {
+        display: 'Nový(N)',
+        local: 'Nový',
+        global: 'New'
+      },
+      existing: {
+        display: 'Existující(E)',
+        local: 'Existující',
+        global: 'Existing'
+      },
+      instances: {
+        display: 'Instance(I)',
+        local: 'Instance',
+        global: 'Instances'
+      },
+      source: {
+        display: 'Zdroj(S)',
+        local: 'Zdroj',
+        global: 'Source'
+      }
+    }
+  },
+  pdftext: {
+    panel: {
+      title: 'Obnovit text',
+      shxGroup: 'Text SHX (čárová písma)',
+      meshGroup: 'Text TrueType (obrysová písma)',
+      style: 'Styl textu',
+      newStyle: 'Nový styl textu…',
+      newTag: 'nový',
+      newStyleName: 'Název nového stylu textu',
+      create: 'Vytvořit',
+      cancel: 'Zrušit',
+      apply: 'Použít',
+      nameError: {
+        empty: 'Zadejte název.',
+        invalid: 'Název obsahuje nepovolené znaky.',
+        exists: 'Styl textu s tímto názvem již existuje.'
+      },
+      font: 'Písmo',
+      bigFont: 'Velké písmo',
+      noBigFont: '(Žádné)',
+      shxFonts: 'Písma SHX',
+      ttfFonts: 'Písma TrueType',
+      fontsUsed: 'Použito: {fonts}',
+      fontMissing:
+        'Písmo „{font}“ není k dispozici; vykreslí se písmem „{fallback}“.',
+      fontNotShx:
+        'Toto je písmo TrueType: text nebude vypadat jako čárový text SHX.',
+      fontNotTtf:
+        'Toto je písmo SHX: text nebude vypadat jako obrysový text TrueType.',
+      styleChanges:
+        'Změní písma stylu textu „{style}“: změní se i texty, které jej již používají.',
+      heightScale: 'Měřítko výšky',
+      widthFactor: 'Faktor šířky',
+      autoWidth: 'Přizpůsobit původní šířce',
+      lines: 'Řádky textu',
+      include: 'Převést tento řádek',
+      textPlaceholder: 'Zadejte text, nebo jej nechte prázdný pro přeskočení',
+      switchKind: 'Přepnout mezi textem SHX a TrueType',
+      kind: {
+        shx: 'SHX',
+        mesh: 'TrueType'
+      },
+      source: {
+        dictionary: 'Naučeno',
+        ocr: 'OCR',
+        typed: 'Upraveno',
+        unread: 'Nerozpoznáno'
+      },
+      hideStrokes: 'Skrýt původní čáry',
+      ready: 'Připraveno {ready} z {count} řádků',
+      merge: 'Sloučit do víceřádkového textu',
+      mergeTip: 'Sloučí vybrané řádky do jednoho víceřádkového textu (MTEXT)',
+      split: 'Rozdělit',
+      splitTip: 'Rozdělí vybraný sloučený text zpět na řádky',
+      mergeAdjacent: 'Sloučit sousední',
+      mergeAdjacentTip:
+        'Sloučí znaky a slova, která stojí vedle sebe na jednom účaří, do víceřádkového textu',
+      mergedCount: 'Sloučeno do víceřádkových textů: {count}.',
+      selectHint: 'Více řádků vyberete klepnutím s klávesou Ctrl nebo Shift.',
+      mtextTag: 'Víceřádkový text'
+    },
+    cancelled: 'Obnovení textu bylo zrušeno; nic nebylo změněno.',
+    ocrNotConfigured:
+      'Rozpoznávání textu (OCR) je vypnuté: není nakonfigurován žádný model AI s podporou obrázků. Nastavte ho příkazem LLMSETTINGS.',
+    recognizing: 'Rozpoznávání textových řádků: {count}…',
+    ocrFailed:
+      'Rozpoznávání textu (OCR) selhalo: {message}. Zadejte text ručně, nebo zkontrolujte model AI příkazem LLMSETTINGS.',
+    noCandidates: 'Ve výběru nebyly nalezeny žádné tahy podobné textu.',
+    summary:
+      'Převedeno {converted} řádků textu, z toho {automatic} automaticky; přeskočeno {skipped}.'
+  },
+  pdfscale: {
+    firstPoint: 'Určete první bod známé vzdálenosti',
+    secondPoint: 'Určete druhý bod',
+    realLength: 'Zadejte skutečnou délku (změřeno {measured})',
+    realLengthFromDimensions:
+      'Zadejte skutečnou délku (změřeno {measured}; texty kót naznačují 1:{scale})',
+    zeroDistance: 'Oba body jsou totožné.',
+    applied: 'Změněno měřítko {count} objektů faktorem {factor}.'
+  },
+  txt2mtxt: {
+    needTwo: 'Vyberte alespoň dva texty nebo víceřádkové texty ke sloučení.',
+    mergeFailed: 'Vybrané texty nelze sloučit.',
+    eraseFailed:
+      'Nepodařilo se smazat všechny zdrojové texty. Sloučení bylo zrušeno.'
+  }
+}

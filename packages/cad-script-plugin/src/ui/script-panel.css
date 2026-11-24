@@ -1,0 +1,457 @@
+.cad-script-root {
+  /* Follow the host theme (`--ml-ui-*` / Element Plus). Hex values are the
+     standalone fallback when those tokens are not set. */
+  --cad-script-bg: var(--ml-ui-bg, var(--el-bg-color, #1e1e1e));
+  --cad-script-text: var(--ml-ui-text, var(--el-text-color-primary, #e8e8e8));
+  --cad-script-text-secondary: color-mix(
+    in srgb,
+    var(--cad-script-text) 78%,
+    var(--cad-script-bg)
+  );
+  --cad-script-text-muted: var(
+    --ml-ui-text-muted,
+    var(--el-text-color-secondary, #9a9a9a)
+  );
+  --cad-script-border: var(--ml-ui-border, var(--el-border-color, #3a3a3a));
+  --cad-script-border-strong: color-mix(
+    in srgb,
+    var(--cad-script-text) 16%,
+    var(--cad-script-border)
+  );
+  --cad-script-bg-raised: color-mix(
+    in srgb,
+    var(--cad-script-text) 6%,
+    var(--cad-script-bg)
+  );
+  --cad-script-bg-sunken: color-mix(in srgb, #000 10%, var(--cad-script-bg));
+  --cad-script-bg-hover: color-mix(
+    in srgb,
+    var(--cad-script-text) 10%,
+    var(--cad-script-bg)
+  );
+  --cad-script-accent: var(--ml-ui-accent, var(--el-color-primary, #409eff));
+  --cad-script-accent-hover: color-mix(
+    in srgb,
+    #fff 18%,
+    var(--cad-script-accent)
+  );
+  --cad-script-on-accent: #fff;
+  --cad-script-danger: var(--ml-ui-danger, var(--el-color-danger, #f56c6c));
+  --cad-script-danger-bg: color-mix(
+    in srgb,
+    var(--cad-script-danger) 14%,
+    var(--cad-script-bg)
+  );
+  --cad-script-success: var(--el-color-success, #67c23a);
+  --cad-script-grip: var(--cad-script-text-muted);
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--cad-script-bg);
+  color: var(--cad-script-text);
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    sans-serif;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.cad-script-root *,
+.cad-script-root *::before,
+.cad-script-root *::after {
+  box-sizing: border-box;
+}
+
+.cad-script-btn {
+  border: 1px solid var(--cad-script-border-strong);
+  background: var(--cad-script-bg-raised);
+  color: var(--cad-script-text);
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.cad-script-btn:hover:not(:disabled) {
+  background: var(--cad-script-bg-hover);
+}
+
+.cad-script-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cad-script-btn--primary {
+  background: var(--cad-script-accent);
+  border-color: var(--cad-script-accent);
+  color: var(--cad-script-on-accent);
+}
+
+.cad-script-btn--primary:hover:not(:disabled) {
+  background: var(--cad-script-accent-hover);
+  border-color: var(--cad-script-accent-hover);
+}
+
+.cad-script-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-left: auto;
+  border-radius: 4px;
+  color: var(--cad-script-text-secondary);
+  text-decoration: none;
+}
+
+.cad-script-help:hover {
+  background: var(--cad-script-bg-hover);
+  color: var(--cad-script-text);
+}
+
+.cad-script-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid var(--cad-script-border);
+  background: var(--cad-script-bg-raised);
+  flex-shrink: 0;
+}
+
+.cad-script-hint {
+  flex: 1;
+  min-width: 8em;
+  color: var(--cad-script-text-muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.cad-script-editor-wrap {
+  flex: 1 1 auto;
+  min-height: 96px;
+  min-width: 0;
+  display: flex;
+}
+
+.cad-script-editor {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--cad-script-bg);
+}
+
+.cad-script-editor .cm-editor {
+  height: 100%;
+}
+
+.cad-script-editor .cm-scroller {
+  overflow: auto;
+}
+
+.cm-tooltip {
+  z-index: 4000;
+}
+
+.cad-script-splitter {
+  position: relative;
+  flex: 0 0 8px;
+  cursor: row-resize;
+  touch-action: none;
+  background: var(--cad-script-bg-raised);
+  border-top: 1px solid var(--cad-script-border);
+  border-bottom: 1px solid var(--cad-script-border);
+}
+
+.cad-script-splitter::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 28px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--cad-script-grip);
+  box-shadow:
+    0 -3px 0 var(--cad-script-grip),
+    0 3px 0 var(--cad-script-grip);
+  transform: translate(-50%, -50%);
+}
+
+.cad-script-splitter:hover,
+.cad-script-splitter:focus-visible,
+.cad-script-splitter.is-dragging {
+  background: var(--cad-script-accent);
+  outline: none;
+}
+
+.cad-script-splitter:hover::after,
+.cad-script-splitter:focus-visible::after,
+.cad-script-splitter.is-dragging::after {
+  background: var(--cad-script-on-accent);
+  box-shadow:
+    0 -3px 0 var(--cad-script-on-accent),
+    0 3px 0 var(--cad-script-on-accent);
+}
+
+.cad-script-result {
+  flex: 0 0 auto;
+  min-height: 72px;
+  overflow: auto;
+  padding: 8px 12px 12px;
+  background: var(--cad-script-bg-sunken);
+}
+
+.cad-script-result.is-error {
+  background: var(--cad-script-danger-bg);
+}
+
+.cad-script-status {
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+
+.cad-script-result.is-success .cad-script-status {
+  color: var(--cad-script-success);
+}
+
+.cad-script-result.is-error .cad-script-status,
+.cad-script-error {
+  margin: 0 0 8px;
+  color: var(--cad-script-danger);
+}
+
+.cad-script-result h3 {
+  margin: 8px 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cad-script-accent);
+}
+
+.cad-script-result pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.cad-script-result-empty,
+.cad-script-muted {
+  margin: 0;
+  color: var(--cad-script-text-muted);
+}
+
+.cad-script-json {
+  font-size: 12px;
+}
+
+.cad-script-images {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.cad-script-image-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+}
+
+.cad-script-image-wrap {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.cad-script-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 4px;
+  border: 1px solid var(--cad-script-border-strong);
+  background: var(--cad-script-bg-sunken);
+}
+
+.cad-script-image-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.cad-script-btn.is-active {
+  background: var(--cad-script-accent);
+  border-color: var(--cad-script-accent);
+  color: var(--cad-script-on-accent);
+}
+
+.cad-script-examples {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--cad-script-bg);
+}
+
+.cad-script-examples[hidden],
+.cad-script-editor-wrap[hidden],
+.cad-script-splitter[hidden],
+.cad-script-result[hidden] {
+  display: none;
+}
+
+.cad-script-examples-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid var(--cad-script-border);
+  background: var(--cad-script-bg-raised);
+  flex-shrink: 0;
+}
+
+.cad-script-examples-search {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid var(--cad-script-border-strong);
+  background: var(--cad-script-bg);
+  color: var(--cad-script-text);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.cad-script-examples-search::placeholder {
+  color: var(--cad-script-text-muted);
+}
+
+.cad-script-examples-search:focus-visible {
+  outline: 1px solid var(--cad-script-accent);
+  outline-offset: 1px;
+}
+
+.cad-script-examples-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cad-script-examples-list {
+  flex: 0 1 42%;
+  min-height: 72px;
+  overflow: auto;
+  border-bottom: 1px solid var(--cad-script-border);
+}
+
+.cad-script-examples-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  margin: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--cad-script-border);
+  background: transparent;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+  font: inherit;
+}
+
+.cad-script-examples-item:hover,
+.cad-script-examples-item.is-active {
+  background: var(--cad-script-accent);
+  color: var(--cad-script-on-accent);
+}
+
+.cad-script-examples-item-title {
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.cad-script-examples-item-desc {
+  color: var(--cad-script-text-muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.cad-script-examples-item:hover .cad-script-examples-item-desc,
+.cad-script-examples-item.is-active .cad-script-examples-item-desc {
+  color: color-mix(in srgb, var(--cad-script-on-accent) 82%, transparent);
+}
+
+.cad-script-examples-empty {
+  margin: 0;
+  padding: 12px;
+  color: var(--cad-script-text-muted);
+}
+
+.cad-script-examples-detail {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px 12px;
+  overflow: hidden;
+}
+
+.cad-script-examples-detail-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: auto;
+}
+
+.cad-script-examples-detail h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cad-script-examples-detail p {
+  margin: 0;
+  color: var(--cad-script-text-secondary);
+  line-height: 1.4;
+}
+
+.cad-script-examples-detail pre {
+  flex: 1 1 auto;
+  margin: 0;
+  min-height: 72px;
+  overflow: auto;
+  padding: 8px;
+  border-radius: 4px;
+  background: var(--cad-script-bg-sunken);
+  color: var(--cad-script-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.cad-script-examples-detail .cad-script-btn {
+  align-self: flex-start;
+}

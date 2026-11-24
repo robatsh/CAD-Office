@@ -1,0 +1,457 @@
+---
+title: 스크립트 API
+---
+
+# 스크립트 API
+
+스크립트에서 `cad` 객체를 통해 도면과 상호 작용합니다. `CAD_SCRIPT_API_TREE`에 선언된 멤버만 접근할 수 있으며, 나머지 속성은 `unknown_api` 오류를 발생시킵니다.
+
+## 실행 환경과 브라우저 API
+
+스크립트는 브라우저의 엄격 모드 샌드박스에서 실행되며, `cad` 객체와 ECMAScript 표준 내장 객체에만 접근할 수 있습니다. 페이지 DOM을 조작하거나 네트워크 요청을 보낼 수 없습니다.
+
+### 사용 가능한 내장 객체
+
+모든 ECMAScript 표준 내장 객체를 사용할 수 있습니다:
+
+- 수학과 수치: `Math`, `Number`, `BigInt`, `parseFloat`, `parseInt`, `isNaN`, `isFinite`
+- 자료 구조: `Object`, `Array`, `Map`, `Set`, `WeakMap`, `WeakSet`, `Symbol`
+- 텍스트와 포맷: `String`, `JSON`, `RegExp`, `Intl`, `encodeURIComponent`, `decodeURIComponent`
+- 시간: `Date`(`Date.now()`는 스크립트 자체의 소요 시간을 측정하는 데 사용할 수 있습니다)
+- 기타: `Boolean`, `Promise`, `Error` 및 그 하위 클래스
+
+정보를 출력할 때는 `cad.log()`를 사용하고 `console.log`에 의존하지 마세요. 결과 패널에는 `cad.log`의 내용만 표시됩니다.
+
+### 금지된 브라우저 API
+
+다음 내용은 스크립트 검증 단계에서 즉시 거부되며, `forbidden_identifier` / `forbidden_syntax` / `forbidden_member` 오류를 발생시킵니다. `{ window: count }` 같은 객체 속성 키는 허용되고, `window.foo` 같은 자유 식별자는 거부됩니다.
+
+- 페이지와 DOM: `window`, `document`, `globalThis`
+- 네트워크와 통신: `fetch`, `XMLHttpRequest`, `WebSocket`, `importScripts`
+- 기기와 환경: `navigator`, `location`, `parent`, `top`, `self`, `frames`(런타임에 `undefined`로 가려집니다)
+- 스토리지: `localStorage`, `sessionStorage`
+- 동적 실행: `eval`, `Function`
+- 기타 런타임: `process`, `require`, `module`, `exports`, `Deno`, `Bun`
+- 구문: `import` / `export` 문, 동적 `import()`, `this`, `with`, `import.meta`, `super`
+- 탈출 경로: `constructor`, `prototype`, `__proto__`, `__defineGetter__`, `__defineSetter__`, `__lookupGetter__`, `__lookupSetter__`
+
+::: warning
+위에서 금지된 객체 외에도 다른 브라우저 전역 변수(예: `alert`, `setTimeout`, `performance`, `console`)는 기술적으로는 완전히 차단되지 않을 수 있지만, 지원되는 API가 아닙니다. 스크립트는 `cad` 객체와 ECMAScript 표준 내장 객체에만 의존해야 하며, 그 외 접근은 향후 버전에서 추가로 제한될 수 있습니다.
+:::
+
+## cad.drawing
+
+현재 도면의 정적 정보를 반환합니다.
+
+| 필드           | 타입                                          | 설명                |
+| -------------- | --------------------------------------------- | ------------------- |
+| `title`        | `string`                                      | 도면 제목           |
+| `currentLayer` | `string`                                      | 현재 레이어 이름    |
+| `units`        | `number`                                      | 삽입 단위(INSUNITS) |
+| `layers`       | `Array<{ name, isOn, isFrozen, isLocked }>`   | 전체 레이어 목록    |
+| `extents`      | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | 모형 공간 범위      |
+
+```javascript
+const info = cad.drawing
+cad.log('현재 레이어:', info.currentLayer)
+cad.log('레이어 총수:', info.layers.length)
+```
+
+## cad.entities
+
+`where` / `count` / `inBox`는 **모형 공간과 도면 공간만** 스캔합니다(블록 정의는 `inBlock(id)`). 블록 참조 속성의 `ownerId`는 참조 자체이고, 그 외는 소속 블록 테이블 레코드입니다. 블록 참조 `type`은 `BlockReference`입니다.
+
+### `cad.entities.count(predicate)`
+
+스냅샷 없이 일치 개수를 셉니다. 집계는 이것을 쓰세요(`where(pred).length`는 일치마다 스냅샷).
+
+```javascript
+const n = cad.entities.count(e => e.type === 'Circle')
+```
+
+### `cad.entities.where(predicate)`
+
+조건에 따라 엔티티 스냅샷을 필터링하여 일치하는 스냅샷 배열을 반환합니다.
+
+```javascript
+const circles = cad.entities.where(e => e.type === 'Circle')
+```
+
+### `cad.entities.byId(id)`
+
+엔티티 ID로 단일 스냅샷을 가져오며, 찾지 못하면 `undefined`를 반환합니다.
+
+```javascript
+const entity = cad.entities.byId('A1B2')
+if (entity) {
+  cad.log('타입:', entity.type)
+}
+```
+
+### `cad.entities.inBlock(blockId)`
+
+한 블록 정의(또는 모형/도면 공간)에 직접 들어 있는 엔티티를 스냅샷합니다.
+
+```javascript
+const widget = cad.blocks.find(block => block.name === 'Widget')
+const ents = widget ? cad.entities.inBlock(widget.id) : []
+```
+
+### `cad.entities.inBox(min, max)`
+
+WCS 사각형과 교차하는 레이아웃 공간 스냅샷을 반환합니다(모형/도면만).
+
+```javascript
+const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
+```
+
+### 엔티티 스냅샷(EntitySnapshot)
+
+| 필드            | 타입                                          | 설명                                                  |
+| --------------- | --------------------------------------------- | ----------------------------------------------------- |
+| `id`            | `string`                                      | 엔티티 객체 ID                                        |
+| `ownerId`       | `string`                                      | 소속 블록 테이블 레코드 ID. 속성은 블록 참조 ID       |
+| `type`          | `string`                                      | 엔티티 타입(`AcDb` 접두사 제외), 예: `Circle`, `Line` |
+| `layer`         | `string`                                      | 소속 레이어 이름                                      |
+| `color`         | `EntityColor`                                 | 저장된 색상(ByLayer / ByBlock 미해석)                 |
+| `resolvedColor` | `EntityColor`                                 | ByLayer / ByBlock을 해석한 색상                       |
+| `lineType`      | `string`                                      | 선종류 이름(`ByLayer` / `ByBlock`은 저장값 유지)      |
+| `lineWeight`    | `number`                                      | `AcGiLineWeight` 값. 음수는 ByLayer / ByBlock         |
+| `linetypeScale` | `number`                                      | 선종류 축척                                           |
+| `visibility`    | `boolean`                                     | `false`이면 숨김                                      |
+| `transparency`  | `EntityTransparency`                          | 투명도 방식과 alpha                                   |
+| `thickness`     | `number \| undefined`                         | 돌출 두께(해당 타입만)                                |
+| `normal`        | `{x,y,z} \| undefined`                        | 돌출 방향 / 평면 법선(해당 타입만)                    |
+| `extents`       | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | 월드 좌표계 범위                                      |
+| `geometry`      | `object \| undefined`                         | 타입별 지오메트리 데이터                              |
+
+`EntityColor`는 `{ red?, green?, blue?, hex?, colorIndex?, isByColor, isByACI, isByLayer, isByBlock, isForeground }`입니다.
+ByLayer / ByBlock 색상에는 RGB가 없습니다. 실제 색상이 필요하면 `resolvedColor`를 읽습니다.
+`EntityTransparency`는 `{ method, alpha, percentage?, isByAlpha, isByLayer, isByBlock }`입니다.
+
+`cad.entities.where(...)` 술어 안에서는 이 표시 속성을 지연 읽기합니다. 술어가 접근한 필드만 해석하고, 일치한 엔티티만 전체 스냅샷으로 변환합니다.
+
+지원되는 `geometry` 타입:
+
+| 엔티티 타입                         | `geometry` 필드                                                                                                                                                                                                                                                                                          |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Circle`                            | `{ center, radius, area, circumference, closed }`                                                                                                                                                                                                                                                        |
+| `Line`                              | `{ start, end, length, midPoint, direction, closed }`                                                                                                                                                                                                                                                    |
+| `Arc`                               | `{ center, radius, startAngle, endAngle, startAngleDeg, endAngleDeg, length, area, startPoint, endPoint, midPoint, closed }`                                                                                                                                                                             |
+| `Ellipse`                           | `{ center, majorAxis, majorRadius, minorRadius, startAngle, endAngle, startAngleDeg, endAngleDeg, area, isCircular, closed }`                                                                                                                                                                            |
+| `Polyline`                          | `{ points, vertices: [{ bulge, startWidth, endWidth }], bulges, hasBulges, hasWidths, closed, elevation, length, area }`                                                                                                                                                                                 |
+| `2dPolyline`                        | `{ points, vertices, bulges, hasBulges, closed, polyType, elevation, length, area }`                                                                                                                                                                                                                     |
+| `3dPolyline`                        | `{ points, closed, polyType, length }`                                                                                                                                                                                                                                                                   |
+| `Spline`                            | `{ points, controlPoints, fitPoints, knots, weights, degree, length, area, isFitPointSpline, isControlPointSpline, startPoint, endPoint, closed, normal }`                                                                                                                                               |
+| `Text`                              | `{ position, text, height, rotation, styleName, alignmentPoint, hasAlignmentPoint, oblique, obliqueDeg, horizontalMode, verticalMode, widthFactor, isBackward, isUpsideDown }`                                                                                                                           |
+| `MText`                             | `{ position, text, plainText, height, width, extentsWidth, rotation, styleName, attachmentPoint, direction, lineSpacingFactor, lineSpacingStyle, backgroundFill, backgroundFillColor, backgroundScaleFactor, drawingDirection, columnType, columnCount, columnWidth, columnGutter, columnFlowReversed }` |
+| `Attribute` / `AttributeDefinition` | 문자 필드에 `{ tag, invisible }` 등 추가                                                                                                                                                                                                                                                                 |
+| `Point`                             | `{ position, ecsRotation }`                                                                                                                                                                                                                                                                              |
+| `Ray` / `Xline`                     | `{ basePoint, unitDir }`                                                                                                                                                                                                                                                                                 |
+| `BlockReference`(Insert)            | `{ name, effectiveName, isDynamicBlock, position, rotation, scale, columnCount, rowCount, columnSpacing, rowSpacing, blockTransform, attributes: [{ tag, text, position, invisible }] }`                                                                                                                 |
+| `Table`                             | 블록 참조 필드에 `{ rows, columns, attachmentPoint, rowHeights, columnWidths, tableWidth, tableHeight, cells }` 추가                                                                                                                                                                                     |
+| `Hatch`                             | `{ patternName, hatchStyle, isSolidFill, isHatch, isGradient, area, loops: [{ closed, points, length }], gradient* }`                                                                                                                                                                                    |
+
+각도 필드 `startAngle` / `endAngle`은 라디안을 사용하고, `startAngleDeg` / `endAngleDeg`는 도(degree)를 사용합니다.
+`plainText`는 MTEXT 제어 코드(`\P`, `\fSimSun|b0|i0;`, 중괄호)가 제거되어 바로 검색할 수 있습니다.
+치수의 `measurement`는 엔티티에 값이 없으면 정의점에서 계산됩니다.
+
+`Hatch`, `Spline`, `Leader`, `MLeader`, `MLine`, 각종 `Dimension`, `RasterImage`, `Viewport`, `3dSolid`, `ProxyEntity`를 포함한 data-model의 모든 구체 엔티티에 `geometry`가 있습니다. ACIS, OLE, 프록시 그래픽 바이너리는 포함하지 않습니다.
+
+## cad.tables
+
+`AcDbDatabase.tables`와 같이 모든 심볼 테이블을 읽습니다. 각 테이블은 `{ id, records }`이며, 레코드에는 최소한 `id`와 `name`이 있습니다.
+
+| 속성             | 내용                                                                                      |
+| ---------------- | ----------------------------------------------------------------------------------------- |
+| `appIdTable`     | 등록된 응용 프로그램 이름                                                                 |
+| `blockTable`     | 블록 정의. 엔티티는 `cad.blocks`                                                          |
+| `dimStyleTable`  | 치수 스타일 (`dimtxt`, `dimscale` 등)                                                     |
+| `linetypeTable`  | 선 종류                                                                                   |
+| `textStyleTable` | 문자 스타일                                                                               |
+| `ucsTable`       | 명명된 UCS                                                                                |
+| `viewTable`      | 명명된 뷰                                                                                 |
+| `layerTable`     | 레이어. `color`, `linetype`, `lineWeight`, `isOff`, `isFrozen`, `isLocked`, `isPlottable` |
+| `viewportTable`  | 모형 공간 VPORT 레코드. 도면 공간 `Viewport` 엔티티가 아닙니다                            |
+
+## cad.blocks
+
+DXF BLOCKS에 해당하는 **메타데이터만**입니다(`*Model_Space` / `*Paper_Space` 포함). 엔티티 배열은 없습니다 — `cad.entities.inBlock(id)`를 쓰세요.
+
+| 필드                            | 설명                                              |
+| ------------------------------- | ------------------------------------------------- |
+| `id`                            | 블록 테이블 레코드 ID. 블록 안 엔티티의 `ownerId` |
+| `name`                          | 블록 이름                                         |
+| `origin`                        | 기준점 `{ x, y, z }`                              |
+| `isModelSpace` / `isPaperSpace` | 모형 공간 / 도면 공간                             |
+| `flags`                         | BLOCK 그룹 코드 70                                |
+| `pathName` / `isXref`           | 외부 참조 경로와 여부                             |
+| `entityCount`                   | 엔티티 수(스냅샷 없음)                                 |
+| `typeCounts`                    | 유형별 개수(스냅샷 없음)                               |
+
+## cad.selection
+
+엔티티를 강조 표시하고 선택하는 데 사용됩니다.
+
+### `cad.selection.ids`
+
+현재 선택된 엔티티 ID 배열입니다. 메서드가 아니라 속성입니다.
+
+```javascript
+const ids = cad.selection.ids
+```
+
+### `cad.selection.entities`
+
+선택 집합에 있는 각 엔티티의 스냅샷입니다. 더 이상 존재하지 않는 ID는 생략됩니다. 스냅샷 필드는 `cad.entities.byId`와 같습니다.
+
+```javascript
+const circles = cad.selection.entities.filter(e => e.type === 'Circle')
+```
+
+### `cad.selection.replace(ids)`
+
+선택 집합을 지우고 지정된 ID 목록으로 설정합니다.
+
+```javascript
+cad.selection.replace(circles.map(e => e.id))
+```
+
+### `cad.selection.add(ids)`
+
+지정된 ID를 현재 선택 집합에 추가합니다.
+
+```javascript
+cad.selection.add(['A1B2', 'C3D4'])
+```
+
+### `cad.selection.remove(ids)`
+
+현재 선택 집합에서 지정된 ID를 제거합니다.
+
+```javascript
+cad.selection.remove(['A1B2'])
+```
+
+### `cad.selection.clear()`
+
+선택 집합을 지웁니다.
+
+```javascript
+cad.selection.clear()
+```
+
+## cad.view
+
+뷰를 제어하는 데 사용됩니다.
+
+### `cad.view.zoomExtents()`
+
+뷰를 모형 공간 범위로 확대/축소합니다.
+
+```javascript
+cad.view.zoomExtents()
+```
+
+### `cad.view.capturePreview({ longSide?, selection?, layers? })`
+
+도면 범위의 PNG 스크린샷을 대기열에 넣습니다. 캡처는 스크립트 본문이 끝난 뒤에 실행됩니다. 반환값은 `{ queued: true, index }` 입니다. Agent 채팅에서는 이미지가 도구 결과에 첨부되어 모델로 전달됩니다(JSON data URL로는 반환되지 않음).
+
+`cad.selection.replace(ids)` 이후 `selection: true`를 전달하면 현재 선택만 캡처합니다.
+
+`layers`(도면층 이름 또는 이름 배열, 대소문자 구분 없음)를 전달하면 모델 공간에서 해당 도면층의 객체만 렌더링하고, 도면 전체가 아니라 그 도면층들을 합친 범위로 프레이밍하므로 큰 여백이 생기지 않습니다. 도면층 켜기/끄기 상태는 무시됩니다. 존재하지 않는 도면층 이름은 오류를 발생시키며, `layers`는 `selection`과 함께 쓸 수 없습니다.
+
+```javascript
+cad.view.zoomExtents()
+cad.view.capturePreview()
+// optional: cad.view.capturePreview({ longSide: 512 })
+// optional: cad.view.capturePreview({ selection: true })
+// optional: cad.view.capturePreview({ layers: ['WALL', 'DOOR'] })
+```
+
+## cad.file
+
+현재 도면을 내보냅니다. DXF 본문은 스크립트 반환값에 포함되지 않습니다.
+
+### `cad.file.saveDxf(path?)`
+
+스크립트가 성공한 뒤 DXF 내보내기를 대기열에 넣습니다. 경로 문자열 또는 `{ path?, fileName? }` 를 넘깁니다. 확장자가 없으면 `.dxf` 가 붙습니다. 반환값은 `{ queued: true, index, fileName }` 입니다.
+
+- 앱 내 에이전트와 스크립트 패널에서는 브라우저 다운로드가 시작됩니다.
+- `cad-mcp-server` 에서는 서버가 `path` 에 파일을 씁니다. 상대 경로는 서버 프로세스의 작업 디렉터리 기준입니다. 도구 결과의 `savedFiles` 에 절대 경로와 바이트 수가 들어갑니다.
+
+```javascript
+cad.file.saveDxf('./plan-out.dxf')
+// or: cad.file.saveDxf({ path: './plan-out.dxf' })
+```
+
+### `cad.file.savePdf(path?)`
+
+Queues a PDF export after the script succeeds. Pass a path string or `{ path?, fileName?, exportLayouts?, exportEmptyLayouts?, colorMode?, textMode?, modelSpaceFit? }`. `.pdf` is appended when missing. Returns `{ queued: true, index, fileName }`.
+
+```javascript
+cad.file.savePdf('./plan.pdf')
+```
+
+### `cad.file.saveHtml(path?)`
+
+Queues offline HTML (or a multi-file `.zip`) after success. Pass a path string or `{ path?, fileName?, exportFormat?, exportLayouts?, exportEmptyLayouts?, background? }`. Requires a viewer host (`exportHtml`). Headless sessions skip with a log note.
+
+```javascript
+cad.file.saveHtml('./plan.html')
+cad.file.saveHtml({ path: './plan.zip', exportFormat: 'multi' })
+```
+
+## cad.measure
+
+Numeric helpers for self-check after drawing. Prefer these over hand-rolled `Math.hypot` / `atan2`. Points are `{ x, y }` in WCS.
+
+| Method                                                  | Returns                                                                               |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `cad.measure.distance(a, b)`                            | Distance between two points                                                           |
+| `cad.measure.angleDeg(a, b)`                            | Bearing of a→b from +X, degrees in (-180, 180]                                        |
+| `cad.measure.angleDeg(a, b, c)`                         | Interior angle at b (a–b–c), degrees in [0, 180]                                      |
+| `cad.measure.deltaAngleDeg(fromDeg, toDeg)`             | Smallest absolute bearing difference in [0, 180]                                      |
+| `cad.measure.center(id)`                                | Circle/arc/ellipse center, or point/text position; else `undefined`                   |
+| `cad.measure.radius(id)`                                | Circle/arc radius or ellipse majorRadius; else `undefined`                            |
+| `cad.measure.length(id)`                                | Line length, or polyline/spline/2dPolyline/3dPolyline path length; else `undefined`   |
+| `cad.measure.area(id)`                                  | Area reported by the entity, or polygon area of its boundary points; else `undefined` |
+| `cad.measure.check(name, expected, actual, tolerance?)` | `{ name, expected, actual, pass }` (default tolerance `1e-3`)                         |
+| `cad.measure.report(checks)`                            | `{ ok, checks }` — `ok` is true iff every check passed                                |
+
+Recommended return shape after a non-trivial draw:
+
+```javascript
+const origin = { x: 0, y: 0 }
+let circleId = ''
+cad.edit.transaction('draw', tx => {
+  circleId = tx.drawCircle({ center: { x: 30, y: 40 }, radius: 10 })
+})
+const center = cad.measure.center(circleId)
+return {
+  ...cad.measure.report([
+    cad.measure.check('r', 10, cad.measure.radius(circleId)),
+    cad.measure.check('pcd', 50, cad.measure.distance(origin, center), 0.01)
+  ]),
+  entityIds: [circleId]
+}
+```
+
+## cad.redraw
+
+참조 이미지(스캔, 사진, 스크린샷)에서 근거를 추적하며 도면을 재구성합니다. 스크립트는 일반 spec 객체를 만들고, `cad.redraw`는 이를 검증한 뒤 하나의 실행 취소 그룹 안에서 표준 도면층(OBJECT, HIDDEN, CENTER, DIM, TEXT, TABLE, BORDER, CONSTRUCTION, ASSUMPTION)에 그리고 결과를 검사합니다. 전체 spec 참조는 `CAD_REDRAW_SPEC_SUMMARY`로 내보내지며 에이전트 프롬프트에 포함되어 있습니다.
+
+| 메서드 | 설명 |
+| --- | --- |
+| `cad.redraw.validate(spec, { profile? }?)` | 그리지 않고 필드, ID, 단위, 보정, 구속 조건을 검사 → `{ status, errors, warnings, evidence, calibrations }` |
+| `cad.redraw.draw(spec, { profile?, omit?, offset?, allowBlocked? }?)` | spec을 그림 → `{ status, drawn, idMap, entityCount, skipped, checks, dimensionChecks, errors, warnings }` |
+| `cad.redraw.inspect(spec, idMap, { profile? }?)` | 검사를 다시 실행하고 치수 `value` 판독값을 그려진 치수의 측정값과 비교 |
+| `cad.redraw.compare(spec, { referenceIndex?, calibration?, viewId?, tolerancePx?, maxSide?, images? }?)` | 첨부한 참조 이미지와 픽셀 단위 비교: spec 보정으로 그린 도면을 정합하고 `redrawCompare`(판정, 커버리지, 정밀도, 거리, `suggestedMove`, 핫스팟)와 오버레이·차이 이미지를 반환 |
+
+- 프로파일: `general`(기본값), `strict-dimensioned`, `hybrid`, `visual-trace`, `geometry-only`(문자, 치수, 지시선, 표 문자 생략).
+- 값별 근거: `known`, `scaled`, `inferred`, `unreadable`. 단위의 기본값은 `unitless`이며 밀리미터를 가정하지 않습니다.
+- 객체는 기본적으로 CAD 좌표를 사용합니다. `coords: 'source'`이면 이미지 픽셀 좌표(왼쪽 위 원점, y 아래 방향)이며 보정(`dimension-anchor`, `similarity`, `affine`, `homography`, `sheet-scale`)으로 변환됩니다.
+- 상태: `pass`, `pass_with_warnings`, `needs_review`(치수 또는 구속 조건 충돌), `blocked`(엄격 프로파일의 근거 부족), `fail`(잘못된 spec, 아무것도 그리지 않음).
+- 표는 AcDbTable이 아니라 선과 문자로 그려집니다.
+- 그릴 때 `units`에 따라 `INSUNITS`를 설정하고, 문자와 치수 문자에는 CJK를 지원하는 `REDRAW_TEXT` 스타일(`simsun` + `hztxt.shx`)을 사용합니다. 만들 수 없는 치수는 선과 문자(반지름/지름은 지시선)로 그리고 경고를 표시하며, `fallbacks`에 그 개수를 기록합니다.
+
+```javascript
+const r = cad.redraw.draw({
+  profile: 'general',
+  units: 'mm',
+  entities: [
+    { id: 'plate', type: 'rectangle', x: 0, y: 0, width: 120, height: 80, evidence: 'known' },
+    { id: 'hole', type: 'circle', center: [60, 40], radius: 10, evidence: 'known' },
+    { id: 'w', type: 'linear_dimension', p1: [0, 0], p2: [120, 0], dimLine: [60, -12], value: 120, evidence: 'known' },
+    { id: 'note', type: 'leader', points: [[67, 47], [85, 65], [95, 65]], text: 'THRU' }
+  ],
+  checks: [{ measure: 'radius', entity: 'hole', expected: 10 }]
+})
+return { status: r.status, checks: r.checks, dimensionChecks: r.dimensionChecks }
+```
+
+### 픽셀 비교
+
+`cad.redraw.compare`는 참조 이미지(또는 `views[].sourceRoi`)에 해당하는 CAD 범위로 도면을 렌더링하고, 보정(유사, 아핀, 호모그래피 변환)으로 이미지 좌표에 맞춘 뒤, 둘 다 1픽셀 중심선으로 세선화하여 거리 변환으로 서로 측정합니다.
+
+- `coverage`: 허용 오차 안에 그려진 형상이 있는 참조선의 비율(형상이 빠지면 낮아집니다).
+- `precision`: 허용 오차 안에 참조선이 있는 그려진 선의 비율(불필요하거나 잘못 놓인 형상이 있으면 낮아집니다).
+- `meanDistance*` / `p95Distance*`: 참조선과 도면 사이의 거리(참조 이미지 픽셀 및 CAD 단위).
+- `verdict`: `aligned`, `offset`(이동으로 대부분 해결 — `suggestedMove` 참고), `incomplete`, `cluttered`, `mismatch`.
+- `hotspots`: 차이가 가장 큰 격자 셀(`sourceRoi`는 이미지 픽셀, `cadBox`는 CAD 범위).
+
+오버레이는 흐리게 처리한 참조 이미지 위에 일치한 선을 녹색, 누락된 선을 빨간색, 불필요한 선을 파란색으로 표시합니다. 비교에는 렌더러와 첨부 이미지가 필요하므로 앱 내 에이전트에서 동작하며, 헤드리스 세션은 `reason: 'no_raster_host'`를 반환합니다. 픽셀 지표는 시각적 근거일 뿐 치수를 증명하지 않습니다.
+
+## cad.edit.transaction
+
+편집 작업을 실행하며, 모든 수정 사항은 하나의 실행 취소 그룹으로 처리됩니다. 도면은 편집 가능한 상태여야 합니다(읽기 전용 모드가 아님).
+
+```javascript
+cad.edit.transaction('일괄 수정', tx => {
+  tx.drawCircle({ center: { x: 50, y: 50 }, radius: 10, layer: '0' })
+  tx.move(entityIds, 10, 20)
+})
+```
+
+트랜잭션에서 사용 가능한 메서드:
+
+### 그리기 메서드
+
+| 메서드                                                                                                     | 매개변수                         | 반환 값      |
+| ---------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------ |
+| `tx.drawLine({ start, end, layer? })`                                                                      | `start/end: {x,y}`               | 새 엔티티 ID |
+| `tx.drawCircle({ center, radius, layer? })`                                                                | `center: {x,y}`                  | 새 엔티티 ID |
+| `tx.drawArc({ center, radius, startAngleDeg, endAngleDeg, layer? })`                                       | `center: {x,y}`                  | 새 엔티티 ID |
+| `tx.drawRectangle({ corner1, corner2, layer? })`                                                           | `corner1/corner2: {x,y}`         | 새 엔티티 ID |
+| `tx.drawPolyline({ points, closed?, layer? })`                                                             | `points: Array<{x,y}>`           | 새 엔티티 ID |
+| `tx.drawEllipse({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? })` | `center: {x,y}`                  | 새 엔티티 ID |
+| `tx.drawHatch({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? })`                        | `boundary: Array<{x,y}>` (min 3) | 새 엔티티 ID |
+| `tx.drawPoint({ position, layer? })`                                                                       | `position: {x,y}`                | 새 엔티티 ID |
+| `tx.drawRay({ start, through, layer? })`                                                                   | `start/through: {x,y}`           | 새 엔티티 ID |
+| `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`           | 새 엔티티 ID |
+| `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`           | 새 엔티티 ID |
+| `tx.drawText({ position, text, height?, rotationDeg?, width?, layer? })`                                                         | `position: {x,y}`                | 새 엔티티 ID |
+| `tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? })`                 | 점 `{x,y}`                       | 새 엔티티 ID |
+| `tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? })`     | `rotationDeg` 생략 시 배치로 수평/수직 | 새 엔티티 ID |
+| `tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, … } \| { chordPoint, farChordPoint, … })` | 중심+반지름 또는 현 점               | 새 엔티티 ID |
+| `tx.drawDimRadius({ center, radius, angleDeg?, leaderLength?, … } \| { center, chordPoint, … })`           | 중심+반지름 또는 중심+현 점          | 새 엔티티 ID |
+| `tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`             | 3점 각도                         | 새 엔티티 ID |
+| `tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`                  | 호 길이                          | 새 엔티티 ID |
+| `tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? })`     | 좌표 치수                        | 새 엔티티 ID |
+| `tx.drawLeader({ points, text?, textPosition?, textHeight?, textLayer?, arrowHead?, styleName?, layer? })` | 화살표는 `points[0]` | 지시선 ID (주석 여러 줄 문자 ID도 생성 ID에 포함) |
+
+치수는 `drawDim*`로 만드세요. 선·화살표·문자로 치수를 흉내 내지 마세요. 기본값은 도면 `$DIMSTYLE`이며, 재정의할 때는 `cad.tables.dimStyleTable`의 `styleName`을 넘깁니다.
+
+### 편집 메서드
+
+| 메서드                             | 매개변수                   | 반환 값          |
+| ---------------------------------- | -------------------------- | ---------------- |
+| `tx.erase(ids)`                    | `string[]`                 | 삭제된 엔티티 수 |
+| `tx.setLayer(ids, layer)`          | `string[], string`         | —                |
+| `tx.move(ids, dx, dy)`             | `string[], number, number` | 이동된 엔티티 수 |
+| `tx.rotate(ids, center, angleDeg)` | `string[], {x,y}, number`  | 회전된 엔티티 수 |
+| `tx.createLayer(name)`             | `string`                   | —                |
+| `tx.setCurrentLayer(name)`         | `string`                   | —                |
+
+## cad.log
+
+결과 패널에 로그 정보를 출력합니다.
+
+```javascript
+cad.log('엔티티 수:', count)
+cad.log({ layer: '0', count })
+```
+
+## 반환 값
+
+스크립트에서 `return`을 사용하여 JSON 직렬화 가능한 임의의 값을 반환할 수 있습니다. 반환 값은 결과 패널에 표시됩니다.
+
+```javascript
+return {
+  total: all.length,
+  circles: circles.length,
+  onLayer0: onLayer0.length
+}
+```
+
+반환 값이 65536자를 초과하면 잘리고 `truncated`로 표시됩니다.

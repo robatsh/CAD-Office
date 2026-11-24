@@ -1,0 +1,160 @@
+import { AcApI18n, type AcApLocale } from '@mlightcad/cad-simple-viewer'
+
+import type { ScriptExampleId } from '../examples/scriptExamples'
+import { scriptAr } from './ar'
+import { scriptChrome } from './chrome'
+import { scriptCommandDescriptions } from './command'
+import { scriptCs } from './cs'
+import { scriptDe } from './de'
+import { scriptEn } from './en'
+import { scriptExampleCopyByLocale } from './exampleCopy'
+import { scriptJa } from './ja'
+import { scriptKo } from './ko'
+import { scriptTr } from './tr'
+import { scriptZh } from './zh'
+
+/** Vue i18n key prefix for script-console strings (`main.toolPalette.script`). */
+export const SCRIPT_I18N_PREFIX = 'main.toolPalette.script'
+
+/** Union of keys in {@link scriptEn}. */
+export type ScriptLabelKey = keyof typeof scriptEn
+
+/** Map of every script-console label key to its translated string. */
+export type ScriptLabels = Record<ScriptLabelKey, string>
+
+/** Locale-specific flat message tables before nesting under `main.toolPalette.script`. */
+const scriptMessagesByLocale = {
+  en: scriptEn,
+  de: scriptDe,
+  zh: scriptZh,
+  ja: scriptJa,
+  ko: scriptKo,
+  tr: scriptTr,
+  cs: scriptCs,
+  ar: scriptAr
+} as const satisfies Record<AcApLocale, ScriptLabels>
+
+const LOCALES: readonly AcApLocale[] = [
+  'en',
+  'de',
+  'zh',
+  'ja',
+  'ko',
+  'tr',
+  'cs',
+  'ar'
+]
+
+/** Guards {@link registerScriptI18n} against duplicate merges. */
+let isRegistered = false
+
+/**
+ * Builds the nested message object for one locale.
+ *
+ * @param locale - Target locale.
+ * @returns Messages shaped for `mergeLocaleMessage`.
+ */
+function buildVueMessages(locale: AcApLocale) {
+  const descriptions = scriptCommandDescriptions[locale]
+  const chrome = scriptChrome[locale]
+  return {
+    command: {
+      ACAD: {
+        cadscript: { description: descriptions.cadscript }
+      }
+    },
+    main: {
+      ribbon: {
+        command: { script: chrome.command },
+        tooltip: { script: chrome.tooltip }
+      },
+      toolPalette: {
+        script: {
+          ...scriptMessagesByLocale[locale],
+          examples: scriptExampleCopyByLocale[locale]
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Locale trees for {@link AcApUiRegistry}, including the console and the
+ * ribbon button.
+ */
+export function scriptLocaleMessages(): Partial<
+  Record<AcApLocale, ReturnType<typeof buildVueMessages>>
+> {
+  const messages: Partial<
+    Record<AcApLocale, ReturnType<typeof buildVueMessages>>
+  > = {}
+  for (const locale of LOCALES) {
+    messages[locale] = buildVueMessages(locale)
+  }
+  return messages
+}
+
+/**
+ * Registers script-console strings into {@link AcApI18n}.
+ * Safe to call multiple times; subsequent calls are no-ops.
+ */
+export function registerScriptI18n(): void {
+  if (isRegistered) return
+
+  for (const locale of LOCALES) {
+    AcApI18n.mergeLocaleMessage(locale, buildVueMessages(locale))
+  }
+  isRegistered = true
+}
+
+/**
+ * Merges script-console strings into a vue-i18n instance (e.g. cad-viewer).
+ *
+ * @param mergeLocaleMessage - Host app's `mergeLocaleMessage` callback.
+ */
+export function mergeScriptI18nIntoVueI18n(
+  mergeLocaleMessage: (locale: AcApLocale, message: object) => void
+): void {
+  registerScriptI18n()
+  for (const locale of LOCALES) {
+    mergeLocaleMessage(locale, buildVueMessages(locale))
+  }
+}
+
+/**
+ * Translates a single script-console label via {@link AcApI18n}.
+ *
+ * @param key - Label key from {@link scriptEn}.
+ * @returns Localized string, or the key as fallback.
+ */
+export function scriptT(key: ScriptLabelKey): string {
+  return AcApI18n.t(`${SCRIPT_I18N_PREFIX}.${key}`, { fallback: key })
+}
+
+/**
+ * Reads the localized title and description of one built-in script.
+ *
+ * @param id - Example id from the catalog.
+ * @returns Strings for the current locale.
+ */
+export function scriptExampleText(id: ScriptExampleId): {
+  title: string
+  description: string
+} {
+  const prefix = `${SCRIPT_I18N_PREFIX}.examples.${id}`
+  return {
+    title: AcApI18n.t(`${prefix}.title`, { fallback: id }),
+    description: AcApI18n.t(`${prefix}.description`, { fallback: id })
+  }
+}
+
+/**
+ * Builds a map of all script-console labels for the current locale.
+ *
+ * @returns Every {@link ScriptLabelKey} mapped to its translation.
+ */
+export function buildScriptLabels(): ScriptLabels {
+  return Object.fromEntries(
+    (Object.keys(scriptEn) as ScriptLabelKey[]).map(key => [key, scriptT(key)])
+  ) as ScriptLabels
+}

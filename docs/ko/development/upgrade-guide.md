@@ -1,0 +1,515 @@
+---
+title: 'cad-simple-viewer 및 cad-editor 업그레이드'
+---
+
+# cad-simple-viewer 및 cad-editor 업그레이드
+
+이 가이드는 `@mlightcad/cad-simple-viewer`와 `@mlightcad/cad-editor`를 안전하게 업그레이드하는 방법을 설명합니다. 즉, 왜 이들을 개별적으로 올릴 수 없는지, 어떤 관련 패키지가 함께 이동해야 하는지, 그리고 주어진 릴리스에 대해 올바른 호환 버전 집합을 확인하는 두 가지 신뢰할 수 있는 방법을 다룹니다.
+
+이 변경이 포함된 릴리스부터 호스트는 `AcApDocManagerOptions` 또는 `MlCadViewer`의 `defaultTextFonts`에 로컬 글꼴 카탈로그의 대체 글꼴 이름을 우선순위대로 지정할 수 있습니다. 기존 호스트는 마이그레이션할 필요가 없습니다.
+
+::: info 플러그인 UI는 `AcApUiRegistry`에서 제공
+이 변경이 포함된 릴리스부터, 플러그인에 속한 리본 그룹, 파일 → 내보내기 항목, 심플 UI 도구 모음 버튼, 팔레트 탭은 해당 플러그인의 `/register` 모듈이 **`AcApUiRegistry`**에 선언합니다. 호스트는 등록된 항목만 그립니다. 설치되지 않은 패키지의 UI는 나타나지 않습니다.
+
+마이그레이션:
+
+- `@mlightcad/cad-editor`는 에이전트, 모델 설정, 스크립트, PDF, HTML, SVG 버튼을 더 이상 하드코딩하지 않습니다. `@mlightcad/cad-pdf-plugin/register`, `@mlightcad/cad-html-plugin/register`, `@mlightcad/cad-svg-plugin/register`를 에이전트 / LLM / 스크립트 / PaddleOCR과 같이 동적 `import()`로 불러옵니다. 에디터를 번들할 때 이 지정자는 external로 두세요.
+- `store.features` 플래그(`agentPlugin`, `llmPlugin`, `paddleOcrPlugin`, `scriptPlugin`)는 제거되었습니다.
+- 플러그인은 `/register`에서 `AcApUiRegistry.register`를 호출해 리본 그룹, `file.export` 메뉴 행, 팔레트 `mount`, 로캘 문구를 등록합니다. `/register`가 실행되면 버튼이 나타나고, 무거운 모듈은 명령 실행 때 불러옵니다.
+- 심플 UI의 내보내기 메뉴와 추가 도구 모음 버튼도 같은 레지스트리를 읽습니다. 손으로 넣은 에이전트 / 스크립트 버튼은 제거하세요.
+- `setAgentPaletteOpener`와 `setCadScriptPaletteOpener`는 레지스트리 팔레트 id를 열지 않는 호스트를 위해 남습니다. `cad-editor`와 심플 UI는 이 id를 직접 엽니다.
+- `chtml`과 `cpdf`는 `cad-html-plugin`과 `cad-pdf-plugin`에 있는 프레임워크 없는 대화상자를 엽니다. 브라우저에서는 `/register`가 이 명령을 등록하고, 확인 시 `-chtml` / `-cpdf`로 플러그인을 불러옵니다. 헤드리스 호스트는 `dialog: false`를 넘겨 `chtml`과 `cpdf`를 명령행 프롬프트로 유지합니다. Vue 대화상자 `MlExportHtmlDlg` / `MlExportPdfDlg`와 편집기 명령 클래스는 제거되었습니다.
+  :::
+
+::: info 심플 UI가 `cad-simple-viewer`로 통합됨
+이 변경이 포함된 릴리스부터 **`@mlightcad/cad-simple-ui-plugin`이 제거**됩니다. 툴바·도크 탭·기본 `AcApPaletteHost`는 **`@mlightcad/cad-simple-viewer`**에 있습니다. `simpleUi`(기본 켜짐)로 설정하고, `cad-editor`/CLI 등은 `simpleUi: false`로 끄세요. `@mlightcad/cad-simple-viewer/find` 서브경로는 제거되었으므로 찾기 API는 `@mlightcad/cad-simple-viewer`에서 import하세요. `/simple-ui`와 `/find` 서브경로는 제거되었습니다.
+:::
+
+::: info Dock 패널 chrome이 `cad-simple-viewer`로 이동
+순수 DOM **dock 패널 chrome**(`AcUiDockPanel`)은 **`@mlightcad/cad-simple-viewer`**에 있습니다. 내장 simple UI가 dock에 탭 콘텐츠(도면층·찾기·검토·측정)를 올리고 `AcApPaletteHost`를 등록하며, `cad-editor`는 Vue 도구 팔레트 호스트를 등록합니다.
+
+마이그레이션:
+
+- `AcUiDockPanel` 등은 `@mlightcad/cad-simple-viewer`에서 import.
+- i18n 키는 **`main.dockPanel.*`**(예: `main.dockPanel.tab.layers`).
+- 호스트가 없으면 `AcApPaletteService.open`이 `AcUiDockPanel`(오른쪽 dock / 폰 sheet)을 사용.
+- 이름 있는 탭은 `AcApPaletteService.openNamedTab` / `ACAP_PALETTE_NAMED_TAB`이며 **등록된 호스트가 필요**(이름 있는 탭용 dock 폴백 없음). 호스팅된 `HTMLElement` 패널은 계속 `AcApPaletteService.open`.
+  :::
+
+::: info 로컬 PaddleOCR(`@mlightcad/cad-paddleocr-plugin`)
+이 변경이 포함된 릴리스부터 호스트는 **`@mlightcad/cad-paddleocr-plugin`**을 설치해 분해된 PDF 문자를 브라우저에서 OCR할 수 있습니다(`pdftext` / PDF 가져오기 OCR). `AcApTextRecognitionService`에 `paddleocr` 인식기를 등록하며, Wasm과 ONNX 모델은 첫 OCR 요청 때만 로드됩니다. PDF 가져오기의 「분해된 문자 인식」 목록에는 _사용 가능한_ OCR마다 항목이 표시됩니다: 로컬 PaddleOCR과 구성된 이미지 지원 LLM **모델** 각각(예: `kkidc — model-id`). 공급자당 한 줄이 아닙니다.
+
+마이그레이션:
+
+- `@mlightcad/cad-paddleocr-plugin`을 설치하고 `registerLazyLlmPlugin` **앞에** `registerLazyPaddleOcrPlugin`을 호출하세요. 읽지 못한 줄은 비전 LLM으로 넘어갑니다. 패키지가 있으면 `@mlightcad/cad-editor`가 자동 등록합니다.
+- ONNX Runtime Web wasm을 동일 출처로 제공하고(데모는 `./vendor/onnxruntime/`) `wasmPaths`를 넘기세요.
+- `AcApTextRecognitionService.has(id)`로 인식기 등록 여부를 확인할 수 있습니다(예: `paddleocr`가 있으면 LLM의 「OCR 미구성」 힌트를 건너뜀).
+
+```ts
+import { registerLazyPaddleOcrPlugin } from '@mlightcad/cad-paddleocr-plugin/register'
+import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
+
+registerLazyPaddleOcrPlugin(pluginManager, {
+  wasmPaths: './vendor/onnxruntime/'
+})
+registerLazyLlmPlugin(pluginManager)
+```
+
+:::
+
+::: info 공유 AI 모델 설정(`@mlightcad/cad-llm-plugin`)
+이 변경이 포함된 릴리스부터 LLM 공급자 설정이 `@mlightcad/cad-agent-plugin`에서 새 **`@mlightcad/cad-llm-plugin`**으로 옮겨져, CAD 에이전트와 `pdftext` 문자 인식(OCR)이 같은 설정을 공유합니다. 새 패키지는 **LLMSETTINGS** 명령과 UI 프레임워크에 의존하지 않는 설정 대화상자(`@mlightcad/cad-editor`의 AI 리본 탭에서도 열 수 있음)를 제공하며, `@mlightcad/cad-simple-viewer`에는 `AcApLlmSettingsService`가 추가되어 어떤 기능에서든 대화상자를 열거나 이미지 지원 모델이 설정되었는지 확인할 수 있습니다.
+
+호스트 마이그레이션:
+
+- `@mlightcad/cad-llm-plugin`(이제 `@mlightcad/cad-agent-plugin`의 peer 의존성)을 설치하고 `registerLazyAgentPlugin`과 함께 `registerLazyLlmPlugin`을 호출합니다. 패키지가 설치되어 있으면 `@mlightcad/cad-editor`가 자동으로 등록합니다.
+- `registerLazyAgentPlugin`은 더 이상 문자 인식기를 등록하지 않습니다. 인식기 id는 `cad-llm`(이전 `cad-agent`)이며 `registerLazyLlmPlugin`이 등록합니다. `acapAgentRecognizeText` / `cleanRecognizedText`는 `@mlightcad/cad-llm-plugin`의 `acapLlmRecognizeText` / `acapLlmCleanRecognizedText`로 바뀌었습니다.
+- 에이전트 패널의 내장 설정 카드는 대화상자로 대체되며, 톱니바퀴 버튼이 LLMSETTINGS를 엽니다.
+- 저장된 설정은 유지됩니다. `localStorage` 키 `cad-agent-plugin.llm-config`는 바뀌지 않습니다.
+- 사용 중인 모델이 텍스트 전용이면 OCR은 설정된 첫 번째 이미지 지원 모델을 사용합니다.
+
+```ts
+import { registerLazyAgentPlugin } from '@mlightcad/cad-agent-plugin/register'
+import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
+
+registerLazyLlmPlugin(pluginManager)
+registerLazyAgentPlugin(pluginManager)
+```
+
+:::
+
+::: info PDF 가져오기: `ipdf`가 `PDFIMPORT` / `-PDFIMPORT`로
+이 변경이 포함된 릴리스(1.8.0)부터 `@mlightcad/cad-pdf-plugin`의 PDF 가져오기 명령은 AutoCAD와 같은 이름을 씁니다:
+
+- **PDFIMPORT**는 파일을 고른 뒤 [PDF 가져오기] 대화상자(`AcUiPdfImportDialog`)를 엽니다: 미리보기가 있는 페이지, 삽입점(X/Y 또는 화면상에 지정), 축척, 모드(도면 복원 / PDF 모양 유지).
+- **-PDFIMPORT**는 `ipdf`의 명령행 프롬프트(페이지 번호, [축척]·[모드] 옵션이 있는 삽입점)를 유지합니다. 클래스는 `AcApImportPdfPromptCmd`입니다.
+
+마이그레이션: `ipdf`는 더 이상 없습니다. `executeCommand('ipdf')`로 프롬프트에 답하던 스크립트는 `-pdfimport`를 사용하세요. 리본을 직접 그리는 호스트는 `pdfimport`를 사용합니다(cad-editor 리본 항목 ID는 이제 `cmd-pdfimport`). 명령 설명은 `command.ACAD.ipdf`에서 `command.ACAD.pdfimport` / `command.ACAD.-pdfimport`로, 프롬프트 문자열은 `jig.ipdf`에서 `jig.pdfimport`로 옮겨졌습니다(대화상자 문자열은 `jig.pdfimport.dialog`). `AcApPdfImportConvertor.importFromFilePicker`는 이제 대화상자를 표시하고, `importFromCommandLine`이 프롬프트 흐름입니다.
+:::
+
+::: info 스마트 블록: 검색 및 변환(`BSEARCH`)
+이 변경이 포함된 릴리스부터 `@mlightcad/cad-simple-viewer`는 **-BSEARCH**를 등록하고, `@mlightcad/cad-editor`는 도구 팔레트의 검색 및 변환 탭(찾은 인스턴스 목록)과 블록으로 변환 대화상자가 있는 **BSEARCH**(별칭 `BCONVERT`)를 추가합니다(리본의 삽입 및 AI 탭).
+
+형상 일치가 `@mlightcad/cad-pdf-plugin`에서 `@mlightcad/cad-simple-viewer`로 이동했습니다. 가져오기를 옮기십시오:
+
+| `@mlightcad/cad-pdf-plugin`(사용 중단)                                     | `@mlightcad/cad-simple-viewer`                                                   |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `findPdfShapeMatches`                                                      | `acedFindShapeMatches`                                                           |
+| `applyPdfAffine`                                                           | `acedApplyAffine2d`                                                              |
+| `pdfEntityToFeature`                                                       | `acedEntityToShapeFeature(entity, id, { matchLayer: false })`                    |
+| `PdfMatchFeature` / `PdfAffine` / `PdfShapeMatch` / `PdfShapeMatchOptions` | `AcEdShapeFeature` / `AcEdAffine2d` / `AcEdShapeMatch` / `AcEdShapeMatchOptions` |
+
+이전 이름은 사용 중단된 별칭으로 계속 동작합니다. 문자열은 특징의 `kind`에서 `label`로 옮겨졌습니다. `@mlightcad/cad-pdf-plugin`의 `pdfblock` 명령은 제거되었습니다. 대신 `BSEARCH` / `-BSEARCH`를 사용하세요(PDF 가져오기 후에는 도면층 일치를 끄세요. PDF 도면층은 색상 기준입니다).
+:::
+
+::: info AutoCAD 그룹(`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`)
+이 변경이 포함된 릴리스부터 `@mlightcad/cad-simple-viewer`는 **GROUP**, **-GROUP**, **UNGROUP**, **GROUPEDIT**를 등록하고, `PICKSTYLE`이 `1` 또는 `3`일 때 선택을 확장하며, 선택 가능한 그룹에 `GROUPDISPLAYMODE` 그립을 적용합니다. `@mlightcad/cad-editor`는 **CLASSICGROUP**(객체 그룹화 대화상자)과 홈 → 그룹 리본 패널을 추가합니다.
+
+`PICKSTYLE`(0–3, 기본 `1`)과 `GROUPDISPLAYMODE`(0–2, 기본 `2`)가 등록된 `@mlightcad/data-model`이 필요합니다. 연관 해치 동시 선택(`PICKSTYLE` 2/3)은 `AcDbHatch`에 경계 soft-pointer가 생길 때까지 no-op입니다.
+:::
+
+::: info `cad.view.capturePreview` 선택 미리보기
+이 변경이 포함된 릴리스부터 `CadSession.capturePreview`는 단독 `longSide` 숫자 대신 옵션 객체를 받습니다.
+
+```ts
+capturePreview?(options?: {
+  longSide?: number
+  selection?: boolean
+}): Promise<CaptureDrawingPreviewResult>
+```
+
+스크립트에서는 `cad.view.capturePreview({ longSide?, selection? })`를 사용합니다. `cad.selection.replace(ids)` 이후 `selection: true`를 전달하면 ENTPREVIEW와 같은 batch 미리보기 경로로 선택 엔티티를 추출하고(장면 bounds로 프레이밍, 데이터베이스 `geometricExtents` 아님) PNG를 도구 결과에 첨부합니다. 선택이 비어 있으면 `reason: 'no-selection'`을 반환합니다. 렌더러가 없는 `createDatabaseSession`은 여전히 미리보기를 건너뜁니다.
+:::
+
+::: info `cad.view.capturePreview` 도면층 미리보기
+이 변경이 포함된 릴리스부터 `CadCapturePreviewOptions`에 `layers?: string | string[]`가, `CaptureDrawingPreviewFailure`에 `'no-layers'`가 추가됩니다.
+
+```ts
+cad.view.capturePreview({ layers: ['WALL', 'DOOR'], longSide: 1024 })
+```
+
+모델 공간에서 해당 도면층의 객체만 렌더링하며(INSERT는 해당 도면층에 있는 부분만), 도면 전체가 아니라 도면층들을 합친 범위로 프레이밍합니다. 도면층 이름은 대소문자를 구분하지 않으며, 존재하지 않는 이름은 스크립트 실행 중 오류를 발생시키고, `layers`는 `selection: true`와 함께 쓸 수 없습니다. `normalizeCadCapturePreviewOptions`는 이제 `NormalizedCadCapturePreviewOptions`(`layers`는 중복 제거된 `string[]`)를 반환합니다. 사용자 정의 `CadSession.capturePreview` 구현은 `options.layers`를 처리하거나 `reason: 'no-layers'`를 반환해야 합니다. 뷰어 구현은 새 `AcApEntityPreviewConvertor.captureLayers(layerNames, longSide)`를 사용합니다.
+:::
+
+::: info 가벼운 파일 열기 랜딩 엔트리
+**1.8.0**부터 `@mlightcad/cad-simple-viewer`는 DocManager에 의존하지 않는 랜딩용 서브경로를 제공합니다. **`acuiCreateFileOpenSession`**(지연 `createDocManager` + 자동 열기 / `attachSourcesTo`)을 우선하십시오. 도면을 직접 여는 경우(예: Vue `MlCadViewer`)에는 `AcUiFileOpenLanding`을 사용하십시오.
+
+```ts
+import { acuiCreateFileOpenSession } from '@mlightcad/cad-simple-viewer/file-open-panel'
+```
+
+홈 / 파일 선택 화면에서 사용해 도면이 열릴 때까지 전체 뷰어를 lazy로 유지하십시오. Vue 에디터 쪽은 `@mlightcad/cad-editor/locale`로 `MlCadViewer` 없이 i18n을 쓸 수 있습니다.
+
+전체 설명은 [파일 열기 패널](./file-open-panel)을 참조하십시오. 클라우드 소스 계약은 [데이터 소스 플러그인](./data-source-plugin)을 참조하십시오.
+:::
+
+::: warning 패키지 이름 변경: `@mlightcad/cad-viewer` → `@mlightcad/cad-editor`
+**1.8.0**부터 패키지 이름이 실제 기능을 드러내도록 `@mlightcad/cad-viewer`의 이름이 `@mlightcad/cad-editor`로 변경되었습니다.
+
+- **이전 패키지는 더 이상 업데이트되지 않습니다.** `@mlightcad/cad-viewer`는 1.7.x에서 멈추고 이후 버전은 registry에 게시되지 않으므로 `pnpm add @mlightcad/cad-viewer@1.8.0`은 404 오류가 납니다. 프로젝트가 중단된 것이 아니라 이름만 바뀐 것이므로 새 이름을 사용하세요.
+- **API는 전혀 바뀌지 않았습니다.** 패키지 이름과 산출물 파일 이름만 변경되었고 `MlCadViewer`, `i18n` 등 내보내기와 사용법은 동일합니다.
+- **나머지 패키지와 같은 버전으로 올리면서 이름도 한 번에 변경하세요:**
+
+```diff
+  {
+    "dependencies": {
+-     "@mlightcad/cad-viewer": "1.7.8",
++     "@mlightcad/cad-editor": "1.8.0",
+      "@mlightcad/cad-simple-viewer": "1.8.0"
+    }
+  }
+```
+
+```diff
+- import { MlCadViewer, i18n } from '@mlightcad/cad-viewer'
++ import { MlCadViewer, i18n } from '@mlightcad/cad-editor'
+```
+
+CDN 파일을 버전으로 고정해 사용한다면(jsDelivr, unpkg 등) 파일 이름도 함께 변경하세요:
+
+```diff
+- https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.7.8/dist/cad-viewer.js
+- https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.7.8/dist/cad-viewer.css
++ https://cdn.jsdelivr.net/npm/@mlightcad/cad-editor@1.8.0/dist/cad-editor.js
++ https://cdn.jsdelivr.net/npm/@mlightcad/cad-editor@1.8.0/dist/cad-editor.css
+```
+
+::: tip 저장소 이름은 변경되지 않았습니다
+GitHub 저장소는 여전히 [`mlightcad/cad-viewer`](https://github.com/mlightcad/cad-viewer)이며 문서 사이트와 라이브 데모도 기존 경로를 유지합니다. **npm 패키지 이름**만 변경되었으므로 이 가이드의 저장소·이슈 링크는 그대로 유효합니다.
+:::
+:::
+
+::: warning HTML 내보내기 공개 API 이름 변경(`AcExHtml` / `acexHtml`)
+**1.8.0**부터 `@mlightcad/cad-html-core`(`@mlightcad/cad-html-plugin`에서 재내보내기)의 공개 타입과 함수는 레이어 접두사 `AcExHtml*`(타입)와 `acexHtml*`(함수)를 사용하며, 모노레포의 다른 부분과 동일한 명명 규칙을 따릅니다.
+
+동작은 그대로이고 심볼 이름만 바뀝니다. 1.7.x에서 업그레이드할 때 import를 갱신하세요.
+
+```diff
+  import {
+-   type AcExSnapshot,
+-   buildAcExPackage,
+-   zipAcExPackageFiles,
+-   unzipAcExPackageFiles,
+-   packHtml,
+-   packHtmlPackage
++   type AcExHtmlSnapshot,
++   acexHtmlBuildPackage,
++   acexHtmlZipPackageFiles,
++   acexHtmlUnzipPackageFiles,
++   acexHtmlPackHtml,
++   acexHtmlPackHtmlPackage
+  } from '@mlightcad/cad-html-plugin'
+```
+
+다른 HTML-core 헬퍼도 같습니다(예: `captureAcExSavedViewExtents` → `acexHtmlCaptureSavedViewExtents`, `buildOsnapCatalog` → `acexHtmlBuildOsnapCatalog`). `AcApHtmlConvertor` 및 `chtml` / `-chtml` 같은 명령 수준 API는 영향을 받지 않습니다. 개발 가이드에 나오는 새 이름은 **1.8.0+** 기준이며, 1.7.x에서는 이전 심볼을 계속 사용하세요.
+:::
+
+::: tip 스크립트 호스트: 실제 치수 엔티티 생성(`drawDim*`)
+**1.8.0-preview.2** 이후 릴리스부터 `@mlightcad/cad-script-core`의 `cad.edit.transaction`으로 치수 엔티티를 만들 수 있습니다(이전에는 스냅샷 읽기만 가능):
+
+- `drawDimAligned`, `drawDimLinear`, `drawDimDiameter`, `drawDimRadius`
+- `drawDimAngular`, `drawDimArc`, `drawDimOrdinate`
+
+Agent/스크립트는 선·화살표·문자로 치수를 흉내 내지 말고 이 API를 호출하세요. 지름/반지름은 `center` + `radius`를 받으므로 원 스냅샷을 바로 넘길 수 있습니다. 자세한 내용: [스크립트 API](../guide/script/api.md).
+:::
+
+::: tip 스크립트 호스트: 블록별 집계는 `cad.blocks`
+이 변경이 포함된 릴리스부터 `cad.blocks`는 블록별 `entityCount` / `typeCounts` 메타데이터를 제공하며 전체 `entities` 배열은 넣지 않습니다. 집계는 이 필드 또는 `count(pred)`를 쓰세요. 스냅샷은 `where` / `inBlock(id, pred)` — 공간 전체 스냅샷은 약 500개에서 `too_many_matches`로 중단됩니다. `where` / `count` / `inBox`는 모형/도면 공간만 스캔합니다.
+:::
+
+::: info SVG File → Open
+**1.8.0**부터 일반 File → Open / `openDocument` / `openUrl`로 `.svg`를 도면으로 열 수 있습니다. 변환은 새 패키지 [`@mlightcad/cad-svg-converter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-converter)(`@mlightcad/data-model`만 의존)에 있습니다. `cad-editor`의 `initializeCadViewer`가 자동 등록합니다. `cad-simple-viewer`만 쓰는 경우 시작 시 `registerSvgConverter()`를 한 번 호출하세요. 보내기는 계속 `cad-svg-plugin`의 `csvg`입니다.
+:::
+
+::: info HTML/PDF 내보내기는 기본적으로 빈 배치를 건너뜀
+이 변경이 포함된 릴리스부터 HTML·PDF 내보내기에 **`exportEmptyLayouts`**(기본값 **`false`**)가 추가됩니다. AutoCAD 기본 `*Paper_Space` 뷰포트만 있는 도면 공간 배치는 옵션을 `true`로 켜지 않으면 생략됩니다. 배치를 내보낼 때 모형 공간은 항상 유지됩니다.
+
+마이그레이션: 빈 도면 공간 탭도 결과에 포함하려면 `exportEmptyLayouts: true`를 전달하세요(내보내기 대화상자 토글, `-chtml` / `-cpdf` 프롬프트, 스크립트 `cad.file.saveHtml` / `savePdf`, 또는 exporter CLI의 `--export-empty-layouts`).
+:::
+
+::: info PDF 내보내기를 공유 코어로 분리(브라우저 + Node)
+**1.8.0**부터 PDF 내보내기는 HTML 내보내기와 같은 계층을 사용합니다. 공유 로직은 `@mlightcad/cad-pdf-core`(옵션 모델과 database → PDF 파이프라인, `cad-simple-viewer` / DOM에 **의존하지 않음**)에 있으며, 다음 두 프론트엔드가 이를 사용합니다.
+
+| 패키지                        | 역할                                                              |
+| ----------------------------- | ----------------------------------------------------------------- |
+| `@mlightcad/cad-pdf-plugin`   | 브라우저 `cpdf` / `-cpdf` / `pdfimport`(및 Vue 내보내기 대화상자) |
+| `@mlightcad/cad-pdf-exporter` | Node 헤드리스 DXF/DWG → PDF — **브라우저 불필요**                 |
+
+**브라우저 통합 측 — 대부분 동일.** `cpdf` / `-cpdf` / `pdfimport`, `AcApPdfConvertor`, `AcApPdfExportOptions`, `resolveAcApPdfExportOptions`를 그대로 사용하세요. 새 peer `@mlightcad/cad-pdf-core`를 플러그인과 같은 버전으로 함께 설치하세요.
+
+**사용자에게 영향을 주는 API / 동작 변경:**
+
+- 새 옵션 `colorMode: 'color' | 'monochrome'`(기본 `'color'`). `cpdf` 대화상자, `-cpdf`의 **마지막** 프롬프트(`Color` / `Monochrome`), 그리고 `AcApPdfExportOptions`에서 사용할 수 있습니다. 기존 `-cpdf` 스크립트는 텍스트 모드 응답 뒤에 이 프롬프트에 답해야 합니다(또는 빈 줄로 기본값).
+- 브라우저 없는 서버 / CI: Playwright로 `cpdf`를 돌리는 대신 `@mlightcad/cad-pdf-exporter`(`exportFileToPdf`, `convertDatabaseToPdf`)를 사용하세요.
+
+```ts
+// 브라우저(이름 변경 없음)
+import {
+  AcApPdfConvertor,
+  resolveAcApPdfExportOptions
+} from '@mlightcad/cad-pdf-plugin'
+
+await new AcApPdfConvertor().convert(
+  context,
+  resolveAcApPdfExportOptions({ colorMode: 'monochrome' })
+)
+
+// Node, 브라우저 불필요
+import { exportFileToPdf } from '@mlightcad/cad-pdf-exporter'
+
+await exportFileToPdf('drawing.dwg', 'drawing.pdf', {
+  colorMode: 'monochrome'
+})
+```
+
+공유 파이프라인을 직접 호출하는 고급 사용은 `@mlightcad/cad-pdf-core`의 `acexPdfExportDatabase` / `acexPdfResolveExportOptions`를 참고하세요. 글꼴·레이아웃·텍스트 모드 세부 사항은 각 패키지 README에 있습니다.
+:::
+
+## 개요
+
+`@mlightcad/cad-simple-viewer`와 `@mlightcad/cad-editor`는 **독립형 패키지가 아닙니다**. 이들은 공통 코드베이스와 릴리스 주기를 공유하는 긴밀히 통합된 생태계의 일부입니다. 각 릴리스는 플러그인, 렌더러, 데이터 모델 패키지, 텍스트 렌더링 라이브러리, 서드파티 UI 프레임워크에 걸친 조정된 업데이트 집합을 묶어 제공합니다.
+
+**`cad-simple-viewer` 또는 `cad-editor`만 개별적으로 업그레이드하면 미묘한 런타임 실패가 발생할 수 있습니다**, 예를 들어:
+
+- 플러그인 인터페이스가 최신(또는 이전) 코어 버전에서 변경된 API 시그니처를 기대함
+- 코어가 기대하는 데이터 모델 형태와 이전 파서/렌더러가 생성하는 형태 간의 불일치
+- libredwg-converter 업그레이드 후 WebAssembly 또는 Worker 호환성 누락
+- `mtext-renderer` / `mtext-parser` 버전이 어긋날 때 텍스트 렌더링 문제
+- 렌더러 계층 전반에 걸쳐 일치하지 않는 Three.js의 호환성 파괴 또는 동작 변경
+
+항상 **관련 패키지 전체 집합을 함께 업그레이드**하십시오. 올바른 버전을 확인하는 두 가지 신뢰할 수 있는 방법은 아래에 설명되어 있습니다.
+
+---
+
+## 생태계 한눈에 보기
+
+업그레이드 전에 어떤 패키지가 조정된 릴리스에 속하고 어떤 것이 서드파티인지 아는 것이 도움이 됩니다. 다음 범주는 동일한 cad-editor 릴리스로 동기화됩니다:
+
+### 코어 뷰어 패키지
+
+| 패키지                         | 역할                                                       |
+| ------------------------------ | ---------------------------------------------------------- |
+| `@mlightcad/cad-simple-viewer` | 프레임워크 독립적 코어(문서 관리, 명령 스택, 렌더링 연결)  |
+| `@mlightcad/cad-editor`        | cad-simple-viewer 위에 구축된 Vue 3 + Element Plus UI 래퍼 |
+
+### 플러그인 — **cad-simple-viewer 버전과 정확히 일치해야 함**
+
+| 패키지                                      | 목적                                                |
+| ------------------------------------------- | --------------------------------------------------- |
+| `@mlightcad/cad-html-plugin`                | 원클릭 자체 포함 HTML 내보내기                      |
+| `@mlightcad/cad-pdf-plugin`                 | 브라우저 PDF 내보내기 및 PDF→CAD 가져오기           |
+| `@mlightcad/cad-svg-plugin`                 | SVG 내보내기                                        |
+| `@mlightcad/cad-simple-viewer` (`simpleUi`) | Built-in plain-DOM toolbar / dock tabs (`simpleUi`) |
+| `@mlightcad/cad-agent-plugin`               | AI 에이전트 기반 상호 작용                          |
+| `@mlightcad/cad-onedrive-plugin`            | OneDrive 통합                                       |
+| `@mlightcad/cad-google-drive-plugin`        | Google Drive 통합                                   |
+
+> **경험칙:** 위 목록의 모든 플러그인은 업그레이드 대상인 `cad-simple-viewer`와 **정확히 동일한 버전 번호**(예: `1.7.5`)로 고정해야 합니다.
+
+### 공유 내보내기 코어 및 헤드리스 내보내기(코어와 동일 버전)
+
+| 패키지                         | 목적                                                             |
+| ------------------------------ | ---------------------------------------------------------------- |
+| `@mlightcad/cad-html-core`     | 공유 HTML 스냅샷 / 패키징 파이프라인(뷰어 / DOM 없음)            |
+| `@mlightcad/cad-html-exporter` | Node 헤드리스 HTML 내보내기                                      |
+| `@mlightcad/cad-pdf-core`      | 공유 PDF 옵션 모델 및 database → PDF 파이프라인(뷰어 / DOM 없음) |
+| `@mlightcad/cad-pdf-exporter`  | Node 헤드리스 DXF/DWG → PDF(브라우저 불필요)                     |
+
+### 내부 렌더러 계층(코어와 동일 버전, 별도 게시)
+
+| 패키지                      | 목적                                        |
+| --------------------------- | ------------------------------------------- |
+| `@mlightcad/three-renderer` | THREE.js 기반 2D/3D 렌더링 엔진             |
+| `@mlightcad/pdf-renderer`   | `cad-pdf-core`가 사용하는 PDF 콘텐츠 백엔드 |
+
+이들은 플러그인과 cad-simple-viewer에서 내부적으로 사용됩니다. 일반적으로 직접 설치하지 **않지만**, 해당 버전은 설치하는 플러그인과 호환되어야 합니다.
+
+### 저수준 데이터 및 텍스트 계층 — **릴리스의 버전과 일치해야 함**
+
+| 패키지                          | 비고                                                                          |
+| ------------------------------- | ----------------------------------------------------------------------------- |
+| `@mlightcad/data-model`         | 코어 엔티티/데이터베이스 타입; 모든 릴리스가 뷰어와 함께 이 패키지를 올립니다 |
+| `@mlightcad/libredwg-converter` | DWG 파싱 WebAssembly 래퍼 — DWG 지원이 이에 의존합니다                        |
+| `@mlightcad/mtext-parser`       | MTEXT 콘텐츠 파서                                                             |
+| `@mlightcad/mtext-renderer`     | MTEXT → THREE 형상 렌더러                                                     |
+| `@mlightcad/mtext-input-box`    | 캔버스 내 MTEXT 편집기 위젯                                                   |
+
+### cad-editor 전용 Vue UI 의존성
+
+이들은 `pnpm-workspace.yaml` overrides에 나타나지만 `@mlightcad/cad-editor`(전체 Vue 3 UI)를 사용할 때만 필요합니다. Cad-simple-viewer 통합에서는 직접 설치하지 않습니다.
+
+| 패키지                     | 목적                   |
+| -------------------------- | ---------------------- |
+| `@mlightcad/ribbon`        | 리본 UI 컴포넌트       |
+| `@mlightcad/ui-components` | 공유 Vue UI 프리미티브 |
+
+### 서드파티 피어 의존성(릴리스에 고정된 버전 유지)
+
+| 패키지                          |
+| ------------------------------- |
+| `three`                         |
+| `vue`(cad-editor 전용)          |
+| `element-plus`(cad-editor 전용) |
+| `vue-i18n`(cad-editor 전용)     |
+| `lodash-es`                     |
+
+---
+
+## 방법 1 — 대상 버전의 `pnpm-workspace.yaml` 읽기
+
+모든 릴리스의 표준 정보 출처는 해당 Git 태그의 모노레포 `pnpm-workspace.yaml` `overrides` 섹션입니다. 여기에는 릴리스가 테스트된 모든 `@mlightcad/*` 패키지와 서드파티 피어 의존성의 **정확한 버전**이 나열됩니다.
+
+### 단계
+
+1. 업그레이드하려는 버전의 태그를 찾습니다. 태그는 `vX.Y.Z` 패턴을 따릅니다(예: `v1.7.5`). 모든 태그는 메인 저장소에 있습니다:
+
+   ```
+   https://github.com/mlightcad/cad-viewer/tags
+   ```
+
+2. 해당 태그의 `pnpm-workspace.yaml`을 엽니다. URL 템플릿은 다음과 같습니다:
+
+   ```
+   https://raw.githubusercontent.com/mlightcad/cad-viewer/vX.Y.Z/pnpm-workspace.yaml
+   ```
+
+   `vX.Y.Z`를 실제 버전 태그로 바꿉니다. 예를 들어:
+
+   ```
+   https://raw.githubusercontent.com/mlightcad/cad-viewer/v1.7.5/pnpm-workspace.yaml
+   ```
+
+3. `overrides:` 블록을 자체 프로젝트의 `pnpm-workspace.yaml`에 복사합니다. 대략 다음과 같습니다(축약 예시):
+
+   ```yaml
+   overrides:
+     '@mlightcad/data-model': '^1.15.4'
+     '@mlightcad/libredwg-converter': '^3.15.4'
+     '@mlightcad/mtext-input-box': '^0.3.3'
+     '@mlightcad/mtext-parser': '^1.5.3'
+     '@mlightcad/mtext-renderer': '^0.13.3'
+     '@mlightcad/ribbon': '^0.1.13'
+     '@mlightcad/ui-components': '^0.1.11'
+     element-plus: '^2.12.0'
+     lodash-es: '4.17.21'
+     three: '^0.172.0'
+     vue: '^3.4.21'
+     vue-i18n: '^11.4.4'
+   ```
+
+4. 사용하는 모든 `@mlightcad/cad-*-plugin`을 `cad-simple-viewer` / `cad-editor`와 **동일한 버전**으로 업데이트합니다:
+
+   ```json
+   {
+     "dependencies": {
+       "@mlightcad/cad-simple-viewer": "1.7.5",
+       "@mlightcad/cad-editor": "1.7.5",
+       "@mlightcad/cad-html-plugin": "1.7.5",
+       "@mlightcad/cad-pdf-plugin": "1.7.5",
+       "@mlightcad/cad-svg-plugin": "1.7.5",
+       "@mlightcad/cad-simple-ui-plugin": "1.7.5",
+       "@mlightcad/cad-agent-plugin": "1.7.5",
+       "@mlightcad/cad-onedrive-plugin": "1.7.5",
+       "@mlightcad/cad-google-drive-plugin": "1.7.5"
+     }
+   }
+   ```
+
+5. `pnpm install`(또는 `npm install`)을 실행하고 피어 의존성 경고 없이 앱이 로드되는지 확인합니다.
+
+> 프로젝트가 일반 `npm` 또는 `yarn` 워크스페이스라면 동일한 `overrides`를 각각 `pnpm.overrides` / `resolutions` 블록에 복사하십시오. 중요한 것은 파일 형식이 아니라 버전 값입니다.
+
+---
+
+## 방법 2 — `cad-simple-viewer-demo` 업그레이드 커밋 따르기
+
+[cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) 저장소는 `cad-simple-viewer`의 공식 최소 호스트입니다. 코어가 릴리스될 때마다 예제 프로젝트는 **모든 관련 의존성을 함께** 업데이트하는 `feat: upgrade to cad-simple-viewer vX.Y.Z` 제목의 커밋을 받습니다. 이 커밋은 해당 릴리스에서 유지 관리자가 사용한 정확한 버전을 보여 주는 실용적이고 구체적인 참조입니다.
+
+### 단계
+
+1. package.json 파일의 커밋 기록을 엽니다:
+
+   ```
+   https://github.com/mlightcad/cad-simple-viewer-example/commits/main/package.json
+   ```
+
+2. 대상 버전에 대해 메시지가 `feat: upgrade to cad-simple-viewer vX.Y.Z`인 커밋을 찾습니다.
+
+3. 커밋을 클릭하여 diff를 확인합니다. diff는 다음에 걸친 조정된 버전 상승을 보여 줍니다:
+   - 모든 플러그인(`cad-simple-viewer`와 동일한 버전으로)
+   - `data-model`
+   - `libredwg-converter`
+   - `mtext-parser`
+   - `mtext-renderer`
+   - 그리고 변경된 모든 서드파티 패키지
+
+4. diff의 버전을 자체 `package.json`에 기록합니다.
+
+### 구체적 예시 — v1.7.3 → v1.7.4 업그레이드
+
+다음은 예제 저장소의 [커밋 `492680a`](https://github.com/mlightcad/cad-simple-viewer-example/commit/492680a6b18d7683c457dbc6e689e035ac636fff)에서 가져온 실제 diff입니다. **모든 `@mlightcad/*` 패키지가 보조를 맞춰 이동**한 점에 주목하십시오:
+
+```diff
+ dependencies:
+-    "@mlightcad/cad-html-plugin": "1.7.3",
+-    "@mlightcad/cad-pdf-plugin": "1.7.3",
+-    "@mlightcad/cad-svg-plugin": "1.7.3",
+-    "@mlightcad/cad-simple-ui-plugin": "1.7.3",
+-    "@mlightcad/cad-simple-viewer": "1.7.3",
+-    "@mlightcad/data-model": "1.15.0",
+-    "@mlightcad/libredwg-converter": "^3.15.0",
++    "@mlightcad/cad-html-plugin": "1.7.4",
++    "@mlightcad/cad-pdf-plugin": "1.7.4",
++    "@mlightcad/cad-svg-plugin": "1.7.4",
++    "@mlightcad/cad-simple-ui-plugin": "1.7.4",
++    "@mlightcad/cad-simple-viewer": "1.7.4",
++    "@mlightcad/data-model": "1.15.1",
++    "@mlightcad/libredwg-converter": "^3.15.1",
+     "@mlightcad/mtext-parser": "^1.5.3",
+-    "@mlightcad/mtext-renderer": "^0.13.1"
++    "@mlightcad/mtext-renderer": "^0.13.2"
+```
+
+> 이것이 바로 자체 프로젝트에서 수행해야 하는 조정된 업데이트의 전형입니다. `mtext-parser`는 `^1.5.3`으로 유지되었고(변경이 필요 없음), `mtext-renderer`는 `0.13.1`에서 `0.13.2`로 이동했습니다. 이러한 결정은 릴리스마다 내려지므로 추측하지 말고 이를 따르십시오.
+
+---
+
+## 업그레이드 후 — 간단한 정상 동작 확인
+
+1. **설치** — 오래된 `node_modules`가 방해하지 않도록 깨끗하게 설치합니다:
+
+   ```bash
+   rm -rf node_modules pnpm-lock.yaml && pnpm install
+   ```
+
+2. **도면 열기** — DXF와 DWG 파일이 모두 로드되고, 팬/줌이 동작하며, 콘솔 오류가 표시되지 않는지 확인합니다.
+
+3. **내보내기** — 내보내기 플러그인을 사용한다면 샘플 도면에서 HTML, PDF, SVG 내보내기를 테스트합니다.
+
+4. **피어 의존성 경고 확인** — `peerDependencies`가 충족되지 않으면 `pnpm`이 경고합니다. 이를 반드시 수정해야 할 문제로 취급하십시오. 보통 플러그인 버전이 코어에서 벗어나면서 발생합니다.
+
+5. **앱 빌드** — 전체 `vite build`(또는 동등한 것)는 뷰어 타입과 자체 통합 코드 간의 타입 불일치를 가장 빠르게 잡아내는 방법입니다.
+
+---
+
+## FAQ
+
+**Q: `cad-simple-viewer@1.7.5`와 `cad-html-plugin@1.7.3`을 혼용할 수 있나요?**
+
+A: 일반적으로 불가능합니다. 플러그인은 코어와 함께 릴리스되며, 마이너 버전 사이에 변경된 내부 API에 의존하는 경우가 많습니다. TypeScript가 컴파일되더라도 런타임 실패(예: 내보내기가 조용히 빈 출력을 생성하거나, 플러그인 등록이 오해를 유발하는 오류로 실패)를 겪을 수 있습니다.
+
+**Q: 플러그인 없이 `cad-simple-viewer`만 사용한다면 어떻게 해야 하나요?**
+
+A: 여전히 호환 버전의 `data-model`과 (DWG 파일을 로드한다면) `libredwg-converter`가 필요합니다. 대상 태그의 `pnpm-workspace.yaml`은 여전히 적용됩니다.
+
+**Q: 시맨틱 버저닝이 보호해 주나요?**
+
+A: Semver 범위(`^`, `~`)는 릴리스 계열 *내*의 패치 수준 상승에는 잘 동작합니다(예: `^1.7.0`은 `1.7.5`를 자동으로 선택). 그러나 **조정된 플러그인/data-model/libredwg-converter 버전**은 semver만으로는 알 수 없습니다. 이들은 릴리스 유지 관리자가 설정합니다. 주어진 마이너 업그레이드에 어떤 버전이 함께 가는지 알려면 여전히 위의 두 가지 방법 중 하나가 필요합니다.
+
+**Q: pnpm 대신 npm/yarn을 사용합니다. 이것이 여전히 적용되나요?**
+
+A: 예. 버전 조정은 패키지 관리자와 무관하게 동일합니다. `pnpm-workspace.yaml`의 값을 사용하여 `overrides`(pnpm), `resolutions`(yarn) 또는 `overrides`(npm)를 설정하거나, 단순히 `cad-simple-viewer-demo` diff의 버전을 `package.json`에 고정하십시오.
+
+## 독일어 지원
+
+1.8.0에서는 편집기, 뷰어, 도면 비교, HTML 내보내기에 독일어(`de`)를 추가합니다. 호스트에서 `AcApLocale`, `AcUiLocale`, `AcExHtmlLocale`의 모든 값을 처리하는 분기나 로캘 맵을 사용한다면 `de`를 추가하세요.

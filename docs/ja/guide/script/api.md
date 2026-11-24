@@ -1,0 +1,457 @@
+---
+title: スクリプト API
+---
+
+# スクリプト API
+
+スクリプトでは `cad` オブジェクトを通じて図面と対話します。`CAD_SCRIPT_API_TREE` で宣言されたメンバーのみアクセス可能で、それ以外のプロパティにアクセスすると `unknown_api` エラーが発生します。
+
+## 実行環境とブラウザー API
+
+スクリプトはブラウザーの strict モードのサンドボックス内で実行され、`cad` オブジェクトと ECMAScript 標準組み込みオブジェクトのみにアクセスできます。ページの DOM を操作したり、ネットワークリクエストを送信したりすることはできません。
+
+### 利用可能な組み込みオブジェクト
+
+すべての ECMAScript 標準組み込みオブジェクトが使用できます：
+
+- 数学と数値：`Math`、`Number`、`BigInt`、`parseFloat`、`parseInt`、`isNaN`、`isFinite`
+- データ構造：`Object`、`Array`、`Map`、`Set`、`WeakMap`、`WeakSet`、`Symbol`
+- テキストとフォーマット：`String`、`JSON`、`RegExp`、`Intl`、`encodeURIComponent`、`decodeURIComponent`
+- 時間：`Date`（`Date.now()` はスクリプト自体の処理時間の計測に使用できます）
+- その他：`Boolean`、`Promise`、`Error` とそのサブクラス
+
+情報の出力には `cad.log()` を使用してください。`console.log` に頼らないでください——結果パネルには `cad.log` の内容のみが表示されます。
+
+### 禁止されているブラウザー API
+
+以下の内容はスクリプトの検証段階で直接拒否され、`forbidden_identifier` / `forbidden_syntax` / `forbidden_member` エラーが発生します。`{ window: count }` のようなオブジェクトのプロパティ名は許可されますが、`window.foo` のような自由識別子は拒否されます。
+
+- ページと DOM：`window`、`document`、`globalThis`
+- ネットワークと通信：`fetch`、`XMLHttpRequest`、`WebSocket`、`importScripts`
+- デバイスと環境：`navigator`、`location`、`parent`、`top`、`self`、`frames`（実行時は `undefined` にマスクされます）
+- ストレージ：`localStorage`、`sessionStorage`
+- 動的実行：`eval`、`Function`
+- その他のランタイム：`process`、`require`、`module`、`exports`、`Deno`、`Bun`
+- 構文：`import` / `export` ステートメント、動的 `import()`、`this`、`with`、`import.meta`、`super`
+- エスケープ経路：`constructor`、`prototype`、`__proto__`、`__defineGetter__`、`__defineSetter__`、`__lookupGetter__`、`__lookupSetter__`
+
+::: warning
+上記の禁止オブジェクト以外にも、その他のブラウザーグローバル変数（`alert`、`setTimeout`、`performance`、`console` など）は技術的には完全にはブロックされていない可能性がありますが、これらはサポート対象の API ではありません。スクリプトは `cad` オブジェクトと ECMAScript 標準組み込みオブジェクトのみに依存する必要があり、それ以外のアクセスは今後のバージョンでさらに制限される可能性があります。
+:::
+
+## cad.drawing
+
+現在の図面の静的情報を返します。
+
+| フィールド     | 型                                            | 説明                     |
+| -------------- | --------------------------------------------- | ------------------------ |
+| `title`        | `string`                                      | 図面タイトル             |
+| `currentLayer` | `string`                                      | 現在のレイヤー名         |
+| `units`        | `number`                                      | 挿入単位（INSUNITS）     |
+| `layers`       | `Array<{ name, isOn, isFrozen, isLocked }>`   | すべてのレイヤーのリスト |
+| `extents`      | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | モデル空間の範囲         |
+
+```javascript
+const info = cad.drawing
+cad.log('当前图层:', info.currentLayer)
+cad.log('图层总数:', info.layers.length)
+```
+
+## cad.entities
+
+`where` / `count` / `inBox` は**モデル空間とペーパー空間のみ**を走査します（ブロック定義内は `inBlock(id)`）。ブロック参照の属性の `ownerId` は参照自身、それ以外は所属ブロック表レコードです。ブロック参照の `type` は `BlockReference` です。
+
+### `cad.entities.count(predicate)`
+
+スナップショットを作らずに一致数を数えます。集計はこちらを優先（`where(pred).length` は一致ごとにスナップショットします）。
+
+```javascript
+const n = cad.entities.count(e => e.type === 'Circle')
+```
+
+### `cad.entities.where(predicate)`
+
+条件に基づいてエンティティスナップショットをフィルタリングし、一致するスナップショットの配列を返します。
+
+```javascript
+const circles = cad.entities.where(e => e.type === 'Circle')
+```
+
+### `cad.entities.byId(id)`
+
+エンティティ ID で単一のスナップショットを取得します。見つからない場合は `undefined` を返します。
+
+```javascript
+const entity = cad.entities.byId('A1B2')
+if (entity) {
+  cad.log('类型:', entity.type)
+}
+```
+
+### `cad.entities.inBlock(blockId)`
+
+1 つのブロック定義（またはモデル／ペーパー空間）内の図形をスナップショットします。
+
+```javascript
+const widget = cad.blocks.find(block => block.name === 'Widget')
+const ents = widget ? cad.entities.inBlock(widget.id) : []
+```
+
+### `cad.entities.inBox(min, max)`
+
+WCS 矩形と交差するレイアウト空間のスナップショットを返します（モデル／ペーパーのみ）。
+
+```javascript
+const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
+```
+
+### エンティティスナップショット（EntitySnapshot）
+
+| フィールド      | 型                                            | 説明                                                                      |
+| --------------- | --------------------------------------------- | ------------------------------------------------------------------------- |
+| `id`            | `string`                                      | エンティティオブジェクト ID                                               |
+| `ownerId`       | `string`                                      | 所属ブロック表レコードの ID。属性の場合はブロック参照の ID                |
+| `type`          | `string`                                      | エンティティタイプ。`AcDb` プレフィックスを含まない。例：`Circle`、`Line` |
+| `layer`         | `string`                                      | 所属するレイヤー名                                                        |
+| `color`         | `EntityColor`                                 | 保存されている色（ByLayer / ByBlock 未解決）                              |
+| `resolvedColor` | `EntityColor`                                 | ByLayer / ByBlock を解決した色                                            |
+| `lineType`      | `string`                                      | 線種名（`ByLayer` / `ByBlock` は保存値のまま）                            |
+| `lineWeight`    | `number`                                      | `AcGiLineWeight` 値。負値は ByLayer / ByBlock                             |
+| `linetypeScale` | `number`                                      | 線種尺度                                                                  |
+| `visibility`    | `boolean`                                     | `false` のとき非表示                                                      |
+| `transparency`  | `EntityTransparency`                          | 透明度の方式と alpha                                                      |
+| `thickness`     | `number \| undefined`                         | 押し出し厚さ（その型が持つ場合）                                          |
+| `normal`        | `{x,y,z} \| undefined`                        | 押し出し方向 / 平面法線（その型が持つ場合）                               |
+| `extents`       | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | ワールド座標系での範囲                                                    |
+| `geometry`      | `object \| undefined`                         | タイプに依存するジオメトリデータ                                          |
+
+`EntityColor` は `{ red?, green?, blue?, hex?, colorIndex?, isByColor, isByACI, isByLayer, isByBlock, isForeground }` です。
+ByLayer / ByBlock の色には RGB がありません。実際の色が必要な場合は `resolvedColor` を読み取ります。
+`EntityTransparency` は `{ method, alpha, percentage?, isByAlpha, isByLayer, isByBlock }` です。
+
+`cad.entities.where(...)` の述語内ではこれらの表示プロパティは遅延読み取りされます。述語が触れたフィールドだけを解決し、一致したエンティティだけを完全なスナップショットに変換します。
+
+サポートされている `geometry` タイプ：
+
+| エンティティタイプ                  | `geometry` フィールド                                                                                                                                                                                                                                                                                    |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Circle`                            | `{ center, radius, area, circumference, closed }`                                                                                                                                                                                                                                                        |
+| `Line`                              | `{ start, end, length, midPoint, direction, closed }`                                                                                                                                                                                                                                                    |
+| `Arc`                               | `{ center, radius, startAngle, endAngle, startAngleDeg, endAngleDeg, length, area, startPoint, endPoint, midPoint, closed }`                                                                                                                                                                             |
+| `Ellipse`                           | `{ center, majorAxis, majorRadius, minorRadius, startAngle, endAngle, startAngleDeg, endAngleDeg, area, isCircular, closed }`                                                                                                                                                                            |
+| `Polyline`                          | `{ points, vertices: [{ bulge, startWidth, endWidth }], bulges, hasBulges, hasWidths, closed, elevation, length, area }`                                                                                                                                                                                 |
+| `2dPolyline`                        | `{ points, vertices, bulges, hasBulges, closed, polyType, elevation, length, area }`                                                                                                                                                                                                                     |
+| `3dPolyline`                        | `{ points, closed, polyType, length }`                                                                                                                                                                                                                                                                   |
+| `Spline`                            | `{ points, controlPoints, fitPoints, knots, weights, degree, length, area, isFitPointSpline, isControlPointSpline, startPoint, endPoint, closed, normal }`                                                                                                                                               |
+| `Text`                              | `{ position, text, height, rotation, styleName, alignmentPoint, hasAlignmentPoint, oblique, obliqueDeg, horizontalMode, verticalMode, widthFactor, isBackward, isUpsideDown }`                                                                                                                           |
+| `MText`                             | `{ position, text, plainText, height, width, extentsWidth, rotation, styleName, attachmentPoint, direction, lineSpacingFactor, lineSpacingStyle, backgroundFill, backgroundFillColor, backgroundScaleFactor, drawingDirection, columnType, columnCount, columnWidth, columnGutter, columnFlowReversed }` |
+| `Attribute` / `AttributeDefinition` | 文字フィールドに `{ tag, invisible }` などを追加                                                                                                                                                                                                                                                         |
+| `Point`                             | `{ position, ecsRotation }`                                                                                                                                                                                                                                                                              |
+| `Ray` / `Xline`                     | `{ basePoint, unitDir }`                                                                                                                                                                                                                                                                                 |
+| `BlockReference`（Insert）          | `{ name, effectiveName, isDynamicBlock, position, rotation, scale, columnCount, rowCount, columnSpacing, rowSpacing, blockTransform, attributes: [{ tag, text, position, invisible }] }`                                                                                                                 |
+| `Table`                             | ブロック参照フィールドに `{ rows, columns, attachmentPoint, rowHeights, columnWidths, tableWidth, tableHeight, cells }` を追加                                                                                                                                                                           |
+| `Hatch`                             | `{ patternName, hatchStyle, isSolidFill, isHatch, isGradient, area, loops: [{ closed, points, length }], gradient* }`                                                                                                                                                                                    |
+
+角度フィールド `startAngle` / `endAngle` はラジアン、`startAngleDeg` / `endAngleDeg` は度を使用します。
+`plainText` は MTEXT の制御コード（`\P`、`\fSimSun|b0|i0;`、中括弧）を除去済みで、そのまま検索できます。
+寸法の `measurement` は、エンティティに値がない場合に定義点から計算されます。
+
+`Hatch`、`Spline`、`Leader`、`MLeader`、`MLine`、各種 `Dimension`、`RasterImage`、`Viewport`、`3dSolid`、`ProxyEntity` など、data-model の具体エンティティにも `geometry` があります。ACIS、OLE、プロキシ図形のバイナリは含まれません。
+
+## cad.tables
+
+`AcDbDatabase.tables` と同じく、すべてのシンボルテーブルを読み取ります。各テーブルは `{ id, records }` です。レコードには少なくとも `id` と `name` があります。
+
+| プロパティ       | 内容                                                                                    |
+| ---------------- | --------------------------------------------------------------------------------------- |
+| `appIdTable`     | 登録アプリケーション名                                                                  |
+| `blockTable`     | ブロック定義。図形は `cad.blocks`                                                       |
+| `dimStyleTable`  | 寸法スタイル（`dimtxt`、`dimscale` など）                                               |
+| `linetypeTable`  | 線種                                                                                    |
+| `textStyleTable` | 文字スタイル                                                                            |
+| `ucsTable`       | 名前付き UCS                                                                            |
+| `viewTable`      | 名前付きビュー                                                                          |
+| `layerTable`     | 画層。`color`、`linetype`、`lineWeight`、`isOff`、`isFrozen`、`isLocked`、`isPlottable` |
+| `viewportTable`  | モデル空間の VPORT レコード。ペーパー空間の `Viewport` 図形ではありません               |
+
+## cad.blocks
+
+DXF の BLOCKS に相当する**メタデータのみ**（`*Model_Space` / `*Paper_Space` 含む）。図形配列は埋め込みません — `cad.entities.inBlock(id)` を使います。
+
+| フィールド                      | 説明                                               |
+| ------------------------------- | -------------------------------------------------- |
+| `id`                            | ブロック表レコード ID。ブロック内図形の `ownerId`  |
+| `name`                          | ブロック名                                         |
+| `origin`                        | 基点 `{ x, y, z }`                                 |
+| `isModelSpace` / `isPaperSpace` | モデル空間 / ペーパー空間                          |
+| `flags`                         | BLOCK グループコード 70                            |
+| `pathName` / `isXref`           | 外部参照のパスとフラグ                             |
+| `entityCount`                   | 図形数（スナップショットなし）                     |
+| `typeCounts`                    | 型ごとの件数（スナップショットなし）               |
+
+## cad.selection
+
+エンティティのハイライトと選択に使用します。
+
+### `cad.selection.ids`
+
+現在選択されているエンティティ ID の配列です。メソッドではなくプロパティです。
+
+```javascript
+const ids = cad.selection.ids
+```
+
+### `cad.selection.entities`
+
+選択セット内の各エンティティのスナップショットです。存在しない ID は除きます。各スナップショットのフィールドは `cad.entities.byId` と同じです。
+
+```javascript
+const circles = cad.selection.entities.filter(e => e.type === 'Circle')
+```
+
+### `cad.selection.replace(ids)`
+
+選択セットをクリアし、指定した ID リストに設定します。
+
+```javascript
+cad.selection.replace(circles.map(e => e.id))
+```
+
+### `cad.selection.add(ids)`
+
+指定した ID を現在の選択セットに追加します。
+
+```javascript
+cad.selection.add(['A1B2', 'C3D4'])
+```
+
+### `cad.selection.remove(ids)`
+
+現在の選択セットから指定した ID を削除します。
+
+```javascript
+cad.selection.remove(['A1B2'])
+```
+
+### `cad.selection.clear()`
+
+選択セットをクリアします。
+
+```javascript
+cad.selection.clear()
+```
+
+## cad.view
+
+ビューの制御に使用します。
+
+### `cad.view.zoomExtents()`
+
+ビューをモデル空間の範囲にズームします。
+
+```javascript
+cad.view.zoomExtents()
+```
+
+### `cad.view.capturePreview({ longSide?, selection?, layers? })`
+
+図面範囲の PNG スクリーンショットをキューします。キャプチャはスクリプト本体の終了後に実行されます。戻り値は `{ queued: true, index }` です。Agent チャットでは、画像はツール結果に添付されてモデルへ送られます（JSON の data URL としては返りません）。
+
+`cad.selection.replace(ids)` の後に `selection: true` を渡すと、現在の選択だけをキャプチャします。
+
+`layers`（画層名、または画層名の配列。大文字小文字は区別しません）を渡すと、モデル空間のそれらの画層上の図形だけを描画し、図面全体ではなくそれらの画層を合わせた範囲でフレーミングするため、大きな余白が出ません。画層のオン/オフ状態は無視されます。存在しない画層名はエラーになります。`layers` と `selection` は併用できません。
+
+```javascript
+cad.view.zoomExtents()
+cad.view.capturePreview()
+// optional: cad.view.capturePreview({ longSide: 512 })
+// optional: cad.view.capturePreview({ selection: true })
+// optional: cad.view.capturePreview({ layers: ['WALL', 'DOOR'] })
+```
+
+## cad.file
+
+現在の図面を書き出します。DXF 本文はスクリプトの戻り値には含まれません。
+
+### `cad.file.saveDxf(path?)`
+
+スクリプトが成功したあと DXF 書き出しをキューします。パス文字列、または `{ path?, fileName? }` を渡します。拡張子が無い場合は `.dxf` が付きます。戻り値は `{ queued: true, index, fileName }` です。
+
+- アプリ内エージェントとスクリプトパネルでは、ブラウザのダウンロードが始まります。
+- `cad-mcp-server` では、サーバーが `path` にファイルを書き込みます。相対パスはサーバープロセスの作業ディレクトリ基準です。ツール結果の `savedFiles` に絶対パスとバイト数が入ります。
+
+```javascript
+cad.file.saveDxf('./plan-out.dxf')
+// or: cad.file.saveDxf({ path: './plan-out.dxf' })
+```
+
+### `cad.file.savePdf(path?)`
+
+Queues a PDF export after the script succeeds. Pass a path string or `{ path?, fileName?, exportLayouts?, exportEmptyLayouts?, colorMode?, textMode?, modelSpaceFit? }`. `.pdf` is appended when missing. Returns `{ queued: true, index, fileName }`.
+
+```javascript
+cad.file.savePdf('./plan.pdf')
+```
+
+### `cad.file.saveHtml(path?)`
+
+Queues offline HTML (or a multi-file `.zip`) after success. Pass a path string or `{ path?, fileName?, exportFormat?, exportLayouts?, exportEmptyLayouts?, background? }`. Requires a viewer host (`exportHtml`). Headless sessions skip with a log note.
+
+```javascript
+cad.file.saveHtml('./plan.html')
+cad.file.saveHtml({ path: './plan.zip', exportFormat: 'multi' })
+```
+
+## cad.measure
+
+Numeric helpers for self-check after drawing. Prefer these over hand-rolled `Math.hypot` / `atan2`. Points are `{ x, y }` in WCS.
+
+| Method                                                  | Returns                                                                               |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `cad.measure.distance(a, b)`                            | Distance between two points                                                           |
+| `cad.measure.angleDeg(a, b)`                            | Bearing of a→b from +X, degrees in (-180, 180]                                        |
+| `cad.measure.angleDeg(a, b, c)`                         | Interior angle at b (a–b–c), degrees in [0, 180]                                      |
+| `cad.measure.deltaAngleDeg(fromDeg, toDeg)`             | Smallest absolute bearing difference in [0, 180]                                      |
+| `cad.measure.center(id)`                                | Circle/arc/ellipse center, or point/text position; else `undefined`                   |
+| `cad.measure.radius(id)`                                | Circle/arc radius or ellipse majorRadius; else `undefined`                            |
+| `cad.measure.length(id)`                                | Line length, or polyline/spline/2dPolyline/3dPolyline path length; else `undefined`   |
+| `cad.measure.area(id)`                                  | Area reported by the entity, or polygon area of its boundary points; else `undefined` |
+| `cad.measure.check(name, expected, actual, tolerance?)` | `{ name, expected, actual, pass }` (default tolerance `1e-3`)                         |
+| `cad.measure.report(checks)`                            | `{ ok, checks }` — `ok` is true iff every check passed                                |
+
+Recommended return shape after a non-trivial draw:
+
+```javascript
+const origin = { x: 0, y: 0 }
+let circleId = ''
+cad.edit.transaction('draw', tx => {
+  circleId = tx.drawCircle({ center: { x: 30, y: 40 }, radius: 10 })
+})
+const center = cad.measure.center(circleId)
+return {
+  ...cad.measure.report([
+    cad.measure.check('r', 10, cad.measure.radius(circleId)),
+    cad.measure.check('pcd', 50, cad.measure.distance(origin, center), 0.01)
+  ]),
+  entityIds: [circleId]
+}
+```
+
+## cad.redraw
+
+参照画像 (スキャン、写真、スクリーンショット) から証拠を追跡しながら図面を再構築します。スクリプトは通常の spec オブジェクトを組み立て、`cad.redraw` がそれを検証し、1 つの元に戻すグループ内で標準の画層 (OBJECT、HIDDEN、CENTER、DIM、TEXT、TABLE、BORDER、CONSTRUCTION、ASSUMPTION) に作図して結果を検査します。spec の完全なリファレンスは `CAD_REDRAW_SPEC_SUMMARY` としてエクスポートされ、エージェントのプロンプトに組み込まれています。
+
+| メソッド | 説明 |
+| --- | --- |
+| `cad.redraw.validate(spec, { profile? }?)` | 作図せずにフィールド、ID、単位、校正、拘束を検査 → `{ status, errors, warnings, evidence, calibrations }` |
+| `cad.redraw.draw(spec, { profile?, omit?, offset?, allowBlocked? }?)` | spec を作図 → `{ status, drawn, idMap, entityCount, skipped, checks, dimensionChecks, errors, warnings }` |
+| `cad.redraw.inspect(spec, idMap, { profile? }?)` | チェックを再実行し、寸法の `value` の読み取り値と作図した寸法の計測値を比較 |
+| `cad.redraw.compare(spec, { referenceIndex?, calibration?, viewId?, tolerancePx?, maxSide?, images? }?)` | 添付した参照画像とのピクセル比較: spec の校正で作図結果を位置合わせし、`redrawCompare` (判定、カバー率、適合率、距離、`suggestedMove`、ホットスポット) とオーバーレイ画像・差分画像を返します |
+
+- プロファイル: `general` (既定)、`strict-dimensioned`、`hybrid`、`visual-trace`、`geometry-only` (文字、寸法、引出線、表の文字を省略)。
+- 値ごとの証拠: `known`、`scaled`、`inferred`、`unreadable`。単位の既定は `unitless` で、ミリメートルを前提にすることはありません。
+- 図形は既定で CAD 座標を使います。`coords: 'source'` の場合は画像のピクセル座標 (左上が原点、y は下向き) で、校正 (`dimension-anchor`、`similarity`、`affine`、`homography`、`sheet-scale`) により変換されます。
+- 状態: `pass`、`pass_with_warnings`、`needs_review` (寸法または拘束の矛盾)、`blocked` (厳密プロファイルで証拠不足)、`fail` (spec が無効で何も作図されません)。
+- 表は AcDbTable ではなく線分と文字で作図されます。
+- 作図時に `units` から `INSUNITS` を設定し、文字と寸法文字には CJK 対応の `REDRAW_TEXT` スタイル (`simsun` + `hztxt.shx`) を使います。作成できない寸法は線分と文字 (半径/直径は引出線) で作図して警告を出し、`fallbacks` にその数を記録します。
+
+```javascript
+const r = cad.redraw.draw({
+  profile: 'general',
+  units: 'mm',
+  entities: [
+    { id: 'plate', type: 'rectangle', x: 0, y: 0, width: 120, height: 80, evidence: 'known' },
+    { id: 'hole', type: 'circle', center: [60, 40], radius: 10, evidence: 'known' },
+    { id: 'w', type: 'linear_dimension', p1: [0, 0], p2: [120, 0], dimLine: [60, -12], value: 120, evidence: 'known' },
+    { id: 'note', type: 'leader', points: [[67, 47], [85, 65], [95, 65]], text: 'THRU' }
+  ],
+  checks: [{ measure: 'radius', entity: 'hole', expected: 10 }]
+})
+return { status: r.status, checks: r.checks, dimensionChecks: r.dimensionChecks }
+```
+
+### ピクセル比較
+
+`cad.redraw.compare` は参照画像 (または `views[].sourceRoi`) に対応する CAD 範囲で図面をレンダリングし、校正 (相似、アフィン、射影変換) で画像座標に変換して、両方を 1 ピクセルの中心線に細線化し、距離変換で互いに計測します。
+
+- `coverage`: 許容範囲内に作図がある参照線の割合 (図形の欠落で下がります)。
+- `precision`: 許容範囲内に参照線がある作図線の割合 (余分な図形や位置ずれで下がります)。
+- `meanDistance*` / `p95Distance*`: 参照線から作図までの距離 (参照画像のピクセルと CAD 単位)。
+- `verdict`: `aligned`、`offset` (平行移動でほぼ解消 — `suggestedMove` を参照)、`incomplete`、`cluttered`、`mismatch`。
+- `hotspots`: 差異が最も大きいグリッドセル (`sourceRoi` は画像ピクセル、`cadBox` は CAD 範囲)。
+
+オーバーレイは薄くした参照画像の上に、一致した線を緑、欠落した線を赤、余分な線を青で表示します。比較にはレンダラーと添付画像が必要なため、アプリ内エージェントで動作します。ヘッドレスセッションは `reason: 'no_raster_host'` を返します。ピクセル指標は視覚的な証拠であり、寸法を証明するものではありません。
+
+## cad.edit.transaction
+
+編集操作を実行し、すべての変更が 1 つのアンドゥグループになります。図面は編集可能な状態（読み取り専用モードでない）である必要があります。
+
+```javascript
+cad.edit.transaction('批量修改', tx => {
+  tx.drawCircle({ center: { x: 50, y: 50 }, radius: 10, layer: '0' })
+  tx.move(entityIds, 10, 20)
+})
+```
+
+トランザクション内で使用可能なメソッド：
+
+### 描画メソッド
+
+| メソッド                                                                                                   | 引数                             | 戻り値                |
+| ---------------------------------------------------------------------------------------------------------- | -------------------------------- | --------------------- |
+| `tx.drawLine({ start, end, layer? })`                                                                      | `start/end: {x,y}`               | 新しいエンティティ ID |
+| `tx.drawCircle({ center, radius, layer? })`                                                                | `center: {x,y}`                  | 新しいエンティティ ID |
+| `tx.drawArc({ center, radius, startAngleDeg, endAngleDeg, layer? })`                                       | `center: {x,y}`                  | 新しいエンティティ ID |
+| `tx.drawRectangle({ corner1, corner2, layer? })`                                                           | `corner1/corner2: {x,y}`         | 新しいエンティティ ID |
+| `tx.drawPolyline({ points, closed?, layer? })`                                                             | `points: Array<{x,y}>`           | 新しいエンティティ ID |
+| `tx.drawEllipse({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? })` | `center: {x,y}`                  | 新しいエンティティ ID |
+| `tx.drawHatch({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? })`                        | `boundary: Array<{x,y}>` (min 3) | 新しいエンティティ ID |
+| `tx.drawPoint({ position, layer? })`                                                                       | `position: {x,y}`                | 新しいエンティティ ID |
+| `tx.drawRay({ start, through, layer? })`                                                                   | `start/through: {x,y}`           | 新しいエンティティ ID |
+| `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`           | 新しいエンティティ ID |
+| `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`           | 新しいエンティティ ID |
+| `tx.drawText({ position, text, height?, rotationDeg?, width?, layer? })`                                                         | `position: {x,y}`                | 新しいエンティティ ID |
+| `tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? })`                 | 点 `{x,y}`                       | 新しいエンティティ ID |
+| `tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? })`     | `rotationDeg` 省略時は配置から水平/垂直 | 新しいエンティティ ID |
+| `tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, … } \| { chordPoint, farChordPoint, … })` | 中心+半径 または弦点                 | 新しいエンティティ ID |
+| `tx.drawDimRadius({ center, radius, angleDeg?, leaderLength?, … } \| { center, chordPoint, … })`           | 中心+半径 または中心+弦点            | 新しいエンティティ ID |
+| `tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`             | 3 点角度                         | 新しいエンティティ ID |
+| `tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`                  | 弧長                             | 新しいエンティティ ID |
+| `tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? })`     | 座標寸法                         | 新しいエンティティ ID |
+| `tx.drawLeader({ points, text?, textPosition?, textHeight?, textLayer?, arrowHead?, styleName?, layer? })` | 矢印は `points[0]` | 引出線 ID (注釈のマルチテキスト ID も作成 ID に含まれます) |
+
+寸法は `drawDim*` で作成してください。線・矢印・文字で寸法を模倣しないでください。既定は図面の `$DIMSTYLE` で、上書きする場合は `cad.tables.dimStyleTable` の `styleName` を渡します。
+
+### 編集メソッド
+
+| メソッド                           | 引数                       | 戻り値                   |
+| ---------------------------------- | -------------------------- | ------------------------ |
+| `tx.erase(ids)`                    | `string[]`                 | 削除されたエンティティ数 |
+| `tx.setLayer(ids, layer)`          | `string[], string`         | —                        |
+| `tx.move(ids, dx, dy)`             | `string[], number, number` | 移動されたエンティティ数 |
+| `tx.rotate(ids, center, angleDeg)` | `string[], {x,y}, number`  | 回転されたエンティティ数 |
+| `tx.createLayer(name)`             | `string`                   | —                        |
+| `tx.setCurrentLayer(name)`         | `string`                   | —                        |
+
+## cad.log
+
+結果パネルにログ情報を出力します。
+
+```javascript
+cad.log('实体数量:', count)
+cad.log({ layer: '0', count })
+```
+
+## 戻り値
+
+スクリプトでは `return` を使用して、任意の JSON シリアライズ可能な値を返すことができます。戻り値は結果パネルに表示されます。
+
+```javascript
+return {
+  total: all.length,
+  circles: circles.length,
+  onLayer0: onLayer0.length
+}
+```
+
+戻り値が 65536 文字を超える場合、切り詰められて `truncated` とマークされます。

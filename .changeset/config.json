@@ -1,0 +1,45 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [
+    [
+      "@mlightcad/cad-agent-core",
+      "@mlightcad/cad-script-core",
+      "@mlightcad/cad-agent-plugin",
+      "@mlightcad/cad-llm-plugin",
+      "@mlightcad/cad-paddleocr-plugin",
+      "@mlightcad/cad-script-plugin",
+      "@mlightcad/cad-google-drive-plugin",
+      "@mlightcad/cad-html-core",
+      "@mlightcad/cad-html-exporter",
+      "@mlightcad/cad-html-plugin",
+      "@mlightcad/cad-onedrive-plugin",
+      "@mlightcad/cad-pdf-core",
+      "@mlightcad/cad-pdf-exporter",
+      "@mlightcad/cad-pdf-plugin",
+      "@mlightcad/cad-simple-viewer",
+      "@mlightcad/cad-simple-viewer-cli",
+      "@mlightcad/cad-mcp-server",
+      "@mlightcad/cad-simple-viewer-demo",
+      "@mlightcad/cad-diff-viewer",
+      "@mlightcad/cad-diff-viewer-example",
+      "@mlightcad/cad-svg-plugin",
+      "@mlightcad/cad-svg-converter",
+      "@mlightcad/pdf-renderer",
+      "@mlightcad/cad-editor",
+      "@mlightcad/cad-editor-demo",
+      "@mlightcad/cad-demo-gallery",
+      "@mlightcad/three-renderer"
+    ]
+  ],
+  "linked": [],
+  "access": "restricted",
+  "baseBranch": "main",
+  "version": true,
+  "updateInternalDependencies": "patch",
+  "ignore": [],
+  "___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH": {
+    "onlyUpdatePeerDependentsWhenOutOfRange": true
+  }
+}
