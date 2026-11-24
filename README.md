@@ -1,6 +1,11 @@
 # CAD-Office
 
-CAD-Office ist ein browserbasierter DWG-/DXF-Viewer und Editor. Die Anwendung basiert auf MLightCAD und läuft lokal im Browser.
+CAD-Office ist ein browserbasierter DWG-/DXF-Viewer und Editor. Die Anwendung
+basiert auf MLightCAD und läuft lokal im Browser.
+
+**Deutsche Benutzeroberfläche bereits enthalten.** Im Sprachmenü kannst du
+„Deutsch“ auswählen. Menüs, Dialoge und Beschreibungen der CAD-Befehle sind
+auf Deutsch verfügbar.
 
 ## Warum es CAD-Office gibt
 
